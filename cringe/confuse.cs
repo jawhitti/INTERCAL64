@@ -360,54 +360,60 @@ namespace INTERCAL
 
 			void EmitBoxAssignment(CompilationContext ctx, string lval)
 			{
-				// The expression must be a double-worm (=) binary expression
+				// Check for box mingle: DO []3 <- []1 $ []2
 				var binExpr = expression as Expression.BinaryExpression;
-				if(binExpr != null && binExpr.ReturnType == null)
+				if(binExpr != null && binExpr.Left is Expression.BoxExpression && binExpr.Right is Expression.BoxExpression)
 				{
-					// Check if left side is a box reference (grow/merge)
 					var leftBox = binExpr.Left as Expression.BoxExpression;
+					var rightBox = binExpr.Right as Expression.BoxExpression;
 
-					if(leftBox != null && leftBox.Name == lval)
+					if(binExpr.ReturnType == null)
 					{
-						// DO []1 <- []1 = expr  →  GrowBox or MergeBoxes
-						var rightBox = binExpr.Right as Expression.BoxExpression;
-						if(rightBox != null)
+						// Double worm: = operator
+						if(leftBox.Name == lval)
 						{
 							// DO []1 <- []1 = []2  →  MergeBoxes
 							ctx.EmitRaw("frame.ExecutionContext.MergeBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
 						}
 						else
 						{
-							// DO []1 <- []1 = #3  →  GrowBox
-							ctx.EmitRaw("frame.ExecutionContext.GrowBox(\"" + lval + "\", ");
-							binExpr.Right.Emit(ctx);
-							ctx.EmitRaw(");\n");
+							// DO []3 <- []1 = []2  →  MergeBoxes
+							ctx.EmitRaw("frame.ExecutionContext.MergeBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
 						}
 					}
 					else
 					{
-						// DO []1 <- expr1 = expr2  →  CreateBox
-						var rightBox = binExpr.Right as Expression.BoxExpression;
-						if(leftBox != null && rightBox != null)
-						{
-							// DO []3 <- []1 = []2  →  MergeBoxes
-							ctx.EmitRaw("frame.ExecutionContext.MergeBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
-						}
-						else
-						{
-							// DO []1 <- #1 = #2  →  CreateBox
-							ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + lval + "\", ");
-							binExpr.Left.Emit(ctx);
-							ctx.EmitRaw(", ");
-							binExpr.Right.Emit(ctx);
-							ctx.EmitRaw(");\n");
-						}
+						// Mingle or other binary op on two boxes → cartesian product
+						ctx.EmitRaw("frame.ExecutionContext.MingleBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
 					}
+					return;
 				}
-				else
+
+				// Double worm with scalar operands
+				if(binExpr != null && binExpr.ReturnType == null)
 				{
-					throw new CompilationException("Box assignment requires double-worm (=) operator");
+					var leftBox = binExpr.Left as Expression.BoxExpression;
+
+					if(leftBox != null && leftBox.Name == lval)
+					{
+						// DO []1 <- []1 = #3  →  GrowBox
+						ctx.EmitRaw("frame.ExecutionContext.GrowBox(\"" + lval + "\", ");
+						binExpr.Right.Emit(ctx);
+						ctx.EmitRaw(");\n");
+					}
+					else
+					{
+						// DO []1 <- #1 = #2  →  CreateBox
+						ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + lval + "\", ");
+						binExpr.Left.Emit(ctx);
+						ctx.EmitRaw(", ");
+						binExpr.Right.Emit(ctx);
+						ctx.EmitRaw(");\n");
+					}
+					return;
 				}
+
+				throw new CompilationException("Box assignment requires double-worm (=) operator or box expression");
 			}
 
 		}
