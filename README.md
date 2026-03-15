@@ -83,16 +83,58 @@ and building on Eric Raymond's work on **ick**, the compiler for this project is
 (This project was originally known as "SICK" but it has been renamed to avoid name-collision with the [CLC sick compiler](http://manpages.ubuntu.com/manpages/xenial/man1/sick.1p.html).
 
 # Project contents
-This project contains a Visual Studio 2015 solution with two main project:
-* **cringe.exe** - A conforming INTERCAL compiler for .NET 
-* **intercal.runtime.dll** - A .NET assembly providing the standard system library and support code for the execution engine.
-  
-You should be able to download the code, load it up and build with ordinary "Ctrl-Shift-B".  A selection of sample 
-INTERCAL programs is available in the "Samples" folder.
+This project contains a .NET solution with the following projects:
+* **cringe** - A conforming INTERCAL compiler for .NET
+* **intercal.runtime** - A .NET assembly providing the standard system library and support code for the execution engine.
+* **intercal.tests** - Unit tests (xUnit)
+* **csharplib** - A sample C# interop library demonstrating cross-language support.
+
+A selection of sample INTERCAL programs is available in the "Samples" folder.
 
 # Dependencies
-This compiler is written in C# and targets **.NET 4.0**.  **cringe.exe** draws influence from both Eric Raymond's 
-classic **ick** and Microsoft's C# compiler **csc.exe**. 
+This compiler is written in C# and targets **.NET 9.0**.  **cringe.exe** draws influence from both Eric Raymond's
+classic **ick** and Microsoft's C# compiler **csc.exe**.
+
+# Building and Running
+Build the entire solution from the repository root:
+```
+dotnet build intercal.sln
+```
+
+To compile an INTERCAL program, run the compiler against a source file:
+```
+dotnet run --project cringe -- samples/hello.i
+```
+
+This produces an executable that can be run directly. See the CRINGE user manual section below for
+full compiler usage including library compilation and cross-language interop.
+
+# Unit Tests
+
+Run the test suite with:
+```
+dotnet test intercal.tests/intercal.tests.csproj
+```
+
+To generate a code coverage report:
+```
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+The tests are organized into four areas:
+
+* **ScannerTests** - Tests the tokenizer/lexer: label recognition, prefix tokens (DO, PLEASE), variable types, operators, gerunds, and multi-word statements.
+* **ProgramTests** - Tests program parsing: statement types, labeled statements, COME FROM, STASH/RETRIEVE, politeness calculation, and error detection.
+* **ExecutionContextTests** - Tests the runtime variable system: spot/two-spot variables, bounds checking, stash/retrieve, IGNORE/REMEMBER, and array operations.
+* **LibTests** - Tests the bitwise operation library: mingle, select, rotate, reverse, and logical operations (and, or, xor).
+
+### Why is code coverage so low?
+
+Overall line coverage sits around 16%. This is because the tests focus on the **scanner, parser, and runtime data structures** — the parts of the system that have well-defined inputs and outputs and are amenable to unit testing.
+
+The two largest bodies of code — the **compiler/code generator** (`futile.cs`) and the **pre-compiled system library** (`sicklib.cs`) — are essentially untested by unit tests. The code generator emits IL and is difficult to unit-test in isolation without standing up the full .NET emission pipeline; in practice it is validated by compiling and running the sample programs. The system library (`sicklib.cs`) is machine-generated code compiled from `syslib.i` and is similarly validated by the sample programs that exercise it (e.g. `primes.i`, `pi.i`). The async threading infrastructure (`twisty.cs`) that implements NEXT/RESUME/FORGET semantics across components is also not unit-tested due to the complexity of its thread-pool-based design.
+
+In short: the unit tests cover the parts that *can* be unit-tested; the rest is validated by integration-style testing against real INTERCAL programs.
    
 # CRINGE user manual
 
