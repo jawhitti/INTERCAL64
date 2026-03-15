@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+
 using System.Collections.Generic;
 using System.Linq;
 
@@ -25,50 +25,50 @@ namespace INTERCAL
     public class Scanner
     {
         public int LineNumber = 1;
-        Match current;
-        Match next;
+        Tokenizer tokenizer;
+        Token current;
+        Token next;
         int newlines;
 
-        public Scanner(Match m)
+        public Scanner(Tokenizer t)
         {
-            current = m;
+            tokenizer = t;
+            current = tokenizer.NextToken();
 
-            while (current.Value == "\n")
+            while (current.Type == TokenType.Newline)
             {
                 newlines++;
-                current = current.NextMatch();
+                current = tokenizer.NextToken();
             }
 
-            next = current.NextMatch();
+            next = tokenizer.NextToken();
         }
-        public Match Current
+
+        public Token Current
         {
             get { return current; }
         }
 
-        public Match PeekNext
+        public Token PeekNext
         {
-            get
-            {
-                return next;
-            }
+            get { return next; }
         }
 
         public void MoveNext()
         {
             //The only complication here is that
-            //we swallow "\n" internally so the 
+            //we swallow "\n" internally so the
             //expression parsers never see it.
             current = next;
             LineNumber += newlines;
             newlines = 0;
 
-            next = next.NextMatch();
+            next = tokenizer.NextToken();
 
-            while (next.Value == "\n")
+            while (next.Type == TokenType.Newline)
             {
                 newlines++;
-                next = next.NextMatch();
+                next = tokenizer.NextToken();
             }
         }
 
@@ -79,35 +79,37 @@ namespace INTERCAL
             for (;;)
             {
                 MoveNext();
-                if (current == Match.Empty)
+                if (current.Type == TokenType.EOF)
                     break;
-                if (current.Groups["prefix"].Success)
+                if (current.Type == TokenType.Prefix)
                     break;
-                else if ((current.Groups["label"].Success) && (next.Groups["prefix"].Success))
+                else if ((current.Type == TokenType.Label) && (next.Type == TokenType.Prefix))
                     break;
             }
         }
 
         public static Scanner CreateScanner(string input)
         {
-            const string Tokens = @"(?<label>(\(\d+\)))|(?<digits>(\d+))|" +
-                      "(?<prefix>(PLEASE|DO|N'T|NOT|%))|" +
-                      "(?<gerund>(READING OUT|WRITING IN|COMING FROM|ABSTAINING|REINSTATING|NEXTING|STASHING|RESUMING|FORGETTING|IGNORING|REMEMBERING|RETRIEVING|CALCULATING))|" +
-                      "(?<statement>(READ OUT|WRITE IN|COME FROM|ABSTAIN FROM|REINSTATE|NEXT|STASH|RESUME|FORGET|IGNORE|REMEMBER|RETRIEVE|GIVE UP|NEXT|<-))|" +
-                      "(?<separator>(\\\"|\\'|\\+|BY))|<-|" +
-                      "(?<var>(\\.|,|;|:|#))|SUB|" +
-                      "(?<unary_op>(\\&|v|V|\\?))|" +
-                      "(?<binary_op>(\\$|~))|[a-zA-Z]+|\\n";
-
-            Regex r = new Regex(Tokens);
-
-            return new Scanner(r.Match(input));
-
+            return new Scanner(new Tokenizer(input));
         }
+
+        private static readonly Dictionary<string, TokenType> GroupTypeMap = new Dictionary<string, TokenType>
+        {
+            { "label", TokenType.Label },
+            { "digits", TokenType.Digits },
+            { "prefix", TokenType.Prefix },
+            { "gerund", TokenType.Gerund },
+            { "statement", TokenType.Statement },
+            { "separator", TokenType.Separator },
+            { "var", TokenType.Var },
+            { "unary_op", TokenType.UnaryOp },
+            { "binary_op", TokenType.BinaryOp },
+        };
+
         public string ReadGroupValue(string group)
         {
-            if (Current.Groups[group].Success)
-                return Current.Groups[group].Value;
+            if (GroupTypeMap.TryGetValue(group, out TokenType expected) && Current.Type == expected)
+                return Current.Value;
             else
                 throw new ParseException(String.Format("line {0}: '{2}' is not a valid {1}", LineNumber, group, Current.Value));
         }
@@ -116,7 +118,6 @@ namespace INTERCAL
         {
             if (Current.Value != val)
                 throw new ParseException(String.Format("line {0}: Expected a {1}", LineNumber, val));
-
         }
 
     }
@@ -348,16 +349,16 @@ namespace INTERCAL
             int begin = scanner.Current.Index;
             int end = begin;
 
-            while (scanner.Current != Match.Empty)
+            while (scanner.Current.Type != TokenType.EOF)
             {
-                //begin and end are used to snip out a substring for 
+                //begin and end are used to snip out a substring for
                 //each statement.
                 begin = end;
                 Statement s = Statement.CreateStatement(scanner);
                 end = scanner.Current.Index;
                 if (end > begin)
                     s.StatementText = src.Substring(begin, end - begin).TrimEnd();
-                else if (scanner.Current == Match.Empty)
+                else if (scanner.Current.Type == TokenType.EOF)
                     s.StatementText = src.Substring(begin).TrimEnd();
 
 

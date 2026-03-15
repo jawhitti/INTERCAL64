@@ -5,7 +5,7 @@ using System.Text;
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.RegularExpressions;
+
 using System.Collections.Generic;
 using System.Linq;
 
@@ -97,10 +97,7 @@ namespace INTERCAL
 
 		public static string ReadGroupValue(Scanner s, string group)
 		{
-			if(s.Current.Groups[group].Success)
-				return s.Current.Groups[group].Value;
-			else
-				throw new ParseException(String.Format(Messages.E017,s.LineNumber+1));
+			return s.ReadGroupValue(group);
 		}
 
 		public static void VerifyToken(Scanner s, string val)
@@ -129,7 +126,7 @@ namespace INTERCAL
 			{
 				//First we look to see if there is a label...
 
-				if(s.Current.Groups["label"].Success)
+				if(s.Current.Type == TokenType.Label)
 				{
 					Label = Statement.ReadGroupValue(s, "label");
 					s.MoveNext();
@@ -179,7 +176,7 @@ namespace INTERCAL
 				//Here we parse out the statement prefix.  Easier to
 				//do it here than break out a separate function.
 				
-				while(s.Current.Groups["prefix"].Success)
+				while(s.Current.Type == TokenType.Prefix)
 				{
 					switch(s.Current.Value)
 					{
@@ -212,7 +209,7 @@ namespace INTERCAL
 				if(!validPrefix) 
 					throw new ParseException(String.Format(Messages.E017,s.LineNumber+1));
 
-				if(s.Current.Groups["statement"].Success)
+				if(s.Current.Type == TokenType.Statement)
 				{
 					//We are looking at the beginning of a statement
 					switch(s.Current.Value)
@@ -231,11 +228,11 @@ namespace INTERCAL
 						case "GIVE UP":		retval = new GiveUpStatement(s);	break;
 					}
 				}
-				else if(s.Current.Groups["label"].Success)
+				else if(s.Current.Type == TokenType.Label)
 				{
 					retval = new NextStatement(s);
 				}
-				else if(s.Current.Groups["var"].Success)
+				else if(s.Current.Type == TokenType.Var)
 				{
 					retval = new CalculateStatement(s);
 				}
@@ -592,7 +589,7 @@ namespace INTERCAL
 			public ResumeStatement(Scanner s)
 			{
 				s.MoveNext(); 
-				if(s.PeekNext.Groups["prefix"].Success || s.PeekNext.Groups["label"].Success)
+				if(s.PeekNext.Type == TokenType.Prefix || s.PeekNext.Type == TokenType.Label)
 					return;
 				
 				Depth = Expression.CreateExpression(s);
@@ -717,7 +714,7 @@ namespace INTERCAL
 			public AbstainStatement(Scanner s)
 			{
 				s.MoveNext();
-				if(s.Current.Groups["gerund"].Success)
+				if(s.Current.Type == TokenType.Gerund)
 				{
                     Gerunds = new List<string>() { s.Current.Value };
 							
@@ -728,7 +725,7 @@ namespace INTERCAL
 						Gerunds.Add(ReadGroupValue(s,"gerund"));
 					}
 				}
-				else if(s.Current.Groups["label"].Success)
+				else if(s.Current.Type == TokenType.Label)
 				{
 					Target = s.Current.Value;
 				}

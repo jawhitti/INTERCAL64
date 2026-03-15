@@ -4,7 +4,7 @@ using System.Text;
 using INTERCAL.Runtime;
 using System.Collections;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+
 using System.Collections.Generic;
 
 namespace INTERCAL
@@ -115,7 +115,7 @@ namespace INTERCAL
 				delimeter = s.Current.Value;
 
 				s.MoveNext();
-				if(s.Current.Groups["unary_op"].Success)
+				if(s.Current.Type == TokenType.UnaryOp)
 				{
 					//3.4.3 A unary operator is applied to a sparked or rabbit-eared 
 					//expression by inserting the operator immediately following the opening spark or ears
@@ -284,7 +284,7 @@ namespace INTERCAL
 			public ConstantExpression(Scanner s)
 			{
 				s.MoveNext();
-				if(s.Current.Groups["unary_op"].Success)
+				if(s.Current.Type == TokenType.UnaryOp)
 				{
 					//For some reason there's an unary operator in front of 
 					//the digits.  We just do the conversion here...
@@ -337,7 +337,7 @@ namespace INTERCAL
 				else
 					Debug.Assert(false);
 				
-				if(s.PeekNext.Groups["unary_op"].Success)
+				if(s.PeekNext.Type == TokenType.UnaryOp)
 				{
 					//Theres an unary operator
 					s.MoveNext();
