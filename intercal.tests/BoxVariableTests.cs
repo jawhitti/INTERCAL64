@@ -223,12 +223,12 @@ namespace intercal.tests
         public void Box_ExceedingMaxValues_ThrowsE2012()
         {
             var ctx = new ExecutionContext();
+            ctx.PleasePeta = true; // disable hunger so we can reach 99
             ctx.CreateBox("[]1", 1, 2);
             // Grow to 99 values (already have 2, need 97 more)
             for (ulong i = 3; i <= 99; i++)
             {
                 ctx.GrowBox("[]1", i);
-                ctx.FeedBox("[]1"); // keep the cat alive
             }
             var ex = Assert.Throws<IntercalException>(() => ctx.GrowBox("[]1", 100));
             Assert.Contains("E2012", ex.Message);
@@ -253,9 +253,13 @@ namespace intercal.tests
             var ctx = new ExecutionContext();
             ctx.CreateBox("[]1", 10, 20);
             ctx.Stash("[]1");
-            ctx.CreateBox("[]1", 77, 88);
+            // Modify the box after stashing
+            ctx.CollapseBox("[]1");
+            ctx.GrowBox("[]1", 99);
+            // Retrieve should restore original superposition
             ctx.Retrieve("[]1");
             var values = ctx.GetBoxValues("[]1");
+            Assert.Equal(2, values.Count);
             Assert.Contains(10UL, values);
             Assert.Contains(20UL, values);
         }
