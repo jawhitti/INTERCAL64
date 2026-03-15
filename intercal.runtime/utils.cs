@@ -2,9 +2,10 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-using System.Runtime.Remoting.Messaging;
+
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace INTERCAL
 {
@@ -141,15 +142,11 @@ namespace INTERCAL
         }
 
 
-        [Serializable]
         public class IntercalException : Exception
         {
             public IntercalException() { }
             public IntercalException(string message) : base(message) { }
             public IntercalException(string message, Exception inner) : base(message, inner) { }
-            protected IntercalException(
-              System.Runtime.Serialization.SerializationInfo info,
-              System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
         }
 
         ////IExecutionContext holds shared variables used to call across components.
@@ -184,8 +181,7 @@ namespace INTERCAL
         //}
 
         [Serializable]
-        public class ExecutionContext : AsyncDispatcher,
-            ILogicalThreadAffinative
+        public class ExecutionContext : AsyncDispatcher
         {
             #region Fields and constuctors
 
@@ -463,8 +459,7 @@ namespace INTERCAL
             #region control flow
             public void Run(IntercalThreadProc proc)
             {
-                StartProc sp = Evaluate;
-                sp.BeginInvoke(proc, 0, ar => sp.EndInvoke(ar), null);
+                Task.Run(() => Evaluate(proc, 0));
 
                 lock (SyncLock)
                 {

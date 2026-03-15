@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace INTERCAL.Runtime
 {
     //The code in this file implements a thread-based NEXTing stack. This is challenging
@@ -57,8 +58,7 @@ namespace INTERCAL.Runtime
             //the function referenced by this.Proc never does a FORGET then 
             //we could just make a direct function call.
 
-            var myThread = new IntercalThreadProc(InternalThreadProc);
-            myThread.BeginInvoke(this, ar => myThread.EndInvoke(ar), null);
+            Task.Run(() => InternalThreadProc(this));
 
             lock (SyncLock)
             {

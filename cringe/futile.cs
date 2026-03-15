@@ -8,21 +8,17 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Linq;
 
-[assembly: AssemblyVersion("0.5.0.*")]
+// Version is now set in the .csproj file
 
 namespace INTERCAL
 {
 
 
-    [Serializable]
     public class CompilationException : Exception
     {
         public CompilationException() { }
         public CompilationException(string message) : base(message) { }
         public CompilationException(string message, Exception inner) : base(message, inner) { }
-        protected CompilationException(
-          System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
     //This is the worlds lamest input scanner

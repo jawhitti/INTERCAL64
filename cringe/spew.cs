@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Configuration;
+
 using System.Reflection;
 
 namespace INTERCAL
@@ -155,47 +155,69 @@ namespace INTERCAL
                 throw new CompilationException(Messages.E888, e);
             }
 
-            string compiler = "csc.exe";
-            string userSpecifiedCompilerPath = ConfigurationManager.AppSettings["compilerPath"];
-            if (!string.IsNullOrEmpty(userSpecifiedCompilerPath)) {
-                compiler = userSpecifiedCompilerPath; 
+            //Generate a temporary .csproj to compile the emitted C# source.
+            //This replaces the old approach of shelling out to csc.exe directly,
+            //which doesn't work on modern .NET without extra setup.
+            string outputType = "Exe";
+            string assemblyFileName = c.assemblyName + ".exe";
+            if (c.assemblyType == CompilationContext.AssemblyType.library)
+            {
+                outputType = "Library";
+                assemblyFileName = c.assemblyName + ".dll";
             }
- 
-            string compiler_args = null;
 
+            StringBuilder csproj = new StringBuilder();
+            csproj.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+            csproj.AppendLine("  <PropertyGroup>");
+            csproj.AppendLine("    <OutputType>" + outputType + "</OutputType>");
+            csproj.AppendLine("    <TargetFramework>net9.0</TargetFramework>");
+            csproj.AppendLine("    <AssemblyName>" + c.assemblyName + "</AssemblyName>");
+            csproj.AppendLine("    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>");
             if (c.debugBuild)
             {
-                compiler_args = "/debug+ /d:TRACE ";
+                csproj.AppendLine("    <DefineConstants>TRACE</DefineConstants>");
+                csproj.AppendLine("    <DebugType>full</DebugType>");
             }
-
-            switch (c.assemblyType)
-            {
-                case CompilationContext.AssemblyType.exe:
-                    compiler_args += " /out:" + c.assemblyName + ".exe ";
-                    break;
-
-                case CompilationContext.AssemblyType.library:
-                    compiler_args += " /t:library /out:" + c.assemblyName + ".dll ";
-                    break;
-            }
-
-            bool needsComma = false;
-
-            compiler_args += (" /r:");
+            csproj.AppendLine("  </PropertyGroup>");
+            csproj.AppendLine("  <ItemGroup>");
+            csproj.AppendLine("    <Compile Include=\"~tmp.cs\" />");
+            csproj.AppendLine("  </ItemGroup>");
 
             //We need to pass references down to the C# compiler
             if (c.references != null)
             {
+                csproj.AppendLine("  <ItemGroup>");
                 for (int i = 0; i < c.references.Length; i++)
                 {
-                    if (needsComma)
-                        compiler_args += ",";
-
-                    compiler_args += '"' + c.references[i].assemblyFile + '"';
-                    needsComma = true;
+                    string refPath = Path.GetFullPath(c.references[i].assemblyFile);
+                    csproj.AppendLine("    <Reference Include=\"" + Path.GetFileNameWithoutExtension(refPath) + "\">");
+                    csproj.AppendLine("      <HintPath>" + refPath + "</HintPath>");
+                    csproj.AppendLine("    </Reference>");
                 }
+                csproj.AppendLine("  </ItemGroup>");
             }
-            compiler_args += " ~tmp.cs";
+
+            csproj.AppendLine("</Project>");
+
+            try
+            {
+                File.WriteAllText("~tmp.csproj", csproj.ToString());
+            }
+            catch (Exception e)
+            {
+                throw new CompilationException(Messages.E888, e);
+            }
+
+            string compiler = "dotnet";
+            string userSpecifiedCompilerPath = Environment.GetEnvironmentVariable("INTERCAL_DOTNET_PATH");
+            if (!string.IsNullOrEmpty(userSpecifiedCompilerPath))
+            {
+                compiler = userSpecifiedCompilerPath;
+            }
+
+            string configuration = c.debugBuild ? "Debug" : "Release";
+            string compiler_args = "build ~tmp.csproj -c " + configuration +
+                " -o " + '"' + Environment.CurrentDirectory + '"';
 
             try
             {
@@ -219,6 +241,7 @@ namespace INTERCAL
             }
 
             //File.Delete("~tmp.cs");
+            //File.Delete("~tmp.csproj");
         }
 
         private static void CopyRequiredBinariesToOutputFolder(CompilationContext c)
@@ -245,7 +268,7 @@ namespace INTERCAL
 
         const string Banner =
             "Simple INTERCAL Compiler version {0}\r\n" +
-            "for Microsoft (R) .NET Framework version {1}\r\n" +
+            "for Microsoft (R) .NET version {1}\r\n" +
             "Authorship disclaimed by Jason Whittington 2017. All rights reserved.\r\n\r\n";
         const string Usage =
         #region usage

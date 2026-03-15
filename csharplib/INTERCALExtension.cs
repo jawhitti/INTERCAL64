@@ -1,5 +1,4 @@
 using System;
-using System.Windows.Forms;
 using INTERCAL.Runtime;
 
 //Use this syntax to route jumps to a particular label to a method on
@@ -17,7 +16,7 @@ public class CSIntercalLib
     
 	public bool foobar(ExecutionContext ctx)
 	{
-		MessageBox.Show("Hello From Intercal!");
+		Console.WriteLine("Hello From Intercal!");
 		ctx[".3"] = ctx[".2"] + ctx[".1"];
 
         //This is an artifact of the way the nexting stack works.
