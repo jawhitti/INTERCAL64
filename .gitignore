@@ -243,3 +243,10 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# INTERCAL compiler temp files
+~tmp.*
+
+# .NET build artifacts from compiled INTERCAL programs
+*.deps.json
+*.runtimeconfig.json
