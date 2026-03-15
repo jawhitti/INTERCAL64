@@ -9,9 +9,9 @@ using System.Collections.Generic;
 
 namespace INTERCAL
 {
-	//INTERCAL Expressions always evaluate to either an int16 or an int32.  For simplicity this
-	//implementations treats everything as a 32-bit int except for some types of expressions
-	//like mingle and select.
+	//INTERCAL Expressions evaluate to int16, int32, or int64.  For simplicity this
+	//implementation treats everything as a 64-bit uint except for some types of expressions
+	//like mingle and select which are width-sensitive.
 	
 	abstract class Expression
 	{
@@ -51,19 +51,23 @@ namespace INTERCAL
 			
 			switch(s.Current.Value)
 			{
-				case "\"": 
+				case "\"":
 				case "'":
 					retval = new QuotedExpression(s);
 					break;
 				case "#":
+				case "##":
+				case "####":
 					retval = new ConstantExpression(s);
 					break;
 				case ".":
 				case ":":
+				case "::":
 					retval = new NumericExpression(s);
 					break;
 				case ",":
 				case ";":
+				case ";;":
 					retval = new ArrayExpression(s, delimeter);
 					break;
 
@@ -89,7 +93,7 @@ namespace INTERCAL
 
 		//After calling Evaluate callers can look at the return type to
 		//decide if they need to trim down to 16 bits.
-		public abstract uint Evaluate(ExecutionContext ctx);
+		public abstract ulong Evaluate(ExecutionContext ctx);
 
 		public abstract void Emit(CompilationContext ctx);
 
@@ -138,12 +142,12 @@ namespace INTERCAL
 				this.returnType = child.ReturnType;
 			}
 
-			public override Expression Optimize() 
+			public override Expression Optimize()
 			{
 				//first we optimize the child.
 				child = child.Optimize();
 				ConstantExpression c = child as ConstantExpression;
-				
+
 				//if the child expression is constant then we can
 				//just compile-time evaluate our operator and return
 				//a constant expression.
@@ -153,17 +157,29 @@ namespace INTERCAL
 						return child;
 					else
 					{
-						if(c.Value < UInt16.MaxValue)
+						if(c.Value <= UInt16.MaxValue)
 						{
 							ushort tmp = (ushort)c.Value;
 							switch(unary_op)
 							{
 								case "v": case "V":
-									return new ConstantExpression(Lib.UnaryOr16(tmp));
-								case "&": 
-									return new ConstantExpression(Lib.UnaryAnd16(tmp));
-								case "?": 
-									return new ConstantExpression(Lib.UnaryXor16(tmp));
+									return new ConstantExpression((ulong)Lib.UnaryOr16(tmp));
+								case "&":
+									return new ConstantExpression((ulong)Lib.UnaryAnd16(tmp));
+								case "?":
+									return new ConstantExpression((ulong)Lib.UnaryXor16(tmp));
+							}
+						}
+						else if(c.Value <= UInt32.MaxValue)
+						{
+							switch(unary_op)
+							{
+								case "v": case "V":
+									return new ConstantExpression((ulong)Lib.UnaryOr32((uint)c.Value));
+								case "&":
+									return new ConstantExpression((ulong)Lib.UnaryAnd32((uint)c.Value));
+								case "?":
+									return new ConstantExpression((ulong)Lib.UnaryXor32((uint)c.Value));
 							}
 						}
 						else
@@ -171,19 +187,19 @@ namespace INTERCAL
 							switch(unary_op)
 							{
 								case "v": case "V":
-									return new ConstantExpression(Lib.UnaryOr32(c.Value));
-								case "&": 
-									return new ConstantExpression(Lib.UnaryAnd32(c.Value));
-								case "?": 
-									return new ConstantExpression(Lib.UnaryXor32(c.Value));
+									return new ConstantExpression(Lib.UnaryOr64(c.Value));
+								case "&":
+									return new ConstantExpression(Lib.UnaryAnd64(c.Value));
+								case "?":
+									return new ConstantExpression(Lib.UnaryXor64(c.Value));
 							}
 						}
 
 					}
 				}
-				
+
 				//if the child expression was not constant then we can't optimize.
-				return this; 
+				return this;
 			}
 
 			public override void Emit(CompilationContext ctx)
@@ -218,40 +234,54 @@ namespace INTERCAL
 				ctx.EmitRaw(")");
 			}
 
-			public override uint Evaluate(ExecutionContext ctx)
-			{ 
-				uint result = child.Evaluate(ctx);
+			public override ulong Evaluate(ExecutionContext ctx)
+			{
+				ulong result = child.Evaluate(ctx);
 				if(unary_op != null)
 				{
-					if(result < UInt16.MaxValue)
+					if(result <= UInt16.MaxValue)
 					{
 						ushort tmp = (ushort)result;
 						switch(unary_op)
 						{
 							case "v": case "V":
-								result = (uint)Lib.UnaryOr16(tmp);
+								result = (ulong)Lib.UnaryOr16(tmp);
 								break;
-							case "&": 
-								result = (uint)Lib.UnaryAnd16(tmp);
+							case "&":
+								result = (ulong)Lib.UnaryAnd16(tmp);
 								break;
-							case "?": 
-								result = (uint)Lib.UnaryXor16(tmp);
+							case "?":
+								result = (ulong)Lib.UnaryXor16(tmp);
+								break;
+						}
+					}
+					else if(result <= UInt32.MaxValue)
+					{
+						switch(unary_op)
+						{
+							case "v": case "V":
+								result = (ulong)Lib.UnaryOr32((uint)result);
+								break;
+							case "&":
+								result = (ulong)Lib.UnaryAnd32((uint)result);
+								break;
+							case "?":
+								result = (ulong)Lib.UnaryXor32((uint)result);
 								break;
 						}
 					}
 					else
 					{
-						short tmp = (short)result;
 						switch(unary_op)
 						{
 							case "v": case "V":
-								result = (uint)Lib.UnaryOr32((uint)result);
+								result = Lib.UnaryOr64(result);
 								break;
-							case "&": 
-								result = (uint)Lib.UnaryAnd32((uint)result);
+							case "&":
+								result = Lib.UnaryAnd64(result);
 								break;
-							case "?": 
-								result = (uint)Lib.UnaryXor32((uint)result);
+							case "?":
+								result = Lib.UnaryXor64(result);
 								break;
 						}
 					}
@@ -262,9 +292,9 @@ namespace INTERCAL
 		
 		class ConstantExpression : Expression
 		{
-			public readonly uint Value;
+			public readonly ulong Value;
 			protected static Dictionary<string, eval_delegate> eval_table = new Dictionary<string, eval_delegate>();
-			
+
 			protected delegate ushort eval_delegate(ushort val);
 
 			static ConstantExpression()
@@ -276,40 +306,65 @@ namespace INTERCAL
 			}
 
 			//This constructor is used during optimization
-			public ConstantExpression(uint val)
+			public ConstantExpression(ulong val)
 			{
 				this.Value = val;
+				// Infer return type from the value's magnitude
+				if(val <= UInt16.MaxValue)
+					this.returnType = typeof(UInt16);
+				else if(val <= UInt32.MaxValue)
+					this.returnType = typeof(UInt32);
+				else
+					this.returnType = typeof(UInt64);
 			}
 
 			public ConstantExpression(Scanner s)
 			{
+				// Remember the constant prefix: # = 16-bit, ## = 32-bit, #### = 64-bit
+				string prefix = s.Current.Value;
+
 				s.MoveNext();
 				if(s.Current.Type == TokenType.UnaryOp)
 				{
-					//For some reason there's an unary operator in front of 
+					//For some reason there's an unary operator in front of
 					//the digits.  We just do the conversion here...
 					string op = s.Current.Value;
 					s.MoveNext();
-					Value = ((eval_delegate)eval_table[op])((ushort)UInt32.Parse(Statement.ReadGroupValue(s, "digits")));
+					Value = ((eval_delegate)eval_table[op])((ushort)UInt64.Parse(Statement.ReadGroupValue(s, "digits")));
 				}
 				else
 				{
-					Value = UInt32.Parse(Statement.ReadGroupValue(s, "digits"));
+					Value = UInt64.Parse(Statement.ReadGroupValue(s, "digits"));
 				}
 
-				//Constant expressions are only 16 bits
-				if(Value < UInt16.MinValue || Value > UInt16.MaxValue)
-					//throw new ParseException(String.Format("line {0}: Constant too big (#{0})", s.LineNumber, Value));
-					throw new CompilationException(Messages.E275);
-				
-				this.returnType = typeof(UInt16);
+				// Validate range based on constant prefix
+				if(prefix == "#")
+				{
+					if(Value > UInt16.MaxValue)
+						throw new CompilationException(Messages.E275);
+					this.returnType = typeof(UInt16);
+				}
+				else if(prefix == "##")
+				{
+					if(Value > UInt32.MaxValue)
+						throw new CompilationException(Messages.E275);
+					this.returnType = typeof(UInt32);
+				}
+				else // ####
+				{
+					// Full 64-bit range
+					this.returnType = typeof(UInt64);
+				}
 			}
 
-			public override uint Evaluate(ExecutionContext ctx) { return Value; }
-			
+			public override ulong Evaluate(ExecutionContext ctx) { return Value; }
+
 			public override void Emit(CompilationContext ctx)
 			{
-				ctx.EmitRaw(Value.ToString());
+				if(returnType == typeof(UInt64))
+					ctx.EmitRaw(Value.ToString() + "UL");
+				else
+					ctx.EmitRaw(Value.ToString());
 			}
 
 		}
@@ -320,23 +375,27 @@ namespace INTERCAL
 		{
 			delegate uint long_op(uint arg);
 			delegate ushort short_op(ushort arg);
+			delegate ulong vlong_op(ulong arg);
 
 			string unary_op = null;
 			string lval;
-			
+
 			long_op longform;
 			short_op shortform;
+			vlong_op vlongform;
 
 			public NumericExpression(Scanner s)
 			{
 				string typeid = s.Current.Value;
-				if(typeid == ":")
+				if(typeid == "::")
+					this.returnType = typeof(UInt64);
+				else if(typeid == ":")
 					this.returnType = typeof(UInt32);
 				else if(typeid == ".")
 					this.returnType = typeof(UInt16);
 				else
 					Debug.Assert(false);
-				
+
 				if(s.PeekNext.Type == TokenType.UnaryOp)
 				{
 					//Theres an unary operator
@@ -348,55 +407,38 @@ namespace INTERCAL
 						case "V":
 							this.shortform = new short_op(Lib.UnaryOr16);
 							this.longform =  new long_op(Lib.UnaryOr32);
+							this.vlongform = new vlong_op(Lib.UnaryOr64);
 							break;
 						case "?":
 							this.shortform = new short_op(Lib.UnaryXor16);
 							this.longform =  new long_op(Lib.UnaryXor32);
+							this.vlongform = new vlong_op(Lib.UnaryXor64);
 							break;
 						case "&":
 							this.shortform = new short_op(Lib.UnaryAnd16);
 							this.longform =  new long_op(Lib.UnaryAnd32);
+							this.vlongform = new vlong_op(Lib.UnaryAnd64);
 							break;
 					}
 				}
-			
+
 				s.MoveNext();
 				this.lval = typeid + Statement.ReadGroupValue(s, "digits");
 			}
 
-			public override uint Evaluate(ExecutionContext ctx)
+			public override ulong Evaluate(ExecutionContext ctx)
 			{
 				if(this.longform == null)
 					return ctx[lval];
-				/*
-				switch(unary_op)
-				{
-						//This code commented out Jan 29, 2003 as being
-						//redundant (I believe)
-						
-						case "v":
-						case "V":
-							this.shortform = new short_op(Lib.UnaryOr16);
-							this.longform =  new long_op(Lib.UnaryOr32);
-							break;
-						case "?":
-							this.shortform = new short_op(Lib.UnaryXor16);
-							this.longform =  new long_op(Lib.UnaryXor32);
-							break;
-						case "&":
-							this.shortform = new short_op(Lib.UnaryAnd16);
-							this.longform =  new long_op(Lib.UnaryAnd32);
-							break;
-						
 
-				}
-				*/
 				if(this.returnType == typeof(UInt16))
 					return shortform((ushort)ctx[lval]);
+				else if(this.returnType == typeof(UInt64))
+					return vlongform(ctx[lval]);
 				else
 					return longform((uint)ctx[lval]);
 			}
-			
+
 			public override void Emit(CompilationContext ctx)
 			{
 				if(this.longform == null)
@@ -405,20 +447,24 @@ namespace INTERCAL
 				{
 					string sf = null;
 					string lf = null;
+					string vlf = null;
 					switch(unary_op)
 					{
 						case "v":
 						case "V":
 							sf = "Lib.UnaryOr16";
 							lf =  "Lib.UnaryOr32";
+							vlf = "Lib.UnaryOr64";
 							break;
 						case "?":
 							sf = "Lib.UnaryXor16";
 							lf =  "Lib.UnaryXor32";
+							vlf = "Lib.UnaryXor64";
 							break;
 						case "&":
 							sf = "Lib.UnaryAnd16";
 							lf =  "Lib.UnaryAnd32";
+							vlf = "Lib.UnaryAnd64";
 							break;
 						default:
 							throw new CompilationException("Bad unary operator");
@@ -427,6 +473,8 @@ namespace INTERCAL
 
 					if(this.returnType == typeof(UInt16))
 						ctx.EmitRaw(sf + "(((ushort)frame.ExecutionContext[\"" + lval + "\"]))");
+					else if(this.returnType == typeof(UInt64))
+						ctx.EmitRaw(vlf + "(frame.ExecutionContext[\"" + lval + "\"])");
 					else
 						ctx.EmitRaw(lf + "(((uint)frame.ExecutionContext[\"" + lval + "\"]))");
 				}
@@ -474,7 +522,7 @@ namespace INTERCAL
 				}
 			}
 
-			public override uint Evaluate(ExecutionContext ctx) 
+			public override ulong Evaluate(ExecutionContext ctx)
 			{
 				string lval = Name;
 
@@ -487,7 +535,7 @@ namespace INTERCAL
 				{
 					Indices[i] = (int)(subscripts[i] as Expression).Evaluate(ctx);
 				}
-				
+
 				return ctx[lval, Indices];
 			}
 
@@ -525,6 +573,15 @@ namespace INTERCAL
 
 				if(op == "$")
 				{
+					// Classic INTERCAL: mingle always truncates operands to 16 bits
+					// and produces a 32-bit result. Even two-spot (:) values get truncated.
+					// 64-bit values cannot be mingled.
+					Type lt = left.ReturnType;
+					Type rt = right.ReturnType;
+
+					if(lt == typeof(UInt64) || rt == typeof(UInt64))
+						throw new CompilationException(Messages.E533);
+
 					returnType = typeof(UInt32);
 				}
 				else if(op == "~")
@@ -549,9 +606,12 @@ namespace INTERCAL
 					switch(op)
 					{
 						case "$":
-							return new ConstantExpression(Lib.Mingle(cleft.Value, cright.Value));
+							return new ConstantExpression((ulong)Lib.Mingle(cleft.Value, cright.Value));
 						case "~":
-							return new ConstantExpression((uint)Lib.Select(cleft.Value, cright.Value));
+							if(returnType == typeof(UInt64))
+								return new ConstantExpression(Lib.Select(cleft.Value, cright.Value));
+							else
+								return new ConstantExpression(Lib.Select((uint)cleft.Value, (uint)cright.Value));
 					}
 				}
 
@@ -559,24 +619,22 @@ namespace INTERCAL
 				return this;
 			}
 
-			public override uint Evaluate(ExecutionContext ctx) 
+			public override ulong Evaluate(ExecutionContext ctx)
 			{
-				uint a = Left.Evaluate(ctx);
-				uint b = Right.Evaluate(ctx);
+				ulong a = Left.Evaluate(ctx);
+				ulong b = Right.Evaluate(ctx);
 
 				switch(op)
 				{
 					case "$":
-					{
-						return Lib.Mingle((ushort)a, (ushort)b);
-					}
+						return Lib.Mingle(a, b);
 
 					case "~":
 					{
-						//A select might use a 16-bit selector to select from a 32-bit
-						//value.  No harm here if we pad the 16-bit value out to 32-bits,
-						//select against the 32-bit value, then take the bottom 16 bits.
-						return (uint)Lib.Select(a, b);
+						if(returnType == typeof(UInt64))
+							return Lib.Select(a, b);
+						else
+							return Lib.Select((uint)a, (uint)b);
 					}
 
 					default:
@@ -603,14 +661,22 @@ namespace INTERCAL
 
 					case "~":
 					{
-						//A select might use a 16-bit selector to select from a 32-bit
-						//value.  No harm here if we pad the 16-bit value out to 32-bits,
-						//select against the 32-bit value, then take the bottom 16 bits.
-						ctx.EmitRaw("(uint)Lib.Select(");
-						Left.Emit(ctx);
-						ctx.EmitRaw(",");
-						Right.Emit(ctx);
-						ctx.EmitRaw(")");
+						if(returnType == typeof(UInt64))
+						{
+							ctx.EmitRaw("Lib.Select(");
+							Left.Emit(ctx);
+							ctx.EmitRaw(",");
+							Right.Emit(ctx);
+							ctx.EmitRaw(")");
+						}
+						else
+						{
+							ctx.EmitRaw("(ulong)Lib.Select((uint)(");
+							Left.Emit(ctx);
+							ctx.EmitRaw("),(uint)(");
+							Right.Emit(ctx);
+							ctx.EmitRaw("))");
+						}
 					}break;
 
 					default:
@@ -645,7 +711,7 @@ namespace INTERCAL
 
 			}
 			
-			public override uint Evaluate(ExecutionContext ctx) 
+			public override ulong Evaluate(ExecutionContext ctx)
 			{
 				throw new Exception("Don't call this!");
 			}
@@ -682,15 +748,15 @@ namespace INTERCAL
 
 	}
 
-	public class LValue 
+	public class LValue
 	{
 		//An lval is a lot like an expression, except resolving it results
 		//in a string naming a location.  So for example :1 is an lval, but
 		//so is ;1SUB:1.  The latter expression might resolve to a different
-		//location every time.  
+		//location every time.
 		string VarName;
 
-		//Most lvals will not have subscripts, but 
+		//Most lvals will not have subscripts, but
 		//arrays obviously do, so we track them in an list of expressions.
 		List<Expression> subscripts = null;
 
@@ -698,19 +764,19 @@ namespace INTERCAL
 		{
 			//first read the basic lval...
 			VarName = Statement.ReadGroupValue(s, "var");
-			if(s.Current.Value == "#")
+			if(s.Current.Value == "#" || s.Current.Value == "##" || s.Current.Value == "####")
 				throw new ParseException(String.Format("line {0}: Constants cannot be used as lvalues ", s.LineNumber));
-			
+
 			s.MoveNext();
 			VarName += Statement.ReadGroupValue(s, "digits");
-			
+
 			//Now look to see if we have any subscripts.
 			if(s.PeekNext.Value == "SUB")
 			{
 				subscripts = new List<Expression>();
 				s.MoveNext(); //skip SUB
-					
-				//We can recognize a subscript coming by the presence of [.,;:#]					
+
+				//We can recognize a subscript coming by the presence of [.,;:#]
 				char[] expression_starter = {'.', ',', ':', ';', '#', '\'', '"'};
 				while(s.PeekNext.Value.IndexOfAny(expression_starter) != -1)
 				{
@@ -722,9 +788,9 @@ namespace INTERCAL
 
 		public bool IsArray
 		{
-			get { if(Name[0] == ',' || Name[0] == ';')
+			get { if(Name.StartsWith(";;") || Name[0] == ',' || Name[0] == ';')
 					  return true;
-				  else 
+				  else
 					  return false;
 			    }
 		}

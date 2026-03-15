@@ -106,10 +106,42 @@ namespace INTERCAL
                 return new Token(TokenType.Statement, "<-", startPos);
             }
 
-            // Single-character tokens
+            // Single-character tokens (with look-ahead for multi-char variants)
             switch (c)
             {
-                case '.': case ',': case ';': case ':': case '#':
+                case ':':
+                    pos++;
+                    if (pos < input.Length && input[pos] == ':')
+                    {
+                        pos++;
+                        return new Token(TokenType.Var, "::", startPos);
+                    }
+                    return new Token(TokenType.Var, ":", startPos);
+
+                case ';':
+                    pos++;
+                    if (pos < input.Length && input[pos] == ';')
+                    {
+                        pos++;
+                        return new Token(TokenType.Var, ";;", startPos);
+                    }
+                    return new Token(TokenType.Var, ";", startPos);
+
+                case '#':
+                    pos++;
+                    if (pos < input.Length && input[pos] == '#')
+                    {
+                        pos++;
+                        if (pos + 1 < input.Length && input[pos] == '#' && input[pos + 1] == '#')
+                        {
+                            pos += 2;
+                            return new Token(TokenType.Var, "####", startPos);
+                        }
+                        return new Token(TokenType.Var, "##", startPos);
+                    }
+                    return new Token(TokenType.Var, "#", startPos);
+
+                case '.': case ',':
                     pos++;
                     return new Token(TokenType.Var, c.ToString(), startPos);
 

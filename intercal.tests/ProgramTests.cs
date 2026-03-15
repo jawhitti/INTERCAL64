@@ -198,5 +198,49 @@ namespace intercal.tests
                 "DO GIVE UP\n");
             Assert.Equal(4, p.StatementCount);
         }
+
+        // Four-spot (::) parsing tests
+        [Fact]
+        public void Parse_FourSpotCalculation()
+        {
+            var p = ParseSource(
+                "DO ::1 <- ####1\n" +
+                "DO GIVE UP\n");
+            Assert.Equal(2, p.StatementCount);
+        }
+
+        [Fact]
+        public void Parse_FourSpotWithConstant()
+        {
+            var p = ParseSource(
+                "DO ::1 <- ####1\n" +
+                "DO ::2 <- #1$#2\n" +
+                "DO GIVE UP\n");
+            Assert.Equal(3, p.StatementCount);
+        }
+
+        // E533: "64 BITS SHOULD BE ENOUGH FOR ANYONE" — mingle two 64-bit values
+        [Fact]
+        public void Parse_MingleTwoFourSpots_ThrowsE533()
+        {
+            var ex = Assert.Throws<CompilationException>(() =>
+                ParseSource(
+                    "DO ::1 <- ####1\n" +
+                    "DO ::2 <- ::1$::1\n" +
+                    "DO GIVE UP\n"));
+            Assert.Contains("E533", ex.Message);
+            Assert.Contains("64 BITS SHOULD BE ENOUGH FOR ANYONE", ex.Message);
+        }
+
+        // Classic INTERCAL: mingle always truncates to 16 bits, even with two-spot operands
+        [Fact]
+        public void Parse_MingleMixedSpotTwoSpot_Succeeds()
+        {
+            var p = ParseSource(
+                "DO .1 <- #1\n" +
+                "DO :1 <- .1$:1\n" +
+                "DO GIVE UP\n");
+            Assert.Equal(3, p.StatementCount);
+        }
     }
 }

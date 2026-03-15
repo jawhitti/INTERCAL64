@@ -177,6 +177,115 @@ namespace intercal.tests
             Assert.Equal(0u, Lib.Xor(0xFFFFFFFF));
         }
 
+        // Mingle32 interleaves the bits of two 32-bit values into a 64-bit result.
+        [Fact]
+        public void Mingle32_ZeroWithZero_ReturnsZero()
+        {
+            Assert.Equal(0UL, Lib.Mingle32(0, 0));
+        }
+
+        [Fact]
+        public void Mingle32_OneWithZero_ReturnsTwo()
+        {
+            Assert.Equal(2UL, Lib.Mingle32(1, 0));
+        }
+
+        [Fact]
+        public void Mingle32_ZeroWithOne_ReturnsOne()
+        {
+            Assert.Equal(1UL, Lib.Mingle32(0, 1));
+        }
+
+        [Fact]
+        public void Mingle32_MaxValues_ReturnsAllOnes()
+        {
+            Assert.Equal(0xFFFFFFFFFFFFFFFFUL, Lib.Mingle32(0xFFFFFFFF, 0xFFFFFFFF));
+        }
+
+        [Fact]
+        public void Mingle32_ZeroWithMax_ReturnsEvenBits()
+        {
+            Assert.Equal(0x5555555555555555UL, Lib.Mingle32(0, 0xFFFFFFFF));
+        }
+
+        [Fact]
+        public void Mingle32_MaxWithZero_ReturnsOddBits()
+        {
+            Assert.Equal(0xAAAAAAAAAAAAAAAAUL, Lib.Mingle32(0xFFFFFFFF, 0));
+        }
+
+        // Select64
+        [Fact]
+        public void Select64_AllZeros_ReturnsZero()
+        {
+            Assert.Equal(0UL, Lib.Select(0UL, 0UL));
+        }
+
+        [Fact]
+        public void Select64_AllOnes_MaskAllOnes_ReturnsSame()
+        {
+            Assert.Equal(ulong.MaxValue, Lib.Select(ulong.MaxValue, ulong.MaxValue));
+        }
+
+        [Fact]
+        public void Select64_ExtractsCorrectBits()
+        {
+            Assert.Equal(2UL, Lib.Select(0b1010UL, 0b1100UL));
+        }
+
+        // Rotate64
+        [Fact]
+        public void Rotate64_One_WrapsToHighBit()
+        {
+            Assert.Equal(0x8000000000000000UL, Lib.Rotate(1UL));
+        }
+
+        [Fact]
+        public void Rotate64_Two_ReturnsOne()
+        {
+            Assert.Equal(1UL, Lib.Rotate(2UL));
+        }
+
+        // 64-bit unary ops
+        [Fact]
+        public void And64_AllOnes_ReturnsAllOnes()
+        {
+            Assert.Equal(ulong.MaxValue, Lib.UnaryAnd64(ulong.MaxValue));
+        }
+
+        [Fact]
+        public void Or64_AllOnes_ReturnsAllOnes()
+        {
+            Assert.Equal(ulong.MaxValue, Lib.UnaryOr64(ulong.MaxValue));
+        }
+
+        [Fact]
+        public void Xor64_AllOnes_ReturnsZero()
+        {
+            Assert.Equal(0UL, Lib.UnaryXor64(ulong.MaxValue));
+        }
+
+        [Fact]
+        public void And_Dispatches_To64Bit_ForLargeValues()
+        {
+            ulong val = 1UL << 40;
+            Assert.Equal(Lib.UnaryAnd64(val), Lib.And(val));
+        }
+
+        [Fact]
+        public void Or_Dispatches_To64Bit_ForLargeValues()
+        {
+            ulong val = 1UL << 40;
+            Assert.Equal(Lib.UnaryOr64(val), Lib.Or(val));
+        }
+
+        [Fact]
+        public void Xor_Dispatches_To64Bit_ForLargeValues()
+        {
+            ulong val = 1UL << 40;
+            Assert.Equal(Lib.UnaryXor64(val), Lib.Xor(val));
+        }
+
         [Fact]
         public void Fail_ThrowsIntercalException()
         {

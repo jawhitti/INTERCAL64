@@ -576,9 +576,9 @@ namespace INTERCAL
                     ctx.EmitRaw("\");\r\n");
                 }
 
-                ctx.EmitRaw("frame.ExecutionContext.Forget(");
+                ctx.EmitRaw("frame.ExecutionContext.Forget((int)(");
                 this.exp.Emit(ctx);
-                ctx.EmitRaw(");\r\n");
+                ctx.EmitRaw("));\r\n");
 			}
 		}
 		
@@ -599,9 +599,9 @@ namespace INTERCAL
 			{
                 //RESUME 0 needs to be treated as a no-op.
                 ctx.EmitRaw("   {\r\n");
-                ctx.EmitRaw("      uint depth = ");
+                ctx.EmitRaw("      uint depth = (uint)(");
                 Depth.Emit(ctx);
-                ctx.EmitRaw(";\r\n");
+                ctx.EmitRaw(");\r\n");
 
                 if (ctx.debugBuild)
                 {

@@ -253,6 +253,80 @@ namespace intercal.tests
             Assert.Equal(3, scanner.Current.Index);    // . at 3
         }
 
+        // Four-spot (::) and double-hybrid (;;) token tests
+        [Fact]
+        public void Tokenizer_RecognizesDoubleColon()
+        {
+            var scanner = Scanner.CreateScanner("::");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal("::", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_SingleColonStillWorks()
+        {
+            var scanner = Scanner.CreateScanner(":1");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal(":", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_RecognizesDoubleSemicolon()
+        {
+            var scanner = Scanner.CreateScanner(";;");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal(";;", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_SingleSemicolonStillWorks()
+        {
+            var scanner = Scanner.CreateScanner(";1");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal(";", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_RecognizesDoubleHash()
+        {
+            var scanner = Scanner.CreateScanner("##");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal("##", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_RecognizesQuadHash()
+        {
+            var scanner = Scanner.CreateScanner("####");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal("####", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_SingleHashStillWorks()
+        {
+            var scanner = Scanner.CreateScanner("#1");
+            Assert.Equal(TokenType.Var, scanner.Current.Type);
+            Assert.Equal("#", scanner.Current.Value);
+        }
+
+        [Fact]
+        public void Tokenizer_FourSpotInStatement()
+        {
+            var scanner = Scanner.CreateScanner("DO ::1 <- ##100");
+            Assert.Equal("DO", scanner.Current.Value);
+            scanner.MoveNext();
+            Assert.Equal("::", scanner.Current.Value);
+            scanner.MoveNext();
+            Assert.Equal("1", scanner.Current.Value);
+            scanner.MoveNext();
+            Assert.Equal("<-", scanner.Current.Value);
+            scanner.MoveNext();
+            Assert.Equal("##", scanner.Current.Value);
+            scanner.MoveNext();
+            Assert.Equal("100", scanner.Current.Value);
+        }
+
         [Fact]
         public void Tokenizer_CompleteStatement()
         {

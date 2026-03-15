@@ -671,7 +671,7 @@ public class syslib : System.Object
 
         label_1001:
         {
-            uint depth = frame.ExecutionContext[".5"];
+            uint depth = (uint)frame.ExecutionContext[".5"];
             if (depth > 0)
             {
                 frame.ExecutionContext.Resume(depth);
@@ -795,7 +795,7 @@ public class syslib : System.Object
 
         label_1023:
         {
-            uint depth = frame.ExecutionContext[".3"];
+            uint depth = (uint)frame.ExecutionContext[".3"];
             if (depth > 0)
             {
                 frame.ExecutionContext.Resume(depth);
@@ -1232,7 +1232,7 @@ public class syslib : System.Object
 
         label_1504:
         {
-            uint depth = frame.ExecutionContext[".6"];
+            uint depth = (uint)frame.ExecutionContext[".6"];
             if (depth > 0)
             {
                 frame.ExecutionContext.Resume(depth);

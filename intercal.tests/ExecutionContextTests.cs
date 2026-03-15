@@ -7,7 +7,7 @@ namespace intercal.tests
 {
     public class ExecutionContextTests
     {
-        // Spot (.) variables are 16-bit, Two-spot (:) are 32-bit
+        // Spot (.) variables are 16-bit, Two-spot (:) are 32-bit, Four-spot (::) are 64-bit
         [Fact]
         public void SpotVariable_SetAndGet()
         {
@@ -153,9 +153,92 @@ namespace intercal.tests
             ctx[".2"] = 20;
             ctx[":1"] = 30;
 
-            Assert.Equal(10u, ctx[".1"]);
-            Assert.Equal(20u, ctx[".2"]);
-            Assert.Equal(30u, ctx[":1"]);
+            Assert.Equal(10UL, ctx[".1"]);
+            Assert.Equal(20UL, ctx[".2"]);
+            Assert.Equal(30UL, ctx[":1"]);
+        }
+
+        // Four-spot (::) 64-bit variable tests
+        [Fact]
+        public void FourSpotVariable_SetAndGet()
+        {
+            var ctx = new ExecutionContext();
+            ctx["::1"] = 42UL;
+            Assert.Equal(42UL, ctx["::1"]);
+        }
+
+        [Fact]
+        public void FourSpotVariable_AcceptsFullUInt64()
+        {
+            var ctx = new ExecutionContext();
+            ctx["::1"] = ulong.MaxValue;
+            Assert.Equal(ulong.MaxValue, ctx["::1"]);
+        }
+
+        [Fact]
+        public void FourSpotVariable_AcceptsValueOver32Bits()
+        {
+            var ctx = new ExecutionContext();
+            ulong bigValue = (ulong)uint.MaxValue + 1;
+            ctx["::1"] = bigValue;
+            Assert.Equal(bigValue, ctx["::1"]);
+        }
+
+        [Fact]
+        public void TwoSpotVariable_RejectsValueOver32Bits()
+        {
+            var ctx = new ExecutionContext();
+            ulong tooBig = (ulong)uint.MaxValue + 1;
+            Assert.Throws<IntercalException>(() => ctx[":1"] = tooBig);
+        }
+
+        [Fact]
+        public void FourSpotVariable_StashAndRetrieve()
+        {
+            var ctx = new ExecutionContext();
+            ulong bigVal = 1UL << 40;
+            ctx["::1"] = bigVal;
+            ctx.Stash("::1");
+            ctx["::1"] = 999;
+            Assert.Equal(999UL, ctx["::1"]);
+            ctx.Retrieve("::1");
+            Assert.Equal(bigVal, ctx["::1"]);
+        }
+
+        [Fact]
+        public void FourSpotVariable_IgnoreAndRemember()
+        {
+            var ctx = new ExecutionContext();
+            ctx["::1"] = 1UL << 50;
+            ctx.Ignore("::1");
+            ctx["::1"] = 0;
+            Assert.Equal(1UL << 50, ctx["::1"]);
+            ctx.Remember("::1");
+            ctx["::1"] = 42;
+            Assert.Equal(42UL, ctx["::1"]);
+        }
+
+        [Fact]
+        public void FourSpotVariable_IndependentFromTwoSpot()
+        {
+            var ctx = new ExecutionContext();
+            ctx[":1"] = 100;
+            ctx["::1"] = 200;
+            Assert.Equal(100UL, ctx[":1"]);
+            Assert.Equal(200UL, ctx["::1"]);
+        }
+
+        // Double-hybrid (;;) 64-bit array tests
+        [Fact]
+        public void DoubleHybridArray_ReDimAndAccess()
+        {
+            var ctx = new ExecutionContext();
+            ctx.ReDim(";;1", new int[] { 2 });
+            ulong bigVal = 1UL << 48;
+            ctx[";;1", new int[] { 1 }] = bigVal;
+            ctx[";;1", new int[] { 2 }] = 42;
+            Assert.Equal(bigVal, ctx[";;1", new int[] { 1 }]);
+            Assert.Equal(42UL, ctx[";;1", new int[] { 2 }]);
         }
     }
 }

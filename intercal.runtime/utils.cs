@@ -48,13 +48,15 @@ namespace INTERCAL
             public const string E240 = "E240 ERROR HANDLER PRINTED SNIDE REMARK";
             /* DONE Invalid dimensioning information was supplied in defining or using an array. */
             public const string E241 = "E241 VARIABLES MAY NOT BE STORED IN WEST HYPERSPACE";
-            /* DONE A 32-bit value has been assigned to a 16-bit variable. */
+            /* DONE A value has been assigned to a variable too small to hold it. */
             public const string E275 = "E275 DON'T BYTE OFF MORE THAN YOU CAN CHEW";
             /* DONE A retrieval has been attempted for an unSTASHed value. */
             public const string E436 = "E436 THROW STICK BEFORE RETRIEVING!";
             /* DONE A WRITE IN statement or interleave ($) operation
-                 * has produced value requirEing over 32 bits to represent. */
-            public const string E533 = "E533 YOU WANT MAYBE WE SHOULD IMPLEMENT 64-BIT VARIABLES?";
+                 * has produced a value requiring over 64 bits to represent. */
+            public const string E533 = "E533 64 BITS SHOULD BE ENOUGH FOR ANYONE";
+            /* Attempted to mingle operands of mismatched widths. */
+            public const string E534 = "E534 YOU CAN'T MINGLE WITH SOMEONE WHO ISN'T YOUR TYPE";
             /* Insufficient data. (raised by reading past EOF) */
             public const string E562 = "E562 I DO NOT COMPUTE";
             /* Input data is invalid. */
@@ -224,7 +226,7 @@ namespace INTERCAL
             public void AdvanceInput(uint delta) { LastIn = LastIn + delta % 255; }
             public void AdvanceOutput(uint delta) { LastOut = LastOut + delta % 255; }
 
-            public uint this[string varname]
+            public ulong this[string varname]
             {
                 get
                 {
@@ -246,7 +248,12 @@ namespace INTERCAL
 
                     if (v is IntVariable)
                     {
-                        if ((v.Name[0] == '.') && value > (UInt32)UInt16.MaxValue)
+                        // Four-spot (::) variables accept full 64-bit values
+                        // Two-spot (:) variables are capped at 32 bits
+                        // Spot (.) variables are capped at 16 bits
+                        if (v.Name[0] == '.' && value > UInt16.MaxValue)
+                            Lib.Fail(Messages.E275);
+                        else if (v.Name[0] == ':' && !v.Name.StartsWith("::") && value > UInt32.MaxValue)
                             Lib.Fail(Messages.E275);
 
                         (v as IntVariable).Value = value;
@@ -258,7 +265,7 @@ namespace INTERCAL
 
             }
 
-            public uint this[string varname, int[] indices]
+            public ulong this[string varname, int[] indices]
             {
                 get
                 {
@@ -308,24 +315,24 @@ namespace INTERCAL
                 public abstract void Retrieve();
             }
 
-            //Variables are always shared across components, just like they 
+            //Variables are always shared across components, just like they
             //were in the traditional public library.
-            //Spot (.) and Two-spot (:) variables are both stored as IntVariables
+            //Spot (.), Two-spot (:), and Four-spot (::) variables are all stored as IntVariables
             [Serializable]
             class IntVariable : Variable
             {
                 static Random random = new System.Random();
-                public uint val = 0;
+                public ulong val = 0;
 
                 //each variable has it's own little stack for stashing/retrieving values...
-                protected Stack<uint> StashStack = new Stack<uint>();
+                protected Stack<ulong> StashStack = new Stack<ulong>();
 
                 public IntVariable(ExecutionContext ctx, string name) : base(ctx, name)
                 {
                     this.val = 0;
                 }
 
-                public uint Value
+                public ulong Value
                 {
                     get { return val; }
                     set { if (Enabled) val = value; }
@@ -336,7 +343,7 @@ namespace INTERCAL
                 {
                     try
                     {
-                        val = (uint)StashStack.Pop();
+                        val = StashStack.Pop();
                     }
                     catch
                     {
@@ -367,17 +374,32 @@ namespace INTERCAL
                     {
                         lbounds[i] = 1;
                     }
-                    values = Array.CreateInstance(typeof(uint), subscripts, lbounds);
-                    values.SetValue(new System.UInt32(), subscripts);
+
+                    // Double-hybrid (;;) arrays store 64-bit values, others store 32-bit
+                    if (Name.StartsWith(";;"))
+                    {
+                        values = Array.CreateInstance(typeof(ulong), subscripts, lbounds);
+                        values.SetValue(new System.UInt64(), subscripts);
+                    }
+                    else
+                    {
+                        values = Array.CreateInstance(typeof(uint), subscripts, lbounds);
+                        values.SetValue(new System.UInt32(), subscripts);
+                    }
                 }
 
 
-                public uint this[string var, int[] indices]
+                public ulong this[string var, int[] indices]
                 {
                     get
                     {
                         try
-                        { return (uint)values.GetValue(indices); }
+                        {
+                            if (Name.StartsWith(";;"))
+                                return (ulong)values.GetValue(indices);
+                            else
+                                return (uint)values.GetValue(indices);
+                        }
                         catch
                         {
                             Lib.Fail(Messages.E241);
@@ -388,7 +410,10 @@ namespace INTERCAL
                     {
                         try
                         {
-                            values.SetValue(value, indices);
+                            if (Name.StartsWith(";;"))
+                                values.SetValue(value, indices);
+                            else
+                                values.SetValue((uint)value, indices);
                         }
                         catch (Exception e)
                         {
@@ -433,9 +458,9 @@ namespace INTERCAL
 
                     int[] idx = new int[1];
 
-                    foreach (uint v in values)
+                    foreach (var v in values)
                     {
-                        uint c = owner.LastOut - v;
+                        uint c = owner.LastOut - Convert.ToUInt32(v);
 
                         owner.LastOut = c;
 
@@ -651,7 +676,10 @@ namespace INTERCAL
                             //Note that this compiler today only works in wimpmode.  To do it
                             //right we will need to have satellite assemblies, one for each of
                             //many different languages.
-                            this[identifier] = UInt32.Parse(input);
+                            if (identifier.StartsWith("::"))
+                                this[identifier] = UInt64.Parse(input);
+                            else
+                                this[identifier] = UInt32.Parse(input);
                         }
                         catch
                         {
@@ -681,15 +709,12 @@ namespace INTERCAL
             0x10000000,         0x20000000,         0x40000000,         0x80000000
         };
 
-            public static uint Mingle(uint men, uint ladies)
+            public static uint Mingle(ulong men, ulong ladies)
             {
                 ushort a = (ushort)men;
                 ushort b = (ushort)ladies;
 
-                //mingle takes two 16 bit values andbuilds a 32-bit operator by "mingling" their bits
-                //if ((a > UInt16.MaxValue) || (b > UInt16.MaxValue))
-                //    throw new IntercalException(Messages.E533);
-
+                //mingle takes two 16 bit values and builds a 32-bit value by "mingling" their bits
                 uint retval = 0;
 
                 for (int i = 15; i >= 0; i--)
@@ -699,6 +724,23 @@ namespace INTERCAL
 
                     if ((b & (ushort)bitflags[i]) != 0)
                         retval |= bitflags[2 * i];
+                }
+
+                return retval;
+            }
+
+            // Mingle two 32-bit values into a 64-bit result
+            public static ulong Mingle32(uint men, uint ladies)
+            {
+                ulong retval = 0;
+
+                for (int i = 31; i >= 0; i--)
+                {
+                    if ((men & bitflags[i]) != 0)
+                        retval |= 1UL << (2 * i + 1);
+
+                    if ((ladies & bitflags[i]) != 0)
+                        retval |= 1UL << (2 * i);
                 }
 
                 return retval;
@@ -740,6 +782,24 @@ namespace INTERCAL
                 return retval;
             }
 
+            public static ulong Select(ulong a, ulong b)
+            {
+                ulong retval = 0;
+                int bit = 0;
+
+                for (int i = 0; i < 64; i++)
+                {
+                    if ((b & (1UL << i)) != 0)
+                    {
+                        if ((a & (1UL << i)) != 0)
+                            retval |= (1UL << bit);
+                        bit++;
+                    }
+                }
+
+                return retval;
+            }
+
             public static uint Rotate(uint val)
             {
                 bool b = ((val & bitflags[0]) != 0);
@@ -758,6 +818,15 @@ namespace INTERCAL
                 return val;
             }
 
+            public static ulong Rotate(ulong val)
+            {
+                bool b = ((val & 1UL) != 0);
+                val >>= 1;
+                if (b)
+                    val |= 0x8000000000000000UL;
+                return val;
+            }
+
             public static ushort Reverse(ushort val)
             {
                 ushort retval = 0;
@@ -769,35 +838,44 @@ namespace INTERCAL
                 return retval;
             }
 
-            public static uint And(uint val)
+            public static ulong And(ulong val)
             {
-                if (val < UInt16.MaxValue)
-                    return (uint)UnaryAnd16((ushort)val);
+                if (val <= UInt16.MaxValue)
+                    return (ulong)UnaryAnd16((ushort)val);
+                else if (val <= UInt32.MaxValue)
+                    return (ulong)UnaryAnd32((uint)val);
                 else
-                    return UnaryAnd32(val);
+                    return UnaryAnd64(val);
             }
             public static uint UnaryAnd32(uint val) { return val & Rotate(val); }
             public static ushort UnaryAnd16(ushort val) { return (ushort)(val & Rotate(val)); }
+            public static ulong UnaryAnd64(ulong val) { return val & Rotate(val); }
 
-            public static uint Or(uint val)
+            public static ulong Or(ulong val)
             {
-                if (val < UInt16.MaxValue)
-                    return (uint)UnaryOr16((ushort)val);
+                if (val <= UInt16.MaxValue)
+                    return (ulong)UnaryOr16((ushort)val);
+                else if (val <= UInt32.MaxValue)
+                    return (ulong)UnaryOr32((uint)val);
                 else
-                    return UnaryOr32(val);
+                    return UnaryOr64(val);
             }
             public static uint UnaryOr32(uint val) { return val | Rotate(val); }
             public static ushort UnaryOr16(ushort val) { return (ushort)(val | Rotate(val)); }
+            public static ulong UnaryOr64(ulong val) { return val | Rotate(val); }
 
-            public static uint Xor(uint val)
+            public static ulong Xor(ulong val)
             {
-                if (val < UInt16.MaxValue)
-                    return (uint)UnaryXor16((ushort)val);
+                if (val <= UInt16.MaxValue)
+                    return (ulong)UnaryXor16((ushort)val);
+                else if (val <= UInt32.MaxValue)
+                    return (ulong)UnaryXor32((uint)val);
                 else
-                    return UnaryXor32(val);
+                    return UnaryXor64(val);
             }
             public static uint UnaryXor32(uint val) { return val ^ Rotate(val); }
             public static ushort UnaryXor16(ushort val) { return (ushort)(val ^ Rotate(val)); }
+            public static ulong UnaryXor64(ulong val) { return val ^ Rotate(val); }
 
 
             public static int Rand(int n)
