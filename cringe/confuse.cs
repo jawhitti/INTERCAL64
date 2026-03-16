@@ -57,11 +57,12 @@ namespace INTERCAL
 		//then it contains the index of the destination COME FROM.
 		public int Trapdoor = -1;
 
-		//A statement may begin with a logical line label enclosed in wax-wane pairs (()). 
-		//A statement may not have more than one label, although it is possible to omit the label 
-		//entirely. A line label is any integer from 1 to 65535, which must be unique within each
-		//program. The user is cautioned, however, that many line labels between 1000 and 
-		//1999 are used in the INTERCAL System Library functions. 
+		//A statement may begin with a logical line label enclosed in wax-wane pairs (()).
+		//A statement may not have more than one label, although it is possible to omit the label
+		//entirely. A line label is any 64-bit integer, which must be unique within each
+		//program. The user is cautioned, however, that many line labels between 1000 and
+		//1999 are used in the INTERCAL System Library functions. The i# syslib uses
+		//labels encoded as ASCII strings (e.g., "ADD16" = 0x4144443136000000).
 		public string  Label = null;
 		
 		//Unrecognizable statements, as noted in section 9, are flagged with a splat (*)
@@ -307,6 +308,7 @@ namespace INTERCAL
 			public override void Emit(CompilationContext ctx)
 			{
 				string lval = destination.Name;
+				ctx.DebugVariables.Add(lval);
 
 				// Quantum box assignment: DO []1 <- expr1 = expr2
 				if(destination.IsBox)
@@ -421,8 +423,9 @@ namespace INTERCAL
 		public class NextStatement : Statement
 		{
 			public string Target;
+			public int ReturnLabelId = -1;
 
-			public NextStatement(Scanner s) 
+			public NextStatement(Scanner s)
 			{
 				this.Target = ReadGroupValue(s, "label");
 				s.MoveNext();
@@ -445,28 +448,16 @@ namespace INTERCAL
 							if(a.Label == this.Target)
 							{
 								Type t = e.assembly.GetType(a.ClassName);
-								MethodInfo m = t.GetMethod(a.MethodName, new Type[] { typeof(ExecutionContext) } );
-								
+								MethodInfo m = t.GetMethod(a.MethodName, new Type[] { typeof(ComponentCall) } );
+
 								if(m != null)
 								{
                                     if (m.IsStatic)
                                     {
-                                        //ctx.EmitRaw(a.ClassName + "." + a.MethodName + "(frame.ExecutionContext);");
-
                                         ctx.EmitRaw("{\r\n");
-                                        ctx.EmitRaw(string.Format("   bool shouldTerminate = {0}.{1}(frame.ExecutionContext);\r\n", a.ClassName, a.MethodName));
-                                        ctx.EmitRaw("   if (shouldTerminate)\r\n");
-                                        ctx.EmitRaw("   {\r\n");
-                                        ctx.EmitRaw("       goto exit;\r\n");
-                                        ctx.EmitRaw("   }\r\n");
-
-                                        if (ctx.debugBuild) {
-                                            ctx.EmitRaw("   else\r\n");
-                                            ctx.EmitRaw("   {\r\n");
-                                            ctx.EmitRaw(string.Format("      Trace.WriteLine(\"Resuming execution at {0}\");", StatementNumber));
-                                            ctx.EmitRaw("   }\r\n");
-                                        }
-
+                                        ctx.EmitRaw(string.Format("   var _call = new ComponentCall(frame.ExecutionContext);\r\n"));
+                                        ctx.EmitRaw(string.Format("   {0}.{1}(_call);\r\n", a.ClassName, a.MethodName));
+                                        ctx.EmitRaw("   if (frame.ExecutionContext.Done) goto exit;\r\n");
                                         ctx.EmitRaw("}\r\n");
 
                                     }
@@ -476,20 +467,17 @@ namespace INTERCAL
                                             ctx.ExternalReferences.Add(a.ClassName);
 
                                         ctx.EmitRaw("{\r\n");
-                                        ctx.EmitRaw("   bool shouldTerminate = " + ctx.GeneratePropertyName(a.ClassName) + "." + a.MethodName + "(frame.ExecutionContext);\r\n");
-                                        ctx.EmitRaw("   if (shouldTerminate)\r\n");
-                                        ctx.EmitRaw("   {\r\n");
-                                        ctx.EmitRaw("       goto exit;\r\n");
+                                        ctx.EmitRaw("   var _call = new ComponentCall(frame.ExecutionContext);\r\n");
+                                        ctx.EmitRaw("   " + ctx.GeneratePropertyName(a.ClassName) + "." + a.MethodName + "(_call);\r\n");
+                                        ctx.EmitRaw("   if (frame.ExecutionContext.Done) goto exit;\r\n");
+                                        ctx.EmitRaw("   int _rd = _call.NextStackDepth;\r\n");
+                                        ctx.EmitRaw("   if (_rd > 0) {\r\n");
+                                        ctx.EmitRaw("      int _retLabel = 0;\r\n");
+                                        ctx.EmitRaw("      int _popped = 0;\r\n");
+                                        ctx.EmitRaw("      while (_popped < _rd && _nextStack.Count > 0) { _retLabel = _nextStack.Pop(); _popped++; }\r\n");
+                                        ctx.EmitRaw("      if (_retLabel > 0) { switch(_retLabel) { /*RESUME_DISPATCH_PLACEHOLDER*/ } }\r\n");
+                                        ctx.EmitRaw("      goto exit;\r\n");
                                         ctx.EmitRaw("   }\r\n");
-
-                                        if (ctx.debugBuild)
-                                        {
-                                            ctx.EmitRaw("   else\r\n");
-                                            ctx.EmitRaw("   {\r\n");
-                                            ctx.EmitRaw(string.Format("      Trace.WriteLine(\"Resuming execution at {0}\");", StatementNumber));
-                                            ctx.EmitRaw("   }\r\n");
-                                        }
-
                                         ctx.EmitRaw("}\r\n");
 
                                     }
@@ -497,56 +485,7 @@ namespace INTERCAL
 
 								else
 								{
-									//look for the dynamic one.
-									m = t.GetMethod(a.MethodName, new Type[] { typeof(ExecutionContext) });
-									if(m != null)
-									{
-										if(m.IsStatic)
-                                        {
-                                            ctx.EmitRaw("{\r\n");
-                                            ctx.EmitRaw(string.Format("   bool shouldTerminate = {0}.{1}(frame.ExecutionContext);\r\n", a.ClassName, a.MethodName));
-                                            ctx.EmitRaw("   if (shouldTerminate)\r\n");
-                                            ctx.EmitRaw("   {\r\n");
-                                            ctx.EmitRaw("       goto exit;\r\n");
-                                            ctx.EmitRaw("   }\r\n");
-
-                                            if (ctx.debugBuild)
-                                            {
-                                                ctx.EmitRaw("   else\r\n");
-                                                ctx.EmitRaw("   {\r\n");
-                                                ctx.EmitRaw(string.Format("      Trace.WriteLine(\"Resuming execution at {0}\");", StatementNumber));
-                                                ctx.EmitRaw("   }\r\n");
-                                            }
-
-                                            ctx.EmitRaw("}\r\n");
-                                        }
-										else
-										{
-											if(!ctx.ExternalReferences.Contains(a.ClassName))
-												ctx.ExternalReferences.Add(a.ClassName);
-
-                                            ctx.EmitRaw("{\r\n");
-                                            ctx.EmitRaw("   bool shouldTerminate = " + ctx.GeneratePropertyName(a.ClassName) + "." + a.MethodName + "(frame.ExecutionContext);\r\n");
-                                            ctx.EmitRaw("   if (shouldTerminate)\r\n");
-                                            ctx.EmitRaw("   {\r\n");
-                                            ctx.EmitRaw("       goto exit;\r\n");
-                                            ctx.EmitRaw("   }\r\n");
-
-                                            if (ctx.debugBuild)
-                                            {
-                                                ctx.EmitRaw("   else\r\n");
-                                                ctx.EmitRaw("   {\r\n");
-                                                ctx.EmitRaw(string.Format("      Trace.WriteLine(\"Resuming execution at {0}\");", StatementNumber));
-                                                ctx.EmitRaw("   }\r\n");
-                                            }
-
-                                            ctx.EmitRaw("}\r\n");
-
-                                        }
-                                    }
-									else
-										throw new CompilationException(String.Format(Messages.E2004, a.ClassName, a.MethodName));
-
+									throw new CompilationException(String.Format(Messages.E2004, a.ClassName, a.MethodName));
 								}
 								return;
 							}
@@ -582,32 +521,15 @@ namespace INTERCAL
 				{
 					Statement target = ctx.program[this.Target].First() as Statement;
 
-                    if (!string.IsNullOrEmpty(target.Label))
-                    {
-                        ctx.Emit(string.Format("Trace.WriteLine(\"       Doing {0} Next\");", target.Label));
-                    }
-                    else
-                    {
-                        ctx.Emit(string.Format("Trace.WriteLine(\"       Doing statement #{0} Next\");", target.StatementNumber));
+                    // Goto-based NEXT: push return label, jump to target
+                    // The _ret_N label is emitted in EmitStatementEpilog (outside abstain scope)
+                    int retId = ++ctx.NextReturnLabelCounter;
+                    ctx.NextReturnLabels.Add(retId);
+                    this.ReturnLabelId = retId;
 
-                    }
-
-                    ctx.EmitRaw("{\r\n");
-                    ctx.EmitRaw("   bool shouldTerminate = frame.ExecutionContext.Evaluate(Eval," + target.Label.Substring(1, target.Label.Length -2) + ");\r\n");
-                    ctx.EmitRaw("   if (shouldTerminate)\r\n");
-                    ctx.EmitRaw("   {\r\n");
-                    ctx.EmitRaw("       goto exit;\r\n");
-                    ctx.EmitRaw("   }\r\n");
-
-                    if (ctx.debugBuild)
-                    {
-                        ctx.EmitRaw("   else\r\n");
-                        ctx.EmitRaw("   {\r\n");
-                        ctx.EmitRaw(string.Format("      Trace.WriteLine(\"Resuming execution at {0}\");", StatementNumber));
-                        ctx.EmitRaw("   }\r\n");
-                    }
-
-                    ctx.EmitRaw("}\r\n");
+                    ctx.EmitRaw("#line hidden\r\n");
+                    ctx.EmitRaw("_nextStack.Push(" + retId + ");\r\n");
+                    ctx.EmitRaw("goto label_" + target.Label.Substring(1, target.Label.Length - 2) + ";\r\n");
 
                 }
             }
@@ -649,9 +571,9 @@ namespace INTERCAL
                     ctx.EmitRaw("\");\r\n");
                 }
 
-                ctx.EmitRaw("frame.ExecutionContext.Forget((int)(");
+                ctx.EmitRaw("{ int _n = (int)(");
                 this.exp.Emit(ctx);
-                ctx.EmitRaw("));\r\n");
+                ctx.EmitRaw("); for (int _i = 0; _i < _n && _nextStack.Count > 0; _i++) _nextStack.Pop(); }\r\n");
 			}
 		}
 		
@@ -670,24 +592,20 @@ namespace INTERCAL
 
 			public override void Emit(CompilationContext ctx)
 			{
-                //RESUME 0 needs to be treated as a no-op.
+                ctx.EmitRaw(";\r\n#line hidden\r\n");
                 ctx.EmitRaw("   {\r\n");
-                ctx.EmitRaw("      uint depth = (uint)(");
+                ctx.EmitRaw("      int depth = (int)(");
                 Depth.Emit(ctx);
                 ctx.EmitRaw(");\r\n");
+                ctx.EmitRaw("      if (depth > 0) {\r\n");
+                ctx.EmitRaw("         int _retLabel = 0;\r\n");
+                ctx.EmitRaw("         int _popped = 0;\r\n");
+                ctx.EmitRaw("         while (_popped < depth && _nextStack.Count > 0) { _retLabel = _nextStack.Pop(); _popped++; }\r\n");
+                ctx.EmitRaw("         int _remaining = depth - _popped;\r\n");
+                ctx.EmitRaw("         if (_retLabel == 0 && frame.Call != null) { frame.Call.NextStackDepth = _remaining; goto exit; }\r\n");
+                ctx.EmitRaw("         if (_retLabel == 0) { goto exit; }\r\n");
+                ctx.EmitRaw("         if (_retLabel > 0) { switch(_retLabel) { /*RESUME_DISPATCH_PLACEHOLDER*/ } }\r\n");
 
-                if (ctx.debugBuild)
-                {
-                    ctx.Emit("      Trace.WriteLine(string.Format(\"      Resuming {0}\", depth));");
-                }
-
-
-                ctx.EmitRaw("      if(depth > 0)\r\n");
-                ctx.EmitRaw("      {\r\n");
-
-
-                ctx.EmitRaw("         frame.ExecutionContext.Resume(depth);\r\n");
-                ctx.EmitRaw("         goto exit;\r\n");
                 ctx.EmitRaw("      }\r\n");
                 ctx.EmitRaw("   }\r\n");
             }
@@ -987,8 +905,8 @@ namespace INTERCAL
 
 			public override void Emit(CompilationContext ctx)
 			{
-                //-1 means "unconditional return"
-                ctx.Emit("           frame.ExecutionContext.GiveUp();\r\n");
+                ctx.EmitRaw("           frame.ExecutionContext.GiveUp();\r\n");
+                ctx.EmitRaw("           goto exit;\r\n");
 			}
 		}
 
@@ -1004,7 +922,7 @@ namespace INTERCAL
 			{
                 //That showoffy jerk Donald Knuth just *had* to put a quote in a 
                 //multiline comment so now I have to fix those up too.
-                var fixedUp = StatementText.Replace("\"", "\\\"").Replace("\r\n", "\" + \r\n\"");
+                var fixedUp = StatementText.Replace("\"", "\\\"").Replace("\r\n", " ").Replace("\n", " ");
 				ctx.EmitRaw("Lib.Fail(\""+ LineNumber.ToString() + " * " + fixedUp);
 				ctx.EmitRaw("\");\n");
 			}

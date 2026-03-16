@@ -4,6 +4,7 @@ using System.Text;
 using System.Diagnostics;
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,7 +42,7 @@ namespace INTERCAL
             /* DONE A line label has been multiply defined. */
             public const string E182 = "E182 YOU MUST LIKE THIS LABEL A LOT!";
             /* DONE An invalid line label has been encountered. */
-            public const string E197 = "E197 SO!  65535 LABELS AREN'T ENOUGH FOR YOU?";
+            public const string E197 = "E197 SO!  9223372036854775807 LABELS AREN'T ENOUGH FOR YOU?";
             /* An expression involves an unidentified variable. */
             public const string E200 = "E200 NOTHING VENTURED, NOTHING GAINED";
             /* An attempt has been made to give an array a dimension of zero. */
@@ -159,6 +160,46 @@ namespace INTERCAL
             public IntercalException(string message, Exception inner) : base(message, inner) { }
         }
 
+        // Thrown by GiveUp to halt the current execution thread.
+        // Not an error — just a clean program exit.
+        public class GiveUpException : Exception { }
+
+        // A single INTERCAL variable for debugger display
+        [System.Diagnostics.DebuggerDisplay("{Value}", Name = "{Name}")]
+        public class DebugVar
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            public readonly string Name;
+            public readonly ulong Value;
+            public DebugVar(string name, ulong value) { Name = name; Value = value; }
+        }
+
+        // Debug helper — snapshots all INTERCAL variables when constructed.
+        [System.Diagnostics.DebuggerDisplay("{summary}")]
+        public class DebugVars
+        {
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.RootHidden)]
+            public readonly DebugVar[] vars;
+
+            [System.Diagnostics.DebuggerBrowsable(System.Diagnostics.DebuggerBrowsableState.Never)]
+            private readonly string summary;
+
+            public DebugVars(ExecutionContext ctx)
+            {
+                var result = new List<DebugVar>();
+                foreach (var name in ctx.VariableNames)
+                {
+                    var val = ctx.GetVarValue(name);
+                    if (val.HasValue)
+                        result.Add(new DebugVar(name, val.Value));
+                }
+                result.Sort((a, b) => string.Compare(a.Name, b.Name));
+                vars = result.ToArray();
+                summary = vars.Length == 0 ? "(no variables)" :
+                    string.Join(", ", vars.Select(v => v.Name + "=" + v.Value));
+            }
+        }
+
         ////IExecutionContext holds shared variables used to call across components.
         ////INTERCAL uses an interface so that other languages can define their own
         ////implementation of this interface and pass it in to the DO functions.  This
@@ -191,6 +232,7 @@ namespace INTERCAL
         //}
 
         [Serializable]
+        [System.Diagnostics.DebuggerNonUserCode]
         public class ExecutionContext : AsyncDispatcher
         {
             #region Fields and constuctors
@@ -358,7 +400,7 @@ namespace INTERCAL
                     }
                     catch
                     {
-                        Lib.Fail(Messages.E436);
+                        Lib.Fail(Messages.E436 + " (" + Name + ")");
                     }
                 }
                 public override string ToString()
@@ -479,7 +521,10 @@ namespace INTERCAL
                         c = (c & 0x33) << 2 | (c & 0xcc) >> 2;
                         c = (c & 0x55) << 1 | (c & 0xaa) >> 1;
 
-                        sb.Append((char)c);
+                        // Skip null bytes — they are used to reset LastOut state
+                        // without producing visible output
+                        if (c != 0)
+                            sb.Append((char)c);
                     }
 
                     return sb.ToString();
@@ -567,27 +612,25 @@ namespace INTERCAL
             //stored here.  Entries in arrays are stored in the Arrays hash table below.
             Dictionary<string, Variable> Variables = new Dictionary<string, Variable>();
 
+            // Expose variable names and access for the debugger
+            public ICollection<string> VariableNames => Variables.Keys;
+            // Get a variable's value without auto-creating it (for debugger use)
+            public ulong? GetVarValue(string name)
+            {
+                if (Variables.ContainsKey(name) && Variables[name] is IntVariable iv)
+                    return iv.Value;
+                return null;
+            }
+
             #endregion
 
             #region control flow
             public void Run(IntercalThreadProc proc)
             {
-                Task.Run(() => Evaluate(proc, 0));
-
-                lock (SyncLock)
-                {
-                    while (!Done)
-                    {
-                        Monitor.Wait(SyncLock);
-                    }
-                }
-
-                if (CurrentException != null)
-                {
-                    throw CurrentException;
-                }
+                var frame = new ExecutionFrame(this, proc, 0);
+                proc(frame);
             }
-            public bool Evaluate(IntercalThreadProc proc, int label)
+            public bool Evaluate(IntercalThreadProc proc, long label)
             {
                 var frame = new ExecutionFrame(this, proc, label);
 
@@ -597,6 +640,10 @@ namespace INTERCAL
                 }
 
                 bool result = frame.Start();
+
+                if (Done)
+                    return true;
+
                 return result;
             }
 
@@ -882,6 +929,7 @@ namespace INTERCAL
 
         //This class provides basic bit-mangling functionality, e.g.
         //uint u = Bits.Mingle(0, 65535);
+        [System.Diagnostics.DebuggerNonUserCode]
         public class Lib
         {
             static Random random = new Random();
@@ -1065,6 +1113,61 @@ namespace INTERCAL
             public static uint UnaryXor32(uint val) { return val ^ Rotate(val); }
             public static ushort UnaryXor16(ushort val) { return (ushort)(val ^ Rotate(val)); }
             public static ulong UnaryXor64(ulong val) { return val ^ Rotate(val); }
+
+            public static ulong Mirror(ulong val)
+            {
+                if (val <= UInt16.MaxValue)
+                    return (ulong)Mirror16((ushort)val);
+                else if (val <= UInt32.MaxValue)
+                    return (ulong)Mirror32((uint)val);
+                else
+                    return Mirror64(val);
+            }
+            // Rotate (| = stripper pole): reverse bit positions AND invert
+            // Pure reversal is |- or -| (rotate then flip, or vice versa)
+            public static ushort Mirror16(ushort val)
+            {
+                ushort result = 0;
+                for (int i = 0; i < 16; i++)
+                {
+                    if ((val & (1 << i)) != 0)
+                        result |= (ushort)(1 << (15 - i));
+                }
+                return (ushort)~result;
+            }
+            public static uint Mirror32(uint val)
+            {
+                uint result = 0;
+                for (int i = 0; i < 32; i++)
+                {
+                    if ((val & (1U << i)) != 0)
+                        result |= 1U << (31 - i);
+                }
+                return ~result;
+            }
+            public static ulong Mirror64(ulong val)
+            {
+                ulong result = 0;
+                for (int i = 0; i < 64; i++)
+                {
+                    if ((val & (1UL << i)) != 0)
+                        result |= 1UL << (63 - i);
+                }
+                return ~result;
+            }
+
+            public static ulong Invert(ulong val)
+            {
+                if (val <= UInt16.MaxValue)
+                    return (ulong)Invert16((ushort)val);
+                else if (val <= UInt32.MaxValue)
+                    return (ulong)Invert32((uint)val);
+                else
+                    return Invert64(val);
+            }
+            public static ushort Invert16(ushort val) { return (ushort)~val; }
+            public static uint Invert32(uint val) { return ~val; }
+            public static ulong Invert64(ulong val) { return ~val; }
 
 
             public static int Rand(int n)

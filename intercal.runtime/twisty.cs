@@ -29,24 +29,27 @@ namespace INTERCAL.Runtime
     //80 threads can be made available quickly.
 
     public delegate void IntercalThreadProc(ExecutionFrame context);
+    [System.Diagnostics.DebuggerNonUserCode]
     public class ExecutionFrame
     {
         public object SyncLock = new object();
         public ExecutionContext ExecutionContext;
         public IntercalThreadProc Proc;
+        public ComponentCall Call;
         private bool Complete = false;
 
         //The value stored in Result is
-        //returned to the calling thread to tell it 
+        //returned to the calling thread to tell it
         //whether or not it should terminate.  Right
-        //now true means "terminate" ("you've been forgotten") and 
+        //now true means "terminate" ("you've been forgotten") and
         //false means "continue" ("you've been resumed");
         public bool Result;
-        public int Label;
+        public long Label;
 
-        public ExecutionFrame(ExecutionContext context, IntercalThreadProc proc, int label)
+        public ExecutionFrame(ExecutionContext context, IntercalThreadProc proc, long label, ComponentCall call = null)
         {
             ExecutionContext = context;
+            Call = call;
             Proc = proc;
             Label = label;
         }
@@ -90,6 +93,8 @@ namespace INTERCAL.Runtime
             try
             {
                 Proc(this);
+                // Eval returned normally (goto exit) — signal completion
+                if (!Complete) Finish(false);
             }
             catch (Exception e)
             {
@@ -98,14 +103,37 @@ namespace INTERCAL.Runtime
         }
     }
 
+    [System.Diagnostics.DebuggerNonUserCode]
+    /// <summary>
+    /// Transient object representing a single cross-component call.
+    /// Created per call, provides access to shared execution state,
+    /// and carries the NEXT stack adjustment back to the caller.
+    /// </summary>
+    public class ComponentCall
+    {
+        public ExecutionContext Context { get; }
+
+        /// <summary>
+        /// Remaining RESUME depth that the caller should apply to its own NEXT stack.
+        /// You probably don't ever want to set this, but you can.
+        /// </summary>
+        public int NextStackDepth { get; set; }
+
+        public ComponentCall(ExecutionContext context)
+        {
+            Context = context;
+            NextStackDepth = 0;
+        }
+    }
+
     public class AsyncDispatcher
     {
-        protected bool Done = false;
+        public bool Done = false;
         protected object SyncLock = new object();
         protected Exception CurrentException { get; set; }
         protected Stack<ExecutionFrame> NextingStack = new Stack<ExecutionFrame>();
 
-        protected delegate bool StartProc(IntercalThreadProc proc, int label);
+        protected delegate bool StartProc(IntercalThreadProc proc, long label);
         public void Resume(uint depth)
         {
             //depth must be zero.  We depend on the compiler to ensure that 
@@ -178,6 +206,7 @@ namespace INTERCAL.Runtime
                 Done = true;
                 Monitor.Pulse(SyncLock);
             }
+
         }
 
         [Conditional("DEBUG")]

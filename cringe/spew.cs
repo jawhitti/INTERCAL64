@@ -27,10 +27,12 @@ namespace INTERCAL
         //What program are we compiling?
         public Program program;
 
-        //What is the build target? 
+        //What is the build target?
         public string assemblyName;
+        public string sourceFile;
         public AssemblyType assemblyType;
         public bool debugBuild = false;
+        public bool skipPoliteness = false;
         public bool Verbose = false;
 
         //What will the base class be for the generated type?
@@ -56,6 +58,13 @@ namespace INTERCAL
         //then used to generate the private properties.
         public List<string> ExternalReferences = new List<string>();
 
+        // Tracks all INTERCAL variable names seen during compilation for debug locals
+        public HashSet<string> DebugVariables = new HashSet<string>();
+
+        // Tracks return labels for the goto-based NEXT state machine
+        public int NextReturnLabelCounter = 0;
+        public List<int> NextReturnLabels = new List<int>();
+
         static CompilationContext()
         {
             AbstainMap["NEXTING"] = typeof(Statement.NextStatement);
@@ -80,6 +89,11 @@ namespace INTERCAL
         }
 
         public override string ToString() { return source.ToString(); }
+
+        public void ReplaceMarker(string marker, string replacement)
+        {
+            source.Replace(marker, replacement);
+        }
 
         public void Emit(string s)
         {
@@ -130,7 +144,31 @@ namespace INTERCAL
                 try
                 {
                     StreamReader r = new StreamReader(file);
-                    src += r.ReadToEnd();
+                    // Join continuation lines: if a line starts with whitespace
+                    // followed by non-keyword content, it's a continuation of the
+                    // previous line (standard INTERCAL allows multi-line statements)
+                    string raw = r.ReadToEnd();
+                    string[] lines = raw.Split('\n');
+                    var joined = new System.Text.StringBuilder();
+                    for (int li = 0; li < lines.Length; li++)
+                    {
+                        string line = lines[li].TrimEnd('\r');
+                        if (li > 0 && line.Length > 0 && (line[0] == ' ' || line[0] == '\t'))
+                        {
+                            // Check if this is a continuation (doesn't start a new statement)
+                            string trimmed = line.TrimStart();
+                            if (trimmed.Length > 0 && trimmed[0] != '(' &&
+                                !trimmed.StartsWith("DO") && !trimmed.StartsWith("PLEASE"))
+                            {
+                                // Continuation line — append without newline
+                                Console.Error.WriteLine("JOINING: " + trimmed);
+                                joined.Append(" " + trimmed);
+                                continue;
+                            }
+                        }
+                        joined.Append(line + "\n");
+                    }
+                    src += joined.ToString();
                     r.Close();
                 }
 
@@ -176,10 +214,12 @@ namespace INTERCAL
             csproj.AppendLine("    <TargetFramework>net9.0</TargetFramework>");
             csproj.AppendLine("    <AssemblyName>" + c.assemblyName + "</AssemblyName>");
             csproj.AppendLine("    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>");
+            // Always emit debug symbols for source-level debugging
+            csproj.AppendLine("    <DebugType>portable</DebugType>");
+            csproj.AppendLine("    <DebugSymbols>true</DebugSymbols>");
             if (c.debugBuild)
             {
                 csproj.AppendLine("    <DefineConstants>TRACE</DefineConstants>");
-                csproj.AppendLine("    <DebugType>full</DebugType>");
             }
             csproj.AppendLine("  </PropertyGroup>");
             csproj.AppendLine("  <ItemGroup>");
@@ -291,7 +331,8 @@ namespace INTERCAL
 
             "\r\n                      - ERRORS AND WARNINGS -\r\n" +
             "/b                      Reduce probably of E774 to zero.\r\n" +
-            "/v or /verbose          Verbose compiler output\r\n";
+            "/v or /verbose          Verbose compiler output\r\n" +
+            "/noplease              Skip politeness checking\r\n";
         #endregion
 
         const int MinimumPoliteness = 20;
@@ -395,6 +436,12 @@ namespace INTERCAL
                             Trace.WriteLine("(Intentional) Bugs disabled");
                             c.Buggy = false;
                         }
+
+                        else if (arg.Substring(1).ToLower() == "noplease")
+                        {
+                            Trace.WriteLine("Politeness checking disabled");
+                            c.skipPoliteness = true;
+                        }
                     }
 
                     else
@@ -406,9 +453,16 @@ namespace INTERCAL
                 //Auto-include standard lib if it hasn't been referenced already
                 if (c.references == null)
                 {
-                    c.references = new ExportList[1];
-                    var file = FindFile("intercal.runtime.dll");
-                    c.references[0] = new ExportList(file);
+                    var refs = new List<ExportList>();
+                    var syslibPath = TryFindFile("isyslib.dll");
+                    // Don't self-reference when compiling the syslib itself
+                    if (syslibPath != null && Path.GetFileNameWithoutExtension(sources[0]) != "isyslib")
+                    {
+                        Trace.WriteLine("Auto-referencing isyslib.dll");
+                        refs.Add(new ExportList(syslibPath));
+                    }
+                    refs.Add(new ExportList(FindFile("intercal.runtime.dll")));
+                    c.references = refs.ToArray();
                 }
 
 
@@ -424,10 +478,14 @@ namespace INTERCAL
                 Trace.WriteLine("Parsing...");
                 Program p = Program.CreateFromFile("~tmp.i");
 
-                //Now do politeness checking.  No point until we have 
+                //Now do politeness checking.  No point until we have
                 //at least three statements in the program.
+                //
+                //Note that componentization affects politeness: a program that is
+                //polite as a whole may fail when broken into components, since this
+                //compiler enforces politeness per component.  Use /noplease to skip.
                 Trace.WriteLine("Analyzing Politeness...");
-                if (p.StatementCount > 3)
+                if (!c.skipPoliteness && p.StatementCount > 3)
                 {
                     //less than 1/5 politeness level is not polite enough
                     if (p.Politeness < MinimumPoliteness)
@@ -444,6 +502,23 @@ namespace INTERCAL
 
                 c.program = p;
                 c.assemblyName = Path.GetFileNameWithoutExtension(sources[0]);
+                c.sourceFile = Path.GetFullPath(sources[0]);
+
+                // Check for label conflicts between local program and referenced assemblies
+                if (c.references != null)
+                {
+                    foreach (var e in c.references)
+                    {
+                        foreach (var a in e.entryPoints)
+                        {
+                            if (p[a.Label].GetEnumerator().MoveNext())
+                            {
+                                Abort(string.Format("E2005 LABEL {0} IS DEFINED LOCALLY AND ALSO EXPORTED BY {1}.  AMBIGUITY IS NOT POLITE",
+                                    a.Label, Path.GetFileName(e.assemblyFile)));
+                            }
+                        }
+                    }
+                }
 
                 Trace.WriteLine("Emitting C#...");
                 p.EmitCSharp(c);
@@ -459,6 +534,15 @@ namespace INTERCAL
                 Abort(e.Message);
             }
 
+        }
+
+        private static string TryFindFile(string path)
+        {
+            if (File.Exists(path)) return path;
+            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var srcPath = Path.Combine(baseDir, path);
+            if (File.Exists(srcPath)) return srcPath;
+            return null;
         }
 
         private static string FindFile(string path)

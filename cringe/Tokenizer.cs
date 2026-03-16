@@ -6,6 +6,7 @@ namespace INTERCAL
     {
         private readonly string input;
         private int pos;
+        private Token pending = null;
 
         // Two-word gerunds: first word -> second word
         static readonly Dictionary<string, string> TwoWordGerunds = new Dictionary<string, string>
@@ -56,6 +57,13 @@ namespace INTERCAL
 
         public Token NextToken()
         {
+            if (pending != null)
+            {
+                var t = pending;
+                pending = null;
+                return t;
+            }
+
             // Skip whitespace (but not newlines)
             while (pos < input.Length && (input[pos] == ' ' || input[pos] == '\t' || input[pos] == '\r'))
                 pos++;
@@ -156,7 +164,7 @@ namespace INTERCAL
                     pos++;
                     return new Token(TokenType.Var, c.ToString(), startPos);
 
-                case '&': case '?':
+                case '&': case '?': case '|': case '-':
                     pos++;
                     return new Token(TokenType.UnaryOp, c.ToString(), startPos);
 
@@ -167,6 +175,12 @@ namespace INTERCAL
                 case '"': case '\'': case '+':
                     pos++;
                     return new Token(TokenType.Separator, c.ToString(), startPos);
+
+                case '!':
+                    // ! is shorthand for '. (spark + spot)
+                    pos++;
+                    pending = new Token(TokenType.Var, ".", startPos);
+                    return new Token(TokenType.Separator, "'", startPos);
 
                 case '%':
                     pos++;

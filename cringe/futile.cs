@@ -402,12 +402,6 @@ namespace INTERCAL
 
                 if (s.Label != null)
                 {
-                    uint lblVal = UInt32.Parse(s.Label.Substring(1, s.Label.Length - 2));
-                    if (lblVal > UInt16.MaxValue)
-                    {
-                        throw new CompilationException(Messages.E197 + " " + s.Label);
-                    }
-
                     //Check for duplicate label
                     if (this[s.Label].Count() > 1)
                         throw new CompilationException(Messages.E182 + " " + s.Label);
@@ -484,8 +478,9 @@ namespace INTERCAL
                     }
 
 
-                    ctx.EmitRaw("public bool DO_" + s.Label.Substring(1, s.Label.Length - 2) + "(ExecutionContext context)\r\n{\r\n");
-                    ctx.EmitRaw("   return context.Evaluate(Eval," + s.Label + ");\r\n");
+                    ctx.EmitRaw("public void DO_" + s.Label.Substring(1, s.Label.Length - 2) + "(ComponentCall call)\r\n{\r\n");
+                    ctx.EmitRaw("   var frame = new ExecutionFrame(call.Context, Eval, " + s.Label.Substring(1, s.Label.Length - 2) + "L, call);\r\n");
+                    ctx.EmitRaw("   Eval(frame);\r\n");
                     ctx.EmitRaw("}\r\n\r\n");
                 }
             }
@@ -508,10 +503,10 @@ namespace INTERCAL
                             continue;
                         }
 
-                        uint labelValue = uint.Parse(s.Label.Substring(1, s.Label.Length - 2));
+                        long labelValue = long.Parse(s.Label.Substring(1, s.Label.Length - 2));
 
                         ctx.EmitRaw("         case \"" + s.Label + "\": ");
-                        ctx.EmitRaw("context.Evaluate(Eval," + labelValue + ");  ");
+                        ctx.EmitRaw("context.Evaluate(Eval," + labelValue + "L);  ");
                         ctx.EmitRaw("break;\r\n");
                     }
 
@@ -525,7 +520,7 @@ namespace INTERCAL
         {
             int abstains = OccurencesOf(typeof(Statement.AbstainStatement)).Count();
 
-            abstains += Statements.Where(s => !s.bEnabled).Count();
+            abstains += Statements.Where(s => !s.bEnabled || s.Splatted).Count();
 
             if (abstains > 0)
             {
@@ -542,7 +537,9 @@ namespace INTERCAL
                     Statement s = (Statement)Statements[i];
 
                     //Does this statement need an abstain guard?
-                    if ((!s.bEnabled) ||
+                    //In the goto model, splatted statements also get guards (starting
+                    //disabled) to prevent fall-through from abstained predecessors.
+                    if ((!s.bEnabled) || s.Splatted ||
                         (this.AbstainedGerunds.ContainsKey(s.GetType())) ||
                         (s.Label != null && this.AbstainedLabels.ContainsKey(s.Label)))
                     {
@@ -555,7 +552,7 @@ namespace INTERCAL
                             bfirst = false;
                         }
 
-                        ctx.EmitRaw(s.bEnabled ? "true" : "false");
+                        ctx.EmitRaw((s.bEnabled && !s.Splatted) ? "true" : "false");
                         ((Statement)Statements[i]).AbstainSlot = slot;
                         slot++;
                     }
@@ -563,6 +560,10 @@ namespace INTERCAL
 
                 ctx.EmitRaw("};\n\n");
             }
+
+            // NEXT stack for goto-based state machine (field, not local, to survive gotos)
+            ctx.EmitRaw("   System.Collections.Generic.Stack<int> _nextStack = new System.Collections.Generic.Stack<int>();\r\n");
+            ctx.EmitRaw("   int _forgetAdj = 0;\r\n\r\n");
         }
 
         public void EmitDispatchMap(CompilationContext ctx)
@@ -583,8 +584,10 @@ namespace INTERCAL
                 {
                     if (s.Label != null)
                     {
-                        int labelNum = int.Parse(s.Label.Substring(1, s.Label.Length - 2));
-                        ctx.EmitRaw("      case " + labelNum + ": ");
+                        long labelNum = long.Parse(s.Label.Substring(1, s.Label.Length - 2));
+                        ctx.EmitRaw("      case " + labelNum + "L: ");
+                        // Push sentinel so RESUME can pop the "caller" level
+                        ctx.EmitRaw("_nextStack.Push(0); ");
                         ctx.EmitRaw("goto label_" + labelNum + ";\r\n");
                     }
                 }
@@ -624,6 +627,11 @@ namespace INTERCAL
                         "   {\r\n");
 
             this.EmitDispatchMap(ctx);
+
+            // _nextStack is a field on the class, declared in EmitAbstainMap
+
+            // Placeholder for debug locals — replaced after all statements are emitted
+            ctx.EmitRaw("/*DEBUG_LOCALS_PLACEHOLDER*/\r\n");
 
         }
 
@@ -722,11 +730,15 @@ namespace INTERCAL
             //will 
             c.EmitRaw("\r\n/* ");
             c.EmitRaw(s.StatementText);
-
             c.EmitRaw("*/\r\n");
 
+            // Emit #line hidden for label/boilerplate, then #line N for the statement
+            c.EmitRaw("#line hidden\r\n");
+
             if (s.Label != null)
+            {
                 c.EmitRaw("\r\nlabel_" + s.Label.Substring(1, s.Label.Length - 2) + ": \r\n");
+            }
 
             //We need to emit labels for COME FROM so the trapdoor has something to point to.
             else if (s as Statement.ComeFromStatement != null)
@@ -757,7 +769,7 @@ namespace INTERCAL
             if ((s.Percent > 0) && (s.Percent < 100))
             {
                 c.EmitRaw("if(Lib.Rand(100)  < " + s.Percent.ToString() + ")\n{\n");
-                c.EmitRaw(string.Format("    Trace.WriteLine(\"[{0:0000}] Rolled the dice and lost.\");", s.StatementNumber));
+                c.EmitRaw(string.Format("    Trace.WriteLine(\"[{0:0000}] Rolled the dice and lost.\");\r\n", s.StatementNumber));
             }
 
             if (c.debugBuild)
@@ -765,11 +777,24 @@ namespace INTERCAL
                 c.EmitRaw(string.Format("Trace.WriteLine(\"[{0:0000}] {1}\");\n", s.StatementNumber, s.GetType().Name));
             }
 
+            // Emit #line directive with a no-op for the debugger to stop on,
+            // then hide the actual C# implementation. This ensures the debugger
+            // stops once on each INTERCAL line even when the underlying C# calls
+            // are marked [DebuggerNonUserCode].
+            if (c.sourceFile != null && s.LineNumber >= 0)
+            {
+                c.EmitRaw("#line " + s.LineNumber + " \"" + c.sourceFile.Replace("\\", "\\\\") + "\"\r\n");
+            }
+
         }
 
         public void EmitStatementEpilog(Statement s, CompilationContext c)
         {
-            //COME FROM statements don't include an abstain guard around 
+            // Placeholder for debug local updates — replaced after all statements emitted
+            c.EmitRaw("\r\n/*DEBUG_UPDATE_PLACEHOLDER*/\r\n");
+            c.EmitRaw("#line hidden\r\n");
+
+            //COME FROM statements don't include an abstain guard around
             //the COME FROM itself.  Any checks for abstaining or % prefixes
             //happen as part of processing the trap door below.
             if (s as Statement.ComeFromStatement == null)
@@ -779,7 +804,7 @@ namespace INTERCAL
                     c.EmitRaw("}\n\n");
                     c.EmitRaw("else {");
                     c.EmitRaw(string.Format("    Trace.WriteLine(\"[{0:0000}] Rolled the dice and lost.\");", s.StatementNumber));
-                    c.EmitRaw("}");
+                    c.EmitRaw("}\r\n");
                 }
 
                 //Close off the abstain block
@@ -789,7 +814,15 @@ namespace INTERCAL
                 }
             }
 
-            //Now we handle COME FROM.  Note that even if the statement has 
+            // Emit return label for NEXT statements BEFORE the COME FROM trapdoor
+            // so that returning from a NEXT hits the trapdoor on the way through
+            if (s is Statement.NextStatement ns2 && ns2.ReturnLabelId >= 0)
+            {
+                c.EmitRaw("_ret_" + ns2.ReturnLabelId + ": ;\r\n");
+                c.EmitRaw("if (frame.ExecutionContext.Done) goto exit;\r\n");
+            }
+
+            //Now we handle COME FROM.  Note that even if the statement has
             //been ABSTAINED we still might fall through the trapdoor.  We have to
             //do this even for COME FROM statements in case someone is sick
             //enough to do this:
@@ -821,6 +854,16 @@ namespace INTERCAL
                 else
                     c.EmitRaw("    goto line_" + target.StatementNumber.ToString() + ";\n");
             }
+
+            // When a statement is abstained, skip everything until the next
+            // labeled statement to prevent fall-through in the goto model.
+            // The else branch of the abstain guard jumps to the next label.
+            // (The skip label is placed at the start of the next labeled statement's prolog)
+            if (s.AbstainSlot >= 0 && s as Statement.ComeFromStatement == null)
+            {
+                c.EmitRaw("_abstain_skip_" + s.StatementNumber + ": ;\n");
+            }
+
         }
 
         //This is the master routine for taking a program and emitting it as 
@@ -854,7 +897,60 @@ namespace INTERCAL
                 EmitStatementEpilog(s, c);
             }
 
+            // Replace debug locals placeholder with actual declarations
+            EmitDebugLocals(c);
+
+            // Replace RESUME dispatch placeholder with goto switch
+            EmitResumeDispatch(c);
+
             EmitProgramEpilog(c);
+        }
+
+        private static string DebugLocalName(string intercalName)
+        {
+            // .1 → dot_1, :1 → colon_1, ::1 → dcolon_1
+            // ,1 → tail_1, ;1 → hybrid_1, ;;1 → dhybrid_1
+            if (intercalName.StartsWith("::")) return "dcolon_" + intercalName.Substring(2);
+            if (intercalName.StartsWith(";;")) return "dhybrid_" + intercalName.Substring(2);
+            if (intercalName.StartsWith(":")) return "colon_" + intercalName.Substring(1);
+            if (intercalName.StartsWith(";")) return "hybrid_" + intercalName.Substring(1);
+            if (intercalName.StartsWith(".")) return "dot_" + intercalName.Substring(1);
+            if (intercalName.StartsWith(",")) return "tail_" + intercalName.Substring(1);
+            return "_" + intercalName;
+        }
+
+        private void EmitDebugLocals(CompilationContext c)
+        {
+            var sortedVars = c.DebugVariables.Where(v => v[0] == '.' || v[0] == ':').OrderBy(v => v).ToList();
+
+            // Emit declarations
+            var decls = new StringBuilder();
+            foreach (var v in sortedVars)
+            {
+                decls.AppendLine("   ulong " + DebugLocalName(v) + " = 0;");
+            }
+            c.ReplaceMarker("/*DEBUG_LOCALS_PLACEHOLDER*/", decls.ToString());
+
+            // Emit updates (same for every statement, hidden from debugger)
+            var updates = new StringBuilder();
+            updates.AppendLine("#line hidden");
+            foreach (var v in sortedVars)
+            {
+                updates.AppendLine(DebugLocalName(v) + " = frame.ExecutionContext.GetVarValue(\"" + v + "\") ?? 0;");
+            }
+            c.ReplaceMarker("/*DEBUG_UPDATE_PLACEHOLDER*/", updates.ToString());
+        }
+
+        private void EmitResumeDispatch(CompilationContext c)
+        {
+            var sb = new StringBuilder();
+            // Sentinel 0 = return from external entry (goto exit)
+            sb.Append("case 0: goto exit; ");
+            foreach (int id in c.NextReturnLabels)
+            {
+                sb.Append("case " + id + ": goto _ret_" + id + "; ");
+            }
+            c.ReplaceMarker("/*RESUME_DISPATCH_PLACEHOLDER*/", sb.ToString());
         }
 
         #endregion
