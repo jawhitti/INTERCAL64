@@ -610,11 +610,29 @@ namespace INTERCAL
             ctx.EmitRaw("[Serializable]\n");
             ctx.EmitRaw("public class " + ctx.assemblyName + " : " + ctx.baseClass + "\n{ \n");
 
-            ctx.EmitRaw(
-                "   public void Run(){\r\n" +
-                "      ExecutionContext ec = INTERCAL.Runtime.ExecutionContext.CreateExecutionContext();\r\n" +
-                "      ec.Run(Eval);\r\n" +
-                "   }\r\n\r\n");
+            ctx.EmitRaw("   public void Run(){\r\n");
+            ctx.EmitRaw("      ExecutionContext ec = INTERCAL.Runtime.ExecutionContext.CreateExecutionContext();\r\n");
+            if (ctx.debugDap)
+            {
+                ctx.EmitRaw("      INTERCAL.Runtime.DebugHost.Initialize(\"" + ctx.debugPipeName + "\");\r\n");
+                // Register COME FROM targets so the debugger can warn
+                foreach (Statement s in Statements)
+                {
+                    if (s.Trapdoor > 0)
+                    {
+                        Statement comeFrom = Statements[s.Trapdoor] as Statement;
+                        ctx.EmitRaw(string.Format(
+                            "      INTERCAL.Runtime.DebugHost.Instance.RegisterComeFrom(\"{0}\", {1}, {2});\r\n",
+                            ctx.sourceFile.Replace("\\", "\\\\"), s.LineNumber, comeFrom.LineNumber));
+                    }
+                }
+            }
+            ctx.EmitRaw("      ec.Run(Eval);\r\n");
+            if (ctx.debugDap)
+            {
+                ctx.EmitRaw("      INTERCAL.Runtime.DebugHost.Instance?.OnTerminated();\r\n");
+            }
+            ctx.EmitRaw("   }\r\n\r\n");
 
             //We assume that EXEs do not want to expose labels and that DLLs do.
             if (ctx.assemblyType == CompilationContext.AssemblyType.library)
@@ -784,6 +802,17 @@ namespace INTERCAL
             if (c.sourceFile != null && s.LineNumber >= 0)
             {
                 c.EmitRaw("#line " + s.LineNumber + " \"" + c.sourceFile.Replace("\\", "\\\\") + "\"\r\n");
+            }
+
+            // DAP debug hook: pause before each statement
+            if (c.debugDap && s.LineNumber >= 0 && !(s is Statement.NonsenseStatement))
+            {
+                var escapedFile = (c.sourceFile ?? "").Replace("\\", "\\\\");
+                var escapedText = (s.StatementText ?? "").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
+                c.EmitRaw(string.Format(
+                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, _nextStack);\r\n",
+                    escapedFile, s.LineNumber, escapedText));
+                c.EmitRaw("#line hidden\r\n");
             }
 
         }

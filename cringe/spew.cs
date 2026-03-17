@@ -32,6 +32,8 @@ namespace INTERCAL
         public string sourceFile;
         public AssemblyType assemblyType;
         public bool debugBuild = false;
+        public bool debugDap = false;
+        public string debugPipeName = null;
         public bool skipPoliteness = false;
         public bool Verbose = false;
 
@@ -441,6 +443,13 @@ namespace INTERCAL
                         {
                             Trace.WriteLine("Politeness checking disabled");
                             c.skipPoliteness = true;
+                        }
+
+                        else if (arg.Substring(1).ToLower().StartsWith("debug-dap:"))
+                        {
+                            c.debugDap = true;
+                            c.debugPipeName = arg.Substring(11);
+                            Trace.WriteLine(string.Format("DAP debugging enabled with pipe: {0}", c.debugPipeName));
                         }
                     }
 
