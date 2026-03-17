@@ -186,15 +186,17 @@ namespace INTERCAL
 				return this;
 			}
 
-			private static string EmitNameForOp(string op)
+			private static string EmitNameForOp(string op, Type width)
 			{
+				bool is16 = width == typeof(UInt16);
+				bool is64 = width == typeof(UInt64);
 				switch(op)
 				{
-					case "v": case "V": return "Lib.Or";
-					case "&": return "Lib.And";
-					case "?": return "Lib.Xor";
-					case "|": return "Lib.Mirror";
-					case "-": return "Lib.Invert";
+					case "v": case "V": return is16 ? "Lib.UnaryOr16" : is64 ? "Lib.UnaryOr64" : "Lib.UnaryOr32";
+					case "&": return is16 ? "Lib.UnaryAnd16" : is64 ? "Lib.UnaryAnd64" : "Lib.UnaryAnd32";
+					case "?": return is16 ? "Lib.UnaryXor16" : is64 ? "Lib.UnaryXor64" : "Lib.UnaryXor32";
+					case "|": return is16 ? "Lib.Mirror16" : is64 ? "Lib.Mirror64" : "Lib.Mirror32";
+					case "-": return is16 ? "Lib.Invert16" : is64 ? "Lib.Invert64" : "Lib.Invert32";
 					default: throw new CompilationException("Bad unary operator");
 				}
 			}
@@ -202,15 +204,30 @@ namespace INTERCAL
 			public override void Emit(CompilationContext ctx)
 			{
 				ctx.EmitRaw("(");
-				// Emit nested calls left-to-right: &-|x becomes Lib.And(Lib.Invert(Lib.Mirror(x)))
-				foreach(string op in unary_ops)
+				if(unary_ops.Count > 0)
 				{
-					ctx.EmitRaw(EmitNameForOp(op) + "(");
-				}
-				child.Emit(ctx);
-				for(int i = 0; i < unary_ops.Count; i++)
-				{
+					// Emit nested calls left-to-right: &-|x becomes Lib.And(Lib.Invert(Lib.Mirror(x)))
+					foreach(string op in unary_ops)
+					{
+						ctx.EmitRaw(EmitNameForOp(op, this.returnType) + "(");
+					}
+					// Cast child to the right width for the innermost unary op
+					if(this.returnType == typeof(UInt16))
+						ctx.EmitRaw("(ushort)(");
+					else if(this.returnType == typeof(UInt64))
+						ctx.EmitRaw("(ulong)(");
+					else
+						ctx.EmitRaw("(uint)(");
+					child.Emit(ctx);
 					ctx.EmitRaw(")");
+					for(int i = 0; i < unary_ops.Count; i++)
+					{
+						ctx.EmitRaw(")");
+					}
+				}
+				else
+				{
+					child.Emit(ctx);
 				}
 				ctx.EmitRaw(")");
 			}
@@ -516,16 +533,16 @@ namespace INTERCAL
 
 				if(op == "$")
 				{
-					// Classic INTERCAL: mingle always truncates operands to 16 bits
-					// and produces a 32-bit result. Even two-spot (:) values get truncated.
-					// 64-bit values cannot be mingled.
+					// Mingle produces a result twice the width of the operands.
+					// 16-bit $ 16-bit → 32-bit (classic INTERCAL)
+					// 32-bit $ 32-bit → 64-bit (i# extension)
 					Type lt = left.ReturnType;
 					Type rt = right.ReturnType;
 
-					if(lt == typeof(UInt64) || rt == typeof(UInt64))
-						throw new CompilationException(Messages.E533);
-
-					returnType = typeof(UInt32);
+					if(lt == typeof(UInt32) || rt == typeof(UInt32))
+						returnType = typeof(UInt64);
+					else
+						returnType = typeof(UInt32);
 				}
 				else if(op == "=")
 				{
@@ -555,7 +572,10 @@ namespace INTERCAL
 					switch(op)
 					{
 						case "$":
-							return new ConstantExpression((ulong)Lib.Mingle(cleft.Value, cright.Value));
+							if(returnType == typeof(UInt64))
+								return new ConstantExpression(Lib.Mingle32((uint)cleft.Value, (uint)cright.Value));
+							else
+								return new ConstantExpression((ulong)Lib.Mingle(cleft.Value, cright.Value));
 						case "~":
 							if(returnType == typeof(UInt64))
 								return new ConstantExpression(Lib.Select(cleft.Value, cright.Value));
@@ -605,11 +625,22 @@ namespace INTERCAL
 				{
 					case "$":
 					{
-						ctx.EmitRaw("Lib.Mingle(");
-						Left.Emit(ctx);
-						ctx.EmitRaw(", ");
-						Right.Emit(ctx);
-						ctx.EmitRaw(")");
+						if(returnType == typeof(UInt64))
+						{
+							ctx.EmitRaw("Lib.Mingle32((uint)(");
+							Left.Emit(ctx);
+							ctx.EmitRaw("), (uint)(");
+							Right.Emit(ctx);
+							ctx.EmitRaw("))");
+						}
+						else
+						{
+							ctx.EmitRaw("Lib.Mingle(");
+							Left.Emit(ctx);
+							ctx.EmitRaw(", ");
+							Right.Emit(ctx);
+							ctx.EmitRaw(")");
+						}
 					}break;
 
 					case "=":
