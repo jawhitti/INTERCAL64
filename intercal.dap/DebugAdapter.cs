@@ -27,6 +27,9 @@ public class DebugAdapter
     private string _currentStatement = "";
     private Dictionary<string, ulong> _currentVariables = new();
     private int[] _currentNextStack = Array.Empty<int>();
+    // Gerund state: gerund name -> list of {slot, line, abstained}
+    private Dictionary<string, List<GerundEntry>> _currentGerundState = new();
+    private record GerundEntry(int Slot, int Line, bool Abstained);
 
     // Pending breakpoints (set before launch)
     private readonly Dictionary<string, List<int>> _pendingBreakpoints = new();
@@ -448,28 +451,70 @@ public class DebugAdapter
 
     private void HandleScopes(DapRequest request)
     {
-        SendResponse(request, body: new
+        var scopes = new List<object>
         {
-            scopes = new[]
-            {
-                new { name = "INTERCAL Variables", variablesReference = 1, expensive = false }
-            }
-        });
+            new { name = "INTERCAL Variables", variablesReference = 1, expensive = false }
+        };
+
+        // Only show Gerund State scope if there are abstainable statements
+        if (_currentGerundState.Count > 0)
+        {
+            scopes.Add(new { name = "Gerund State", variablesReference = 2, expensive = false });
+        }
+
+        SendResponse(request, body: new { scopes });
     }
+
+    // variablesReference scheme:
+    //   1 = INTERCAL Variables (flat list of .X, :X, ::X)
+    //   2 = Gerund State (top-level gerund names)
+    //   100+ = individual gerund entries (gerund name -> stable ref)
+    private readonly Dictionary<string, int> _gerundNameToRef = new();
+    private readonly Dictionary<int, string> _gerundRefMap = new();
+    private int _nextGerundRef = 100;
 
     private void HandleVariables(DapRequest request)
     {
+        int varRef = 1;
+        if (request.Arguments.HasValue &&
+            request.Arguments.Value.TryGetProperty("variablesReference", out var vr))
+            varRef = vr.GetInt32();
+
         var variables = new List<object>();
 
-        foreach (var kvp in _currentVariables.OrderBy(v => v.Key))
+        if (varRef == 1)
         {
-            variables.Add(new
+            // INTERCAL Variables scope
+            foreach (var kvp in _currentVariables.OrderBy(v => v.Key))
             {
-                name = kvp.Key,
-                value = kvp.Value.ToString(),
-                type = GetVariableType(kvp.Key),
-                variablesReference = 0,
-            });
+                variables.Add(new
+                {
+                    name = kvp.Key,
+                    value = kvp.Value.ToString(),
+                    type = GetVariableType(kvp.Key),
+                    variablesReference = 0,
+                });
+            }
+        }
+        else if (varRef == 2)
+        {
+            // Gerund State scope — flat list, one entry per abstainable statement
+            // Grouped visually by gerund name in the variable name
+            foreach (var kvp in _currentGerundState.OrderBy(g => g.Key))
+            {
+                var gerund = kvp.Key;
+                var entries = kvp.Value;
+
+                foreach (var entry in entries.OrderBy(e => e.Line))
+                {
+                    variables.Add(new
+                    {
+                        name = $"({entry.Line}) {gerund}",
+                        value = entry.Abstained ? "ABSTAINED" : "enabled",
+                        variablesReference = 0,
+                    });
+                }
+            }
         }
 
         SendResponse(request, body: new { variables });
@@ -574,6 +619,23 @@ public class DebugAdapter
         if (root.TryGetProperty("nextStack", out var ns))
             _currentNextStack = ns.EnumerateArray()
                 .Select(x => x.GetInt32()).ToArray();
+        if (root.TryGetProperty("gerundState", out var gs))
+        {
+            _currentGerundState.Clear();
+            foreach (var entry in gs.EnumerateArray())
+            {
+                var gerund = entry.GetProperty("gerund").GetString()!;
+                var ge = new GerundEntry(
+                    0,
+                    entry.GetProperty("line").GetInt32(),
+                    entry.GetProperty("abstained").GetBoolean());
+
+                if (!_currentGerundState.ContainsKey(gerund))
+                    _currentGerundState[gerund] = new List<GerundEntry>();
+                _currentGerundState[gerund].Add(ge);
+            }
+
+        }
 
         var reason = root.TryGetProperty("reason", out var r)
             ? r.GetString() : "step";

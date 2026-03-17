@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 
@@ -254,8 +255,28 @@ namespace INTERCAL.Runtime
                 reason,
                 variables = CollectVariables(context),
                 nextStack = nextStack.ToArray(),
-                abstained = abstainInfo
+                abstained = abstainInfo,
+                gerundState = CollectGerundState()
             });
+        }
+
+        /// <summary>
+        /// Collect the current abstain state as a flat array.
+        /// Each entry: {"gerund":"READING OUT","line":46,"abstained":true}
+        /// </summary>
+        private object[] CollectGerundState()
+        {
+            if (_abstainMap == null) return Array.Empty<object>();
+
+            var result = new List<object>();
+            foreach (var kvp in _abstainSlots.OrderBy(k => k.Value.line))
+            {
+                int slot = kvp.Key;
+                var (line, gerund) = kvp.Value;
+                bool abstained = slot < _abstainMap.Length && !_abstainMap[slot];
+                result.Add(new { gerund, line, abstained });
+            }
+            return result.ToArray();
         }
 
         private Dictionary<string, object> CollectVariables(ExecutionContext context)
