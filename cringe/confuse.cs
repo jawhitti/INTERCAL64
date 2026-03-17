@@ -454,6 +454,7 @@ namespace INTERCAL
 								{
                                     if (m.IsStatic)
                                     {
+                                        ctx.EmitRaw("#line hidden\r\n");
                                         ctx.EmitRaw("{\r\n");
                                         ctx.EmitRaw(string.Format("   var _call = new ComponentCall(frame.ExecutionContext);\r\n"));
                                         ctx.EmitRaw(string.Format("   {0}.{1}(_call);\r\n", a.ClassName, a.MethodName));
@@ -466,6 +467,7 @@ namespace INTERCAL
                                         if (!ctx.ExternalReferences.Contains(a.ClassName))
                                             ctx.ExternalReferences.Add(a.ClassName);
 
+                                        ctx.EmitRaw("#line hidden\r\n");
                                         ctx.EmitRaw("{\r\n");
                                         ctx.EmitRaw("   var _call = new ComponentCall(frame.ExecutionContext);\r\n");
                                         ctx.EmitRaw("   " + ctx.GeneratePropertyName(a.ClassName) + "." + a.MethodName + "(_call);\r\n");
@@ -571,6 +573,7 @@ namespace INTERCAL
                     ctx.EmitRaw("\");\r\n");
                 }
 
+                ctx.EmitRaw("#line hidden\r\n");
                 ctx.EmitRaw("{ int _n = (int)(");
                 this.exp.Emit(ctx);
                 ctx.EmitRaw("); for (int _i = 0; _i < _n && _nextStack.Count > 0; _i++) _nextStack.Pop(); }\r\n");
@@ -905,6 +908,7 @@ namespace INTERCAL
 
 			public override void Emit(CompilationContext ctx)
 			{
+                ctx.EmitRaw("#line hidden\r\n");
                 ctx.EmitRaw("           frame.ExecutionContext.GiveUp();\r\n");
                 ctx.EmitRaw("           goto exit;\r\n");
 			}

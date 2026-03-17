@@ -577,7 +577,7 @@ namespace INTERCAL
 
             if (labels.Count() > 0)
             {
-                //ctx.EmitRaw("dispatch:\n");
+                ctx.EmitRaw("#line hidden\r\n");
                 ctx.EmitRaw("   switch(frame.Label)\r\n   {\r\n");
 
                 foreach (Statement s in Statements)
@@ -833,10 +833,7 @@ namespace INTERCAL
             {
                 Statement target = Statements[s.Trapdoor] as Statement;
 
-                //We'll need to emit a label identifying the trapdoor, because if 
-                //the line in question is a DO NEXT then when we return from the next
-                //we have to evaluate the trapdoor before moving on to the next source line.
-                //c.EmitRaw("trapdoor_" + s.StatementNumber + ":\n");
+                c.EmitRaw("#line hidden\r\n");
 
                 //make sure the COME FROM in question has not been abstained!
                 if (target.AbstainSlot >= 0)
