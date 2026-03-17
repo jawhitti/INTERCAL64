@@ -97,8 +97,8 @@ namespace INTERCAL.Runtime
                 Send(new
                 {
                     @event = "output",
-                    category = "important",
-                    output = $"⏭ Line {line} skipped (ABSTAINED from {abstainedGerund})\n"
+                    category = "console",
+                    output = $">> Line {line} skipped (ABSTAINED from {abstainedGerund})\n"
                 });
                 return; // Don't stop, keep running
             }

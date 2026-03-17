@@ -57,13 +57,6 @@ public class DebugAdapter
 
     private void HandleRequest(DapRequest request)
     {
-        // Log every DAP request for diagnostics
-        SendEvent("output", new
-        {
-            category = "console",
-            output = $"[DAP] << {request.Command}\n"
-        });
-
         switch (request.Command)
         {
             case "initialize":
@@ -318,7 +311,7 @@ public class DebugAdapter
         // The debuggee immediately stops on entry and sends a "stopped" event.
         // We MUST read it now before sending any commands, otherwise
         // ReadFromDebuggee() in breakpoint handling will consume it.
-        _initialStoppedEvent = ReadFromDebuggee();
+        _initialStoppedEvent = ReadFromDebuggeeSkippingOutput();
 
         // Now send any pending breakpoints — the debuggee is in WaitForCommand
         foreach (var kvp in _pendingBreakpoints)
@@ -538,6 +531,7 @@ public class DebugAdapter
         if (_pipeReader == null) return null;
         var line = _pipeReader.ReadLine();
         if (line == null) return null;
+
         return JsonDocument.Parse(line);
     }
 

@@ -801,7 +801,21 @@ namespace INTERCAL
                 c.Emit("Lib.Fail(Messages.E774)");
             }
 
-            //We only emit abstain guards for statements that are the target of 
+            // DAP debug hook: MUST be emitted BEFORE the abstain guard
+            // so the debugger sees abstained statements and can report them
+            if (c.debugDap && s.LineNumber >= 0 && !(s is Statement.NonsenseStatement))
+            {
+                if (c.sourceFile != null)
+                    c.EmitRaw("#line " + s.LineNumber + " \"" + c.sourceFile.Replace("\\", "\\\\") + "\"\r\n");
+                var escapedFile = (c.sourceFile ?? "").Replace("\\", "\\\\");
+                var escapedText = (s.StatementText ?? "").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
+                c.EmitRaw(string.Format(
+                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, _nextStack, {3});\r\n",
+                    escapedFile, s.LineNumber, escapedText, s.AbstainSlot));
+                c.EmitRaw("#line hidden\r\n");
+            }
+
+            //We only emit abstain guards for statements that are the target of
             //an abstain, either by name or by gerund.
             if (s.AbstainSlot >= 0)
             {
@@ -819,24 +833,10 @@ namespace INTERCAL
                 c.EmitRaw(string.Format("Trace.WriteLine(\"[{0:0000}] {1}\");\n", s.StatementNumber, s.GetType().Name));
             }
 
-            // Emit #line directive with a no-op for the debugger to stop on,
-            // then hide the actual C# implementation. This ensures the debugger
-            // stops once on each INTERCAL line even when the underlying C# calls
-            // are marked [DebuggerNonUserCode].
-            if (c.sourceFile != null && s.LineNumber >= 0)
+            // Emit #line directive for non-DAP builds
+            if (!c.debugDap && c.sourceFile != null && s.LineNumber >= 0)
             {
                 c.EmitRaw("#line " + s.LineNumber + " \"" + c.sourceFile.Replace("\\", "\\\\") + "\"\r\n");
-            }
-
-            // DAP debug hook: pause before each statement
-            if (c.debugDap && s.LineNumber >= 0 && !(s is Statement.NonsenseStatement))
-            {
-                var escapedFile = (c.sourceFile ?? "").Replace("\\", "\\\\");
-                var escapedText = (s.StatementText ?? "").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
-                c.EmitRaw(string.Format(
-                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, _nextStack, {3});\r\n",
-                    escapedFile, s.LineNumber, escapedText, s.AbstainSlot));
-                c.EmitRaw("#line hidden\r\n");
             }
 
         }
