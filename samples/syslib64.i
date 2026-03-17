@@ -404,10 +404,88 @@
 	DO RETRIEVE .1 + .2 + .3
 	PLEASE RESUME #1
 
-(6073470532629770752)	DO STASH :1 + :2
-	DO (1549) NEXT
-	DO ::3 <- :3
-	DO RETRIEVE :1 + :2
+	PLEASE NOTE TIMES32: :1 * :2 -> ::3 (full 64-bit result)
+	PLEASE NOTE Schoolbook: 4 partial products, 4 slots, PACK32
+	PLEASE NOTE Phase 1: :10=AH :11=AL :12=BH :13=BL, products in :14-:17
+	PLEASE NOTE Phase 2: accumulate slots, :10=s0 :11=s1 :12=s2 :13=s3
+(6073470532629770752)	DO STASH :1 + :2 + .1 + .2 + .3 + .4 + :10 + :11 + :12 + :13 + :14 + :15 + :16 + :17
+	DO :10 <- :1 ~ '#65280$#65280'
+	DO :11 <- :1 ~ #65535
+	DO :12 <- :2 ~ '#65280$#65280'
+	DO :13 <- :2 ~ #65535
+	PLEASE NOTE P0 = AL * BL
+	DO .1 <- :11 ~ #65535
+	DO .2 <- :13 ~ #65535
+	DO (1530) NEXT
+	DO :14 <- :1
+	PLEASE NOTE P1 = AL * BH
+	DO .1 <- :11 ~ #65535
+	DO .2 <- :12 ~ #65535
+	DO (1530) NEXT
+	DO :15 <- :1
+	PLEASE NOTE P2 = AH * BL
+	DO .1 <- :10 ~ #65535
+	DO .2 <- :13 ~ #65535
+	DO (1530) NEXT
+	DO :16 <- :1
+	PLEASE NOTE P3 = AH * BH
+	DO .1 <- :10 ~ #65535
+	DO .2 <- :12 ~ #65535
+	DO (1530) NEXT
+	DO :17 <- :1
+	PLEASE NOTE s0 = P0L
+	DO :10 <- :14 ~ #65535
+	PLEASE NOTE s1 = P0H + P1L + P2L (carry -> :13)
+	DO .1 <- :14 ~ '#65280$#65280'
+	DO .2 <- :15 ~ #65535
+	DO (1009) NEXT
+	DO :13 <- '.4~#2'
+	DO .1 <- .3
+	DO .2 <- :16 ~ #65535
+	DO (1009) NEXT
+	DO :11 <- .3
+	DO .1 <- :13 ~ #65535
+	DO .2 <- '.4~#2'
+	DO (1009) NEXT
+	DO :13 <- .3
+	PLEASE NOTE s2 = P1H + P2H + P3L + carry_from_s1
+	DO .1 <- :15 ~ '#65280$#65280'
+	DO .2 <- :16 ~ '#65280$#65280'
+	DO (1009) NEXT
+	DO :14 <- '.4~#2'
+	DO .1 <- .3
+	DO .2 <- :17 ~ #65535
+	DO (1009) NEXT
+	DO :12 <- .3
+	DO .1 <- :14 ~ #65535
+	DO .2 <- '.4~#2'
+	DO (1009) NEXT
+	DO :14 <- .3
+	DO .1 <- :12 ~ #65535
+	DO .2 <- :13 ~ #65535
+	DO (1009) NEXT
+	DO :12 <- .3
+	DO .1 <- :14 ~ #65535
+	DO .2 <- '.4~#2'
+	DO (1009) NEXT
+	DO :14 <- .3
+	PLEASE NOTE s3 = P3H + carry_from_s2
+	DO .1 <- :17 ~ '#65280$#65280'
+	DO .2 <- :14 ~ #65535
+	DO (1009) NEXT
+	DO :13 <- .3
+	PLEASE NOTE pack: (1520) s1$s0 -> :2 (low), s3$s2 -> :1 (high)
+	DO .1 <- :11 ~ #65535
+	DO .2 <- :10 ~ #65535
+	DO (1520) NEXT
+	DO :2 <- :1
+	DO .1 <- :13 ~ #65535
+	DO .2 <- :12 ~ #65535
+	DO (1520) NEXT
+	PLEASE NOTE :1=high, :2=low -> PACK32 -> ::1
+	DO (4920558940556964667) NEXT
+	DO ::3 <- ::1
+	DO RETRIEVE :1 + :2 + .1 + .2 + .3 + .4 + :10 + :11 + :12 + :13 + :14 + :15 + :16 + :17
 	PLEASE RESUME #1
 
 (6073470532629967872)	DO STASH ::1 + ::2 + :1 + :2
@@ -516,6 +594,32 @@
 	PLEASE RESUME #2
 (4920558940556964665)	DO RESUME :5
 	PLEASE NOTE DIVIDE64: TODO
+*(4920558940556965428)	PLEASE NOTE THIS IS YET TO BE IMPLEMENTED
+
+	PLEASE NOTE PACK32: :1=high :2=low -> ::1 = (:1 << 32) | :2
+	PLEASE NOTE Same algorithm as (1520) but at 32-bit level
+(4920558940556964667) DO STASH :1 + :2 + :3 + :4 + :10 + :11 + .1 + .2
+	DO :10 <- :1
+	DO :11 <- :2
+	DO .1 <- :10 ~ ##2863311530
+	DO .2 <- #0
+	DO (1520) NEXT
+	DO :3 <- :1
+	DO .1 <- #0
+	DO .2 <- :11 ~ ##2863311530
+	DO (1520) NEXT
+	DO :3 <- 'V":3$:1"'~'##0$##4294967295'
+	DO .1 <- :10 ~ ##1431655765
+	DO .2 <- #0
+	DO (1520) NEXT
+	DO :4 <- :1
+	DO .1 <- #0
+	DO .2 <- :11 ~ ##1431655765
+	DO (1520) NEXT
+	DO :4 <- 'V":4$:1"'~'##0$##4294967295'
+	DO ::1 <- ':3$:4'
+	DO RETRIEVE :1 + :2 + :3 + :4 + :10 + :11 + .1 + .2
+	PLEASE RESUME #1
 
 (5570746397223760182)	DO STASH .1 + .2 + .4
 	DO (4920558940556964150) NEXT
