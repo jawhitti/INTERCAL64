@@ -144,11 +144,26 @@ namespace INTERCAL.Runtime
 
         #region Private helpers
 
+        private bool _loggedBpCheck = false;
         private bool IsBreakpoint(string file, int line)
         {
-            // Normalize path for comparison
             var key = Path.GetFullPath(file).ToLowerInvariant();
-            return _breakpoints.TryGetValue(key, out var lines) && lines.Contains(line);
+            var hit = _breakpoints.TryGetValue(key, out var lines) && lines.Contains(line);
+
+            // Log the first breakpoint check so we can diagnose path mismatches
+            if (!_loggedBpCheck && _breakpoints.Count > 0)
+            {
+                _loggedBpCheck = true;
+                var storedKeys = string.Join(", ", _breakpoints.Keys);
+                Send(new
+                {
+                    @event = "output",
+                    category = "console",
+                    output = $"[DebugHost] BP check: file='{key}' stored keys=[{storedKeys}] match={_breakpoints.ContainsKey(key)}\n"
+                });
+            }
+
+            return hit;
         }
 
         private void CheckComeFromWarning(string file, int line)
@@ -260,7 +275,8 @@ namespace INTERCAL.Runtime
         {
             if (root.TryGetProperty("file", out var fileEl))
             {
-                var file = Path.GetFullPath(fileEl.GetString()!).ToLowerInvariant();
+                var rawFile = fileEl.GetString()!;
+                var file = Path.GetFullPath(rawFile).ToLowerInvariant();
                 var lines = new HashSet<int>();
 
                 if (root.TryGetProperty("lines", out var linesEl))
@@ -270,6 +286,13 @@ namespace INTERCAL.Runtime
                 }
 
                 _breakpoints[file] = lines;
+
+                Send(new
+                {
+                    @event = "output",
+                    category = "console",
+                    output = $"[DebugHost] Breakpoints stored: key='{file}' lines=[{string.Join(",", lines)}]\n"
+                });
             }
 
             Send(new { @event = "breakpointsSet", success = true });

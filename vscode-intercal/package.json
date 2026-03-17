@@ -16,6 +16,9 @@
     "onDebugResolve:intercal"
   ],
   "contributes": {
+    "breakpoints": [
+      { "language": "intercal" }
+    ],
     "languages": [
       {
         "id": "intercal",

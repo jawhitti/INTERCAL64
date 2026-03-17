@@ -57,6 +57,13 @@ public class DebugAdapter
 
     private void HandleRequest(DapRequest request)
     {
+        // Log every DAP request for diagnostics
+        SendEvent("output", new
+        {
+            category = "console",
+            output = $"[DAP] << {request.Command}\n"
+        });
+
         switch (request.Command)
         {
             case "initialize":
@@ -190,6 +197,19 @@ public class DebugAdapter
             output = $"Compiling {Path.GetFileName(_programPath)}...\n"
         });
 
+        // Clean stale build artifacts so dotnet build doesn't use cached output
+        var baseName = Path.GetFileNameWithoutExtension(_programPath);
+        foreach (var ext in new[] { ".exe", ".dll", ".pdb", ".deps.json", ".runtimeconfig.json" })
+        {
+            var stale = Path.Combine(programDir, baseName + ext);
+            try { File.Delete(stale); } catch { }
+        }
+        // Also clean the generated csproj/cs to force full recompile
+        try { File.Delete(Path.Combine(programDir, "~tmp.cs")); } catch { }
+        try { File.Delete(Path.Combine(programDir, "~tmp.csproj")); } catch { }
+        try { Directory.Delete(Path.Combine(programDir, "obj"), true); } catch { }
+        try { Directory.Delete(Path.Combine(programDir, "bin"), true); } catch { }
+
         var psi = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -309,7 +329,7 @@ public class DebugAdapter
                 file = kvp.Key,
                 lines = kvp.Value.ToArray()
             });
-            ReadFromDebuggee(); // ack
+            ReadFromDebuggeeSkippingOutput(); // ack
         }
     }
 
@@ -369,7 +389,7 @@ public class DebugAdapter
                 file,
                 lines = lines.ToArray()
             });
-            ReadFromDebuggee(); // ack
+            ReadFromDebuggeeSkippingOutput(); // ack
 
             SendEvent("output", new
             {
@@ -519,6 +539,28 @@ public class DebugAdapter
         var line = _pipeReader.ReadLine();
         if (line == null) return null;
         return JsonDocument.Parse(line);
+    }
+
+    /// <summary>
+    /// Read from the debuggee, forwarding any output events to VS Code,
+    /// until we get a non-output message (like an ack or stopped event).
+    /// </summary>
+    private JsonDocument? ReadFromDebuggeeSkippingOutput()
+    {
+        while (true)
+        {
+            var msg = ReadFromDebuggee();
+            if (msg == null) return null;
+
+            var root = msg.RootElement;
+            if (root.TryGetProperty("event", out var ev) && ev.GetString() == "output")
+            {
+                // Forward output to VS Code and keep reading
+                ProcessDebuggeeMessage(root);
+                continue;
+            }
+            return msg;
+        }
     }
 
     private void ProcessStoppedEvent(JsonElement root)
