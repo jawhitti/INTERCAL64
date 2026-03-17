@@ -28,6 +28,91 @@ public abstract class QTree
     /// Collect all QValues referenced by leaf nodes in this tree.
     /// </summary>
     public abstract IEnumerable<QValue> GetLeaves();
+
+    /// <summary>
+    /// Iterative post-order evaluation. Avoids stack overflow on deep trees.
+    /// </summary>
+    public static long EvaluateIterative(QTree root)
+    {
+        // Post-order traversal using two stacks
+        var work = new Stack<QTree>();
+        var values = new Stack<long>();
+        // Use a marker to distinguish "push children" from "combine results"
+        var ops = new Stack<object>(); // QMingle or QUnary marker
+
+        work.Push(root);
+        while (work.Count > 0)
+        {
+            var node = work.Pop();
+            if (node is QLeaf leaf)
+            {
+                values.Push(leaf.Value.Result);
+            }
+            else if (node is QMingle m)
+            {
+                ops.Push(m);
+                work.Push(node); // revisit marker
+                work.Push(m.Right);
+                work.Push(m.Left);
+            }
+            else if (node is QUnary u)
+            {
+                ops.Push(u);
+                work.Push(node); // revisit marker
+                work.Push(u.Operand);
+            }
+        }
+
+        // That approach is tricky with revisit detection. Simpler:
+        // Flatten to leaves, then re-fold with the tree structure.
+        // Since we only have Mingle and Unary, and our trees are
+        // always right-leaning chains for the permutation case,
+        // just use an explicit stack-based evaluator.
+
+        values.Clear();
+        var evalWork = new Stack<(QTree node, bool childrenPushed)>();
+        evalWork.Push((root, false));
+
+        while (evalWork.Count > 0)
+        {
+            var (node, pushed) = evalWork.Pop();
+
+            if (node is QLeaf lf)
+            {
+                values.Push(lf.Value.Result);
+            }
+            else if (node is QMingle mg)
+            {
+                if (pushed)
+                {
+                    var right = values.Pop();
+                    var left = values.Pop();
+                    values.Push(QMingle.Mingle(left, right));
+                }
+                else
+                {
+                    evalWork.Push((node, true));
+                    evalWork.Push((mg.Right, false));
+                    evalWork.Push((mg.Left, false));
+                }
+            }
+            else if (node is QUnary un)
+            {
+                if (pushed)
+                {
+                    var val = values.Pop();
+                    values.Push(QUnary.ApplyOp(un.Op, val));
+                }
+                else
+                {
+                    evalWork.Push((node, true));
+                    evalWork.Push((un.Operand, false));
+                }
+            }
+        }
+
+        return values.Pop();
+    }
 }
 
 public class QLeaf : QTree
@@ -55,9 +140,27 @@ public class QMingle : QTree
         Right = right ?? throw new ArgumentNullException(nameof(right));
     }
 
-    public override long Evaluate() => Mingle(Left.Evaluate(), Right.Evaluate());
-    public override bool AllLeavesCollapsed => Left.AllLeavesCollapsed && Right.AllLeavesCollapsed;
-    public override IEnumerable<QValue> GetLeaves() => Left.GetLeaves().Concat(Right.GetLeaves());
+    public override long Evaluate() => QTree.EvaluateIterative(this);
+    public override bool AllLeavesCollapsed => GetLeaves().All(v => v.Collapsed);
+    public override IEnumerable<QValue> GetLeaves()
+    {
+        // Iterative traversal to avoid stack overflow on deep trees
+        var stack = new Stack<QTree>();
+        stack.Push(this);
+        while (stack.Count > 0)
+        {
+            var node = stack.Pop();
+            if (node is QLeaf leaf)
+                yield return leaf.Value;
+            else if (node is QMingle m)
+            {
+                stack.Push(m.Right);
+                stack.Push(m.Left);
+            }
+            else if (node is QUnary u)
+                stack.Push(u.Operand);
+        }
+    }
 
     /// <summary>
     /// Interleave bits of two 16-bit values into one 32-bit value.
@@ -94,7 +197,7 @@ public class QUnary : QTree
         Operand = operand ?? throw new ArgumentNullException(nameof(operand));
     }
 
-    public override long Evaluate() => ApplyOp(Op, Operand.Evaluate());
+    public override long Evaluate() => QTree.EvaluateIterative(this);
     public override bool AllLeavesCollapsed => Operand.AllLeavesCollapsed;
     public override IEnumerable<QValue> GetLeaves() => Operand.GetLeaves();
 
