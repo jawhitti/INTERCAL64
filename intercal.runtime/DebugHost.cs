@@ -41,6 +41,11 @@ namespace INTERCAL.Runtime
         // Source info for COME FROM warnings: line -> "COME FROM target, jumps to line N"
         private readonly Dictionary<string, Dictionary<int, int>> _comeFromTargets = new();
 
+        // Abstain tracking: reference to the generated abstainMap array
+        private bool[] _abstainMap;
+        // Maps abstain slot -> (source line, gerund name)
+        private readonly Dictionary<int, (int line, string gerund)> _abstainSlots = new();
+
         /// <summary>
         /// Initialize the debug host. Called early in the program if /debug-dap is set.
         /// Connects to the named pipe created by the DAP adapter.
@@ -63,7 +68,7 @@ namespace INTERCAL.Runtime
         /// This is the main debug hook — it decides whether to pause.
         /// </summary>
         public void OnStatement(string file, int line, string statementText,
-            ExecutionContext context, Stack<int> nextStack)
+            ExecutionContext context, Stack<int> nextStack, int abstainSlot = -1)
         {
             // Check if we should stop
             string? stopReason = null;
@@ -84,11 +89,29 @@ namespace INTERCAL.Runtime
 
             if (stopReason == null) return;
 
+            // Check if statement is currently abstained
+            var abstainedGerund = IsAbstained(abstainSlot);
+            if (abstainedGerund != null && stopReason == "step")
+            {
+                // Auto-skip abstained statements, notify user
+                Send(new
+                {
+                    @event = "output",
+                    category = "important",
+                    output = $"⏭ Line {line} skipped (ABSTAINED from {abstainedGerund})\n"
+                });
+                return; // Don't stop, keep running
+            }
+
             // Check for COME FROM warning
             CheckComeFromWarning(file, line);
 
+            // Include abstain state in stopped data
+            string? abstainInfo = abstainedGerund != null
+                ? $"ABSTAINED from {abstainedGerund}" : null;
+
             // Send stopped event with current state
-            SendStopped(file, line, statementText, stopReason, context, nextStack);
+            SendStopped(file, line, statementText, stopReason, context, nextStack, abstainInfo);
 
             // Wait for command from adapter
             WaitForCommand(context, nextStack, file);
@@ -106,6 +129,43 @@ namespace INTERCAL.Runtime
                 category = "console",
                 output = $"FORGET #{count} at {Path.GetFileName(file)}:{line} — {count} entry(s) popped from NEXT stack\n"
             });
+        }
+
+        /// <summary>
+        /// Register the abstain map from the generated code.
+        /// Called once at startup with the bool[] and slot-to-info mapping.
+        /// </summary>
+        public void SetAbstainMap(bool[] map)
+        {
+            _abstainMap = map;
+        }
+
+        /// <summary>
+        /// Register a single abstain slot's metadata (source line and gerund name).
+        /// Called by generated prolog for each abstainable statement.
+        /// </summary>
+        public void RegisterAbstainSlot(int slot, int line, string gerund)
+        {
+            _abstainSlots[slot] = (line, gerund);
+        }
+
+        /// <summary>
+        /// Check if a statement at the given abstain slot is currently abstained.
+        /// Returns the gerund name if abstained, null otherwise.
+        /// </summary>
+        public string IsAbstained(int abstainSlot)
+        {
+            if (abstainSlot >= 0 && _abstainMap != null &&
+                abstainSlot < _abstainMap.Length && !_abstainMap[abstainSlot])
+            {
+                // abstainMap[slot] == false means the statement is abstained
+                // (true = enabled, false = abstained — inverted from what you'd expect
+                //  because the guard is: if(abstainMap[slot]) { execute })
+                if (_abstainSlots.TryGetValue(abstainSlot, out var info))
+                    return info.gerund;
+                return "UNKNOWN";
+            }
+            return null;
         }
 
         /// <summary>
@@ -182,7 +242,8 @@ namespace INTERCAL.Runtime
         }
 
         private void SendStopped(string file, int line, string statementText,
-            string reason, ExecutionContext context, Stack<int> nextStack)
+            string reason, ExecutionContext context, Stack<int> nextStack,
+            string? abstainInfo = null)
         {
             Send(new
             {
@@ -192,7 +253,8 @@ namespace INTERCAL.Runtime
                 statement = statementText,
                 reason,
                 variables = CollectVariables(context),
-                nextStack = nextStack.ToArray()
+                nextStack = nextStack.ToArray(),
+                abstained = abstainInfo
             });
         }
 

@@ -648,6 +648,30 @@ namespace INTERCAL
 
             // _nextStack is a field on the class, declared in EmitAbstainMap
 
+            // Register abstain slots with DebugHost for abstain tracking
+            if (ctx.debugDap)
+            {
+                ctx.EmitRaw("#line hidden\r\n");
+                ctx.EmitRaw("if (INTERCAL.Runtime.DebugHost.Instance != null) {\r\n");
+                // Pass the abstainMap array reference
+                bool hasAbstainMap = Statements.Any(s => s.AbstainSlot >= 0);
+                if (hasAbstainMap)
+                {
+                    ctx.EmitRaw("   INTERCAL.Runtime.DebugHost.Instance.SetAbstainMap(abstainMap);\r\n");
+                    foreach (Statement s in Statements)
+                    {
+                        if (s.AbstainSlot >= 0)
+                        {
+                            var gerund = StatementToGerund(s);
+                            ctx.EmitRaw(string.Format(
+                                "   INTERCAL.Runtime.DebugHost.Instance.RegisterAbstainSlot({0}, {1}, \"{2}\");\r\n",
+                                s.AbstainSlot, s.LineNumber, gerund));
+                        }
+                    }
+                }
+                ctx.EmitRaw("}\r\n");
+            }
+
             // Placeholder for debug locals — replaced after all statements are emitted
             ctx.EmitRaw("/*DEBUG_LOCALS_PLACEHOLDER*/\r\n");
 
@@ -810,8 +834,8 @@ namespace INTERCAL
                 var escapedFile = (c.sourceFile ?? "").Replace("\\", "\\\\");
                 var escapedText = (s.StatementText ?? "").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
                 c.EmitRaw(string.Format(
-                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, _nextStack);\r\n",
-                    escapedFile, s.LineNumber, escapedText));
+                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, _nextStack, {3});\r\n",
+                    escapedFile, s.LineNumber, escapedText, s.AbstainSlot));
                 c.EmitRaw("#line hidden\r\n");
             }
 
@@ -930,6 +954,25 @@ namespace INTERCAL
             EmitResumeDispatch(c);
 
             EmitProgramEpilog(c);
+        }
+
+        private static string StatementToGerund(Statement s)
+        {
+            if (s is Statement.CalculateStatement) return "CALCULATING";
+            if (s is Statement.NextStatement) return "NEXTING";
+            if (s is Statement.ForgetStatement) return "FORGETTING";
+            if (s is Statement.ResumeStatement) return "RESUMING";
+            if (s is Statement.StashStatement) return "STASHING";
+            if (s is Statement.IgnoreStatement) return "IGNORING";
+            if (s is Statement.AbstainStatement) return "ABSTAINING";
+            if (s is Statement.ReadOutStatement) return "READING OUT";
+            if (s is Statement.WriteInStatement) return "WRITING IN";
+            if (s is Statement.GiveUpStatement) return "GIVING UP";
+            if (s is Statement.ComeFromStatement) return "COMING FROM";
+            if (s is Statement.FeedStatement) return "FEEDING";
+            if (s is Statement.RetrieveStatement) return "RETRIEVING";
+            if (s is Statement.NonsenseStatement) return "SPLATTED";
+            return "UNKNOWN";
         }
 
         private static string DebugLocalName(string intercalName)
