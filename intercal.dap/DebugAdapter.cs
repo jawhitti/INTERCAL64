@@ -31,6 +31,9 @@ public class DebugAdapter
     // Pending breakpoints (set before launch)
     private readonly Dictionary<string, List<int>> _pendingBreakpoints = new();
 
+    // Stashed initial stopped event (read during launch, consumed by configurationDone)
+    private JsonDocument? _initialStoppedEvent;
+
     // Launch config
     private string _programPath = "";
     private string _compilerPath = "";
@@ -292,7 +295,12 @@ public class DebugAdapter
             output = "Debuggee connected. Debugging started.\n"
         });
 
-        // Send any pending breakpoints to the debuggee
+        // The debuggee immediately stops on entry and sends a "stopped" event.
+        // We MUST read it now before sending any commands, otherwise
+        // ReadFromDebuggee() in breakpoint handling will consume it.
+        _initialStoppedEvent = ReadFromDebuggee();
+
+        // Now send any pending breakpoints — the debuggee is in WaitForCommand
         foreach (var kvp in _pendingBreakpoints)
         {
             SendToDebuggee(new
@@ -301,8 +309,7 @@ public class DebugAdapter
                 file = kvp.Key,
                 lines = kvp.Value.ToArray()
             });
-            // Read ack
-            ReadFromDebuggee();
+            ReadFromDebuggee(); // ack
         }
     }
 
@@ -310,9 +317,17 @@ public class DebugAdapter
     {
         SendResponse(request);
 
-        // The debuggee is already running and stopped on entry.
-        // Wait for the first stopped event from it.
-        WaitForDebuggeeStop();
+        // Process the stashed initial stopped event
+        if (_initialStoppedEvent != null)
+        {
+            ProcessStoppedEvent(_initialStoppedEvent.RootElement);
+            _initialStoppedEvent = null;
+        }
+        else
+        {
+            // Shouldn't happen, but fall back to reading from pipe
+            WaitForDebuggeeStop();
+        }
     }
 
     private void HandleSetBreakpoints(DapRequest request)
@@ -341,7 +356,11 @@ public class DebugAdapter
             }
         }
 
-        // If debuggee is running, send breakpoints to it
+        // Normalize the file path for consistent matching
+        if (file != null)
+            file = Path.GetFullPath(file);
+
+        // If debuggee is connected, send breakpoints to it
         if (_pipeWriter != null && file != null)
         {
             SendToDebuggee(new
@@ -351,6 +370,12 @@ public class DebugAdapter
                 lines = lines.ToArray()
             });
             ReadFromDebuggee(); // ack
+
+            SendEvent("output", new
+            {
+                category = "console",
+                output = $"Breakpoints set: {Path.GetFileName(file)} lines [{string.Join(", ", lines)}]\n"
+            });
         }
         else if (file != null)
         {
@@ -496,15 +521,71 @@ public class DebugAdapter
         return JsonDocument.Parse(line);
     }
 
+    private void ProcessStoppedEvent(JsonElement root)
+    {
+        if (root.TryGetProperty("file", out var f))
+            _currentFile = f.GetString() ?? "";
+        if (root.TryGetProperty("line", out var l))
+            _currentLine = l.GetInt32();
+        if (root.TryGetProperty("statement", out var s))
+            _currentStatement = s.GetString() ?? "";
+        if (root.TryGetProperty("variables", out var v))
+        {
+            _currentVariables.Clear();
+            foreach (var prop in v.EnumerateObject())
+                _currentVariables[prop.Name] = prop.Value.GetUInt64();
+        }
+        if (root.TryGetProperty("nextStack", out var ns))
+            _currentNextStack = ns.EnumerateArray()
+                .Select(x => x.GetInt32()).ToArray();
+
+        var reason = root.TryGetProperty("reason", out var r)
+            ? r.GetString() : "step";
+
+        SendEvent("stopped", new
+        {
+            reason,
+            threadId = 1,
+            allThreadsStopped = true
+        });
+    }
+
+    private void ProcessDebuggeeMessage(JsonElement root)
+    {
+        if (!root.TryGetProperty("event", out var eventEl)) return;
+        var eventName = eventEl.GetString();
+
+        switch (eventName)
+        {
+            case "stopped":
+                ProcessStoppedEvent(root);
+                break;
+            case "output":
+                var category = root.TryGetProperty("category", out var c)
+                    ? c.GetString() : "console";
+                var output = root.TryGetProperty("output", out var o)
+                    ? o.GetString() : "";
+                SendEvent("output", new { category, output });
+                break;
+            case "terminated":
+                SendEvent("terminated");
+                break;
+            case "exited":
+                var exitCode = root.TryGetProperty("exitCode", out var ec)
+                    ? ec.GetInt32() : 0;
+                SendEvent("exited", new { exitCode });
+                SendEvent("terminated");
+                break;
+        }
+    }
+
     private void WaitForDebuggeeStop()
     {
-        // Read messages from the debuggee until we get a "stopped" event
         while (true)
         {
             var msg = ReadFromDebuggee();
             if (msg == null)
             {
-                // Pipe closed — debuggee exited
                 SendEvent("exited", new { exitCode = _process?.ExitCode ?? 0 });
                 SendEvent("terminated");
                 return;
@@ -514,57 +595,11 @@ public class DebugAdapter
             if (!root.TryGetProperty("event", out var eventEl)) continue;
             var eventName = eventEl.GetString();
 
-            switch (eventName)
-            {
-                case "stopped":
-                    // Update cached state
-                    if (root.TryGetProperty("file", out var f))
-                        _currentFile = f.GetString() ?? "";
-                    if (root.TryGetProperty("line", out var l))
-                        _currentLine = l.GetInt32();
-                    if (root.TryGetProperty("statement", out var s))
-                        _currentStatement = s.GetString() ?? "";
-                    if (root.TryGetProperty("variables", out var v))
-                    {
-                        _currentVariables.Clear();
-                        foreach (var prop in v.EnumerateObject())
-                            _currentVariables[prop.Name] = prop.Value.GetUInt64();
-                    }
-                    if (root.TryGetProperty("nextStack", out var ns))
-                        _currentNextStack = ns.EnumerateArray()
-                            .Select(x => x.GetInt32()).ToArray();
+            ProcessDebuggeeMessage(root);
 
-                    var reason = root.TryGetProperty("reason", out var r)
-                        ? r.GetString() : "step";
-
-                    // Send DAP stopped event to VS Code
-                    SendEvent("stopped", new
-                    {
-                        reason,
-                        threadId = 1,
-                        allThreadsStopped = true
-                    });
-                    return;
-
-                case "output":
-                    var category = root.TryGetProperty("category", out var c)
-                        ? c.GetString() : "console";
-                    var output = root.TryGetProperty("output", out var o)
-                        ? o.GetString() : "";
-                    SendEvent("output", new { category, output });
-                    break;
-
-                case "terminated":
-                    SendEvent("terminated");
-                    return;
-
-                case "exited":
-                    var exitCode = root.TryGetProperty("exitCode", out var ec)
-                        ? ec.GetInt32() : 0;
-                    SendEvent("exited", new { exitCode });
-                    SendEvent("terminated");
-                    return;
-            }
+            // Return once we've hit a terminal state
+            if (eventName == "stopped" || eventName == "terminated" || eventName == "exited")
+                return;
         }
     }
 
