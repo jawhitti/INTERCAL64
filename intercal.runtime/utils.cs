@@ -622,6 +622,17 @@ namespace INTERCAL
                 return null;
             }
 
+            public Dictionary<string, ulong> GetAllVariables()
+            {
+                var result = new Dictionary<string, ulong>();
+                foreach (var kvp in Variables)
+                {
+                    if (kvp.Value is IntVariable iv)
+                        result[kvp.Key] = iv.Value;
+                }
+                return result;
+            }
+
             #endregion
 
             #region control flow
