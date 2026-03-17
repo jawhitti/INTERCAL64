@@ -225,6 +225,7 @@ public class QValue
     }
 
     /// <summary>True if this cat is dead after observation.</summary>
+    /// <summary>True if this cat is dead after observation.</summary>
     public bool IsDead => Collapsed && Result == THECATISDEAD;
 
     /// <summary>
