@@ -39,8 +39,8 @@ namespace INTERCAL.Runtime
         // NEXT stack depth when step-over was initiated (for detecting FORGET)
         private int _stepOverDepth = 0;
 
-        // Source info for COME FROM warnings: line -> "COME FROM target, jumps to line N"
-        private readonly Dictionary<string, Dictionary<int, int>> _comeFromTargets = new();
+        // Source info for COME FROM warnings: normalized file -> { targetLine -> (comeFromLine, comeFromAbstainSlot) }
+        private readonly Dictionary<string, Dictionary<int, (int comeFromLine, int abstainSlot)>> _comeFromTargets = new();
 
         // Abstain tracking: reference to the generated abstainMap array
         private bool[] _abstainMap;
@@ -186,11 +186,12 @@ namespace INTERCAL.Runtime
         /// Register a COME FROM target at compile time or program init.
         /// When execution reaches 'targetLine', we warn that control will transfer to 'comeFromLine'.
         /// </summary>
-        public void RegisterComeFrom(string file, int targetLine, int comeFromLine)
+        public void RegisterComeFrom(string file, int targetLine, int comeFromLine, int comeFromAbstainSlot = -1)
         {
-            if (!_comeFromTargets.ContainsKey(file))
-                _comeFromTargets[file] = new Dictionary<int, int>();
-            _comeFromTargets[file][targetLine] = comeFromLine;
+            var key = Path.GetFullPath(file).ToLowerInvariant();
+            if (!_comeFromTargets.ContainsKey(key))
+                _comeFromTargets[key] = new Dictionary<int, (int, int)>();
+            _comeFromTargets[key][targetLine] = (comeFromLine, comeFromAbstainSlot);
         }
 
         /// <summary>
@@ -231,13 +232,20 @@ namespace INTERCAL.Runtime
         {
             var key = Path.GetFullPath(file).ToLowerInvariant();
             if (_comeFromTargets.TryGetValue(key, out var targets) &&
-                targets.TryGetValue(line, out var comeFromLine))
+                targets.TryGetValue(line, out var comeFromInfo))
             {
+                var (comeFromLine, abstainSlot) = comeFromInfo;
+
+                // Don't warn if the COME FROM itself is currently abstained
+                if (abstainSlot >= 0 && _abstainMap != null &&
+                    abstainSlot < _abstainMap.Length && !_abstainMap[abstainSlot])
+                    return;
+
                 Send(new
                 {
                     @event = "output",
-                    category = "important",
-                    output = $"WARNING: Line {line} is a COME FROM target — after execution, control transfers to line {comeFromLine}\n"
+                    category = "console",
+                    output = $">> COME FROM active — after this statement, control transfers to line {comeFromLine}\n"
                 });
             }
         }

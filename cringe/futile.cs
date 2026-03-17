@@ -622,8 +622,8 @@ namespace INTERCAL
                     {
                         Statement comeFrom = Statements[s.Trapdoor] as Statement;
                         ctx.EmitRaw(string.Format(
-                            "      INTERCAL.Runtime.DebugHost.Instance.RegisterComeFrom(\"{0}\", {1}, {2});\r\n",
-                            ctx.sourceFile.Replace("\\", "\\\\"), s.LineNumber, comeFrom.LineNumber));
+                            "      INTERCAL.Runtime.DebugHost.Instance.RegisterComeFrom(\"{0}\", {1}, {2}, {3});\r\n",
+                            ctx.sourceFile.Replace("\\", "\\\\"), s.LineNumber, comeFrom.LineNumber, comeFrom.AbstainSlot));
                     }
                 }
             }
