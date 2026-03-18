@@ -640,9 +640,14 @@ public class DebugAdapter
         var reason = root.TryGetProperty("reason", out var r)
             ? r.GetString() : "step";
 
+        string? description = null;
+        if (root.TryGetProperty("comeFrom", out var cf) && cf.ValueKind == JsonValueKind.String)
+            description = cf.GetString();
+
         SendEvent("stopped", new
         {
             reason,
+            description,
             threadId = 1,
             allThreadsStopped = true
         });

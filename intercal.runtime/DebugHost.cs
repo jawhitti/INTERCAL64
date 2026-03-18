@@ -104,15 +104,25 @@ namespace INTERCAL.Runtime
                 return; // Don't stop, keep running
             }
 
-            // Check for COME FROM warning
-            CheckComeFromWarning(file, line);
-
             // Include abstain state in stopped data
             string? abstainInfo = abstainedGerund != null
                 ? $"ABSTAINED from {abstainedGerund}" : null;
 
+            // Check if this line is a COME FROM target
+            var comeFromLine = GetComeFromTarget(file, line);
+            if (comeFromLine != null)
+            {
+                Send(new
+                {
+                    @event = "output",
+                    category = "console",
+                    output = $">> COME FROM pending — when this statement completes, control will transfer to line {comeFromLine}\n"
+                });
+            }
+
             // Send stopped event with current state
-            SendStopped(file, line, statementText, stopReason, context, nextStack, abstainInfo);
+            SendStopped(file, line, statementText, stopReason, context, nextStack, abstainInfo,
+                comeFromLine != null ? $"COME FROM → line {comeFromLine}" : null);
 
             // Wait for command from adapter
             WaitForCommand(context, nextStack, file);
@@ -167,6 +177,21 @@ namespace INTERCAL.Runtime
                 return "UNKNOWN";
             }
             return null;
+        }
+
+        /// <summary>
+        /// Called by generated code just before a COME FROM trapdoor fires.
+        /// This is the last moment before control transfers — the statement
+        /// has finished executing (including any NEXT calls).
+        /// </summary>
+        public void OnComeFrom(int fromLine, int toLine)
+        {
+            Send(new
+            {
+                @event = "output",
+                category = "console",
+                output = $">> COME FROM: line {fromLine} completed, transferring to line {toLine}\n"
+            });
         }
 
         /// <summary>
@@ -228,7 +253,11 @@ namespace INTERCAL.Runtime
             return hit;
         }
 
-        private void CheckComeFromWarning(string file, int line)
+        /// <summary>
+        /// Returns the COME FROM destination line if this line is a target, null otherwise.
+        /// Returns null if the COME FROM is currently abstained.
+        /// </summary>
+        private int? GetComeFromTarget(string file, int line)
         {
             var key = Path.GetFullPath(file).ToLowerInvariant();
             if (_comeFromTargets.TryGetValue(key, out var targets) &&
@@ -239,20 +268,16 @@ namespace INTERCAL.Runtime
                 // Don't warn if the COME FROM itself is currently abstained
                 if (abstainSlot >= 0 && _abstainMap != null &&
                     abstainSlot < _abstainMap.Length && !_abstainMap[abstainSlot])
-                    return;
+                    return null;
 
-                Send(new
-                {
-                    @event = "output",
-                    category = "console",
-                    output = $">> COME FROM active — after this statement, control transfers to line {comeFromLine}\n"
-                });
+                return comeFromLine;
             }
+            return null;
         }
 
         private void SendStopped(string file, int line, string statementText,
             string reason, ExecutionContext context, Stack<int> nextStack,
-            string? abstainInfo = null)
+            string? abstainInfo = null, string? comeFromWarning = null)
         {
             Send(new
             {
@@ -264,7 +289,8 @@ namespace INTERCAL.Runtime
                 variables = CollectVariables(context),
                 nextStack = nextStack.ToArray(),
                 abstained = abstainInfo,
-                gerundState = CollectGerundState()
+                gerundState = CollectGerundState(),
+                comeFrom = comeFromWarning
             });
         }
 
