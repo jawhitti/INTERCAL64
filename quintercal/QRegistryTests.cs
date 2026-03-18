@@ -69,14 +69,14 @@ public class BasicTests
             var reg = Helpers.Random();
             var q = new QValue(42, reg);
             long result = q.Observe();
-            Assert.True(result == 42 || result == QValue.THECATISDEAD,
-                $"Expected 42 or THECATISDEAD but got {result}");
+            Assert.True(result == 42 || result == QValue.DEDKITTY,
+                $"Expected 42 or DEDKITTY but got {result}");
             if (result == 42) count42++;
             else countDead++;
         }
 
         Assert.True(count42 > 0, "Never got 42 in 100 trials");
-        Assert.True(countDead > 0, "Never got THECATISDEAD in 100 trials");
+        Assert.True(countDead > 0, "Never got DEDKITTY in 100 trials");
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class BasicTests
             var reg = Helpers.Random();
             var q = new QValue(value, reg);
             long result = q.Observe();
-            Assert.True(result == value || result == QValue.THECATISDEAD);
+            Assert.True(result == value || result == QValue.DEDKITTY);
         }
     }
 
@@ -152,11 +152,11 @@ public class BasicTests
             var q = new QValue(42, reg);
             long result = q.Observe();
             if (result == 42) sawValue = true;
-            if (result == QValue.THECATISDEAD) sawDead = true;
+            if (result == QValue.DEDKITTY) sawDead = true;
             if (sawValue && sawDead) break;
         }
         Assert.True(sawValue, "Never got the value in 200 trials");
-        Assert.True(sawDead, "Never got THECATISDEAD in 200 trials");
+        Assert.True(sawDead, "Never got DEDKITTY in 200 trials");
     }
 }
 
@@ -190,7 +190,7 @@ public class EntanglementTests
             q1.Observe();
 
             // Exactly one should have its value, the other zero
-            int survivors = (q1.Result != QValue.THECATISDEAD ? 1 : 0) + (q2.Result != QValue.THECATISDEAD ? 1 : 0);
+            int survivors = (q1.Result != QValue.DEDKITTY ? 1 : 0) + (q2.Result != QValue.DEDKITTY ? 1 : 0);
             Assert.Equal(1, survivors);
         }
     }
@@ -247,7 +247,7 @@ public class EntanglementTests
             q1.Observe();
 
             int survivors = new[] { q1, q2, q3 }
-                .Count(q => q.Result != QValue.THECATISDEAD);
+                .Count(q => q.Result != QValue.DEDKITTY);
             Assert.Equal(1, survivors);
         }
     }
@@ -309,7 +309,7 @@ public class EntanglementTests
             qs[1].Swirl(qs[2]);
             qs[0].Observe();
             for (int j = 0; j < 3; j++)
-                if (qs[j].Result != QValue.THECATISDEAD) wasSurvivor[j] = true;
+                if (qs[j].Result != QValue.DEDKITTY) wasSurvivor[j] = true;
             if (wasSurvivor.All(x => x)) break;
         }
         Assert.True(wasSurvivor[0], "q1 was never the survivor");
@@ -379,7 +379,7 @@ public class ExpressionTreeTests
             derived.Observe();
 
             // Zero branch: OR of all bits of 0 = 0. Invariant preserved.
-            Assert.True(derived.Result == QValue.THECATISDEAD || derived.Result == QUnary.ApplyOp(UnaryOp.Or, 255),
+            Assert.True(derived.Result == QValue.DEDKITTY || derived.Result == QUnary.ApplyOp(UnaryOp.Or, 255),
                 $"Unexpected result {derived.Result}");
         }
     }
@@ -526,8 +526,8 @@ public class SideEffectTests
             q1.Swirl(q2);
 
             int nonzeroHooks = 0;
-            reg.RegisterAbstainHook(q1, r => { if (r != QValue.THECATISDEAD) nonzeroHooks++; });
-            reg.RegisterAbstainHook(q2, r => { if (r != QValue.THECATISDEAD) nonzeroHooks++; });
+            reg.RegisterAbstainHook(q1, r => { if (r != QValue.DEDKITTY) nonzeroHooks++; });
+            reg.RegisterAbstainHook(q2, r => { if (r != QValue.DEDKITTY) nonzeroHooks++; });
 
             q1.Observe();
             Assert.Equal(1, nonzeroHooks);
@@ -594,10 +594,10 @@ public class SideEffectTests
             buzz.Swirl(number);
 
             int nonzeroCount = 0;
-            reg.RegisterAbstainHook(fizzbuzz, r => { if (r != QValue.THECATISDEAD) nonzeroCount++; });
-            reg.RegisterAbstainHook(fizz, r => { if (r != QValue.THECATISDEAD) nonzeroCount++; });
-            reg.RegisterAbstainHook(buzz, r => { if (r != QValue.THECATISDEAD) nonzeroCount++; });
-            reg.RegisterAbstainHook(number, r => { if (r != QValue.THECATISDEAD) nonzeroCount++; });
+            reg.RegisterAbstainHook(fizzbuzz, r => { if (r != QValue.DEDKITTY) nonzeroCount++; });
+            reg.RegisterAbstainHook(fizz, r => { if (r != QValue.DEDKITTY) nonzeroCount++; });
+            reg.RegisterAbstainHook(buzz, r => { if (r != QValue.DEDKITTY) nonzeroCount++; });
+            reg.RegisterAbstainHook(number, r => { if (r != QValue.DEDKITTY) nonzeroCount++; });
 
             fizzbuzz.Observe();
 
@@ -617,8 +617,8 @@ public class SideEffectTests
         bool statement100Abstained = false;
         bool statement200Abstained = false;
 
-        reg.RegisterAbstainHook(q1, r => statement100Abstained = (r == QValue.THECATISDEAD));
-        reg.RegisterAbstainHook(q2, r => statement200Abstained = (r == QValue.THECATISDEAD));
+        reg.RegisterAbstainHook(q1, r => statement100Abstained = (r == QValue.DEDKITTY));
+        reg.RegisterAbstainHook(q2, r => statement200Abstained = (r == QValue.DEDKITTY));
 
         q1.Observe();
 
@@ -655,7 +655,7 @@ public class SelectTests
     }
 
     [Fact]
-    public void SelectOnDeadBranchReturnsTHECATISDEAD()
+    public void SelectOnDeadBranchReturnsDEDKITTY()
     {
         var reg = Helpers.DeterministicLast(); // last leaf wins
         var q1 = new QValue(0b1010, reg);
@@ -664,7 +664,7 @@ public class SelectTests
 
         // With DeterministicLast, q2 wins, q1 dies
         long result = q1.Select(0b1111);
-        Assert.Equal(QValue.THECATISDEAD, result);
+        Assert.Equal(QValue.DEDKITTY, result);
     }
 
     [Fact]
@@ -711,10 +711,10 @@ public class QuantumFizzBuzzTests
             candidates[0].Swirl(candidates[i]);
 
         // Register hooks
-        if (qFizzBuzz != null) reg.RegisterAbstainHook(qFizzBuzz, r => fizzBuzzFired = r != QValue.THECATISDEAD);
-        if (qFizz != null) reg.RegisterAbstainHook(qFizz, r => fizzFired = r != QValue.THECATISDEAD);
-        if (qBuzz != null) reg.RegisterAbstainHook(qBuzz, r => buzzFired = r != QValue.THECATISDEAD);
-        if (qNumber != null) reg.RegisterAbstainHook(qNumber, r => numberFired = r != QValue.THECATISDEAD);
+        if (qFizzBuzz != null) reg.RegisterAbstainHook(qFizzBuzz, r => fizzBuzzFired = r != QValue.DEDKITTY);
+        if (qFizz != null) reg.RegisterAbstainHook(qFizz, r => fizzFired = r != QValue.DEDKITTY);
+        if (qBuzz != null) reg.RegisterAbstainHook(qBuzz, r => buzzFired = r != QValue.DEDKITTY);
+        if (qNumber != null) reg.RegisterAbstainHook(qNumber, r => numberFired = r != QValue.DEDKITTY);
 
         // Collapse
         candidates[0].Observe();
@@ -853,7 +853,7 @@ public class QuantumBogosortTests
 
             qa.Observe();
 
-            int survivors = new[] { qa, qb, qc }.Count(q => q.Result != QValue.THECATISDEAD);
+            int survivors = new[] { qa, qb, qc }.Count(q => q.Result != QValue.DEDKITTY);
             Assert.Equal(1, survivors);
         }
     }
@@ -870,7 +870,7 @@ public class QuantumBogosortTests
             qs[1].Swirl(qs[2]);
             qs[0].Observe();
             for (int j = 0; j < 3; j++)
-                if (qs[j].Result != QValue.THECATISDEAD) wasSurvivor[j] = true;
+                if (qs[j].Result != QValue.DEDKITTY) wasSurvivor[j] = true;
         }
         Assert.True(wasSurvivor.All(x => x), "Not all elements were ever the survivor");
     }
@@ -904,7 +904,7 @@ public class InvariantTests
             var reg = Helpers.Random();
             var q = new QValue(42, reg);
             q.Observe();
-            Assert.True(q.Result == 42 || q.Result == QValue.THECATISDEAD);
+            Assert.True(q.Result == 42 || q.Result == QValue.DEDKITTY);
         }
     }
 
@@ -946,7 +946,7 @@ public class InvariantTests
             derived.Observe();
 
             long expectedValue = QUnary.ApplyOp(UnaryOp.Or, 0b1111_1111);
-            Assert.True(derived.Result == expectedValue || derived.Result == QValue.THECATISDEAD,
+            Assert.True(derived.Result == expectedValue || derived.Result == QValue.DEDKITTY,
                 $"Result {derived.Result} violated invariant");
         }
     }
@@ -1045,7 +1045,7 @@ public class QuantumTeleportationTests
         // In our {value,0} model it's a select with a mask derived from aliceBits
         int correctionMask = aliceBits != 0 ? 0b1111 : 0b0000;
         long bobCorrected = QValue.InterCalSelect(
-            bobRaw != QValue.THECATISDEAD ? unknownValue : 0,
+            bobRaw != QValue.DEDKITTY ? unknownValue : 0,
             correctionMask != 0 ? 0b1111 : 0b1111
         );
 
@@ -1097,7 +1097,7 @@ public class QuantumTeleportationTests
             // independent has its own superposition, unaffected by original
             Assert.False(independent.Collapsed);
             long independentResult = independent.Observe();
-            Assert.True(independentResult == 42 || independentResult == QValue.THECATISDEAD);
+            Assert.True(independentResult == 42 || independentResult == QValue.DEDKITTY);
         }
     }
 
@@ -1216,7 +1216,7 @@ public class QuantumTeleportationTests
             // Bob sees either 0 or 1 (his pair value)
             // He cannot determine from this alone what 42 was
             // or even whether Alice's unknown was 42 or any other value
-            if (bobRaw == QValue.THECATISDEAD) sawZero++;
+            if (bobRaw == QValue.DEDKITTY) sawZero++;
             else sawValue++;
         }
 
@@ -1278,7 +1278,7 @@ public class QuantumTeleportationTests
 
         Assert.True(bobPair.Collapsed);
         // Exactly one survived
-        int survivors = (alicePair.Result != QValue.THECATISDEAD ? 1 : 0) + (bobPair.Result != QValue.THECATISDEAD ? 1 : 0);
+        int survivors = (alicePair.Result != QValue.DEDKITTY ? 1 : 0) + (bobPair.Result != QValue.DEDKITTY ? 1 : 0);
         Assert.Equal(1, survivors);
     }
 
@@ -1479,8 +1479,8 @@ public class QuantumTeleportationTests
             alice.Swirl(bob);
             alice.Observe();
 
-            if (alice.Result != QValue.THECATISDEAD) aliceGotValue++;
-            if (bob.Result != QValue.THECATISDEAD) bobGotValue++;
+            if (alice.Result != QValue.DEDKITTY) aliceGotValue++;
+            if (bob.Result != QValue.DEDKITTY) bobGotValue++;
         }
 
         // Should be roughly 50/50
@@ -1553,7 +1553,7 @@ public class QuantumKeyDistributionTests
             Assert.True(alice.IsDead != bob.IsDead,
                 "Exactly one of Alice and Bob should be dead");
 
-            long bobFlipped = bob.IsDead ? 1L : QValue.THECATISDEAD;
+            long bobFlipped = bob.IsDead ? 1L : QValue.DEDKITTY;
             Assert.Equal(aliceResult, bobFlipped);
         }
     }
@@ -1620,7 +1620,7 @@ public class QuantumKeyDistributionTests
             bobSecret[i] = bob.Observe();
         }
 
-        var bobFlipped = bobSecret.Select(b => b == QValue.THECATISDEAD ? 1L : QValue.THECATISDEAD).ToArray();
+        var bobFlipped = bobSecret.Select(b => b == QValue.DEDKITTY ? 1L : QValue.DEDKITTY).ToArray();
         Assert.Equal(aliceSecret, bobFlipped);
     }
 
@@ -1638,7 +1638,7 @@ public class QuantumKeyDistributionTests
         long eveResult = bob.Observe();
 
         // Eve creates a fresh replacement box (must be nonzero — alive cat)
-        var eveBox = new QValue(eveResult != QValue.THECATISDEAD ? (int)eveResult : 1, reg);
+        var eveBox = new QValue(eveResult != QValue.DEDKITTY ? (int)eveResult : 1, reg);
 
         // Eve's box is NOT entangled with Alice
         Assert.False(reg.AreEntangled(alice, eveBox),
@@ -1683,7 +1683,7 @@ public class QuantumKeyDistributionTests
             long eveResult = bob.Observe();
 
             // Eve sends Bob a fresh box - no entanglement with Alice
-            var eveBox = new QValue(eveResult != QValue.THECATISDEAD ? (int)eveResult : 1, reg);
+            var eveBox = new QValue(eveResult != QValue.DEDKITTY ? (int)eveResult : 1, reg);
 
             alice.Observe();
             eveBox.Observe();
@@ -1698,7 +1698,7 @@ public class QuantumKeyDistributionTests
     [Fact]
     public void ManInMiddle_DetectionProbabilityIsRoughly50PercentPerPair()
     {
-        // With THECATISDEAD, Eve cannot forward a dead cat — she must create a live box.
+        // With DEDKITTY, Eve cannot forward a dead cat — she must create a live box.
         // Eve gets dead (50%): creates QValue(1). Alice alive. eveBox 50/50.
         //   eveBox dies (50%): alice alive, eveBox dead — anticorrelated. Escapes.
         //   eveBox alive (50%): alice alive, eveBox alive — DETECTED.
@@ -1718,7 +1718,7 @@ public class QuantumKeyDistributionTests
             alice.Swirl(bob);
 
             long eveResult = bob.Observe();
-            var eveBox = new QValue(eveResult != QValue.THECATISDEAD ? (int)eveResult : 1, reg);
+            var eveBox = new QValue(eveResult != QValue.DEDKITTY ? (int)eveResult : 1, reg);
 
             alice.Observe();
             eveBox.Observe();
@@ -1753,7 +1753,7 @@ public class QuantumKeyDistributionTests
                 alice.Swirl(bob);
 
                 long eveResult = bob.Observe();
-                var eveBox = new QValue(eveResult != QValue.THECATISDEAD ? (int)eveResult : 1, reg);
+                var eveBox = new QValue(eveResult != QValue.DEDKITTY ? (int)eveResult : 1, reg);
 
                 alice.Observe();
                 eveBox.Observe();
@@ -1796,7 +1796,7 @@ public class QuantumKeyDistributionTests
             if (bob.IsDead == expectedBobDead) eveLearnedCorrectly++;
 
             // Eve sends replacement
-            var eveBox = new QValue(eveResult != QValue.THECATISDEAD ? (int)eveResult : 1, reg);
+            var eveBox = new QValue(eveResult != QValue.DEDKITTY ? (int)eveResult : 1, reg);
             alice.Observe();
             eveBox.Observe();
 
@@ -1863,8 +1863,8 @@ public class QuantumKeyDistributionTests
         bool channelClean = true;
         for (int i = 0; i < verificationPairs; i++)
         {
-            bool aliceDead = aliceResults[i] == QValue.THECATISDEAD;
-            bool bobDead = bobResults[i] == QValue.THECATISDEAD;
+            bool aliceDead = aliceResults[i] == QValue.DEDKITTY;
+            bool bobDead = bobResults[i] == QValue.DEDKITTY;
             if (!(aliceDead != bobDead)) { channelClean = false; break; }
         }
 
@@ -1873,7 +1873,7 @@ public class QuantumKeyDistributionTests
         // Use remaining N pairs as secret
         var aliceSecret = aliceResults.Skip(verificationPairs).ToArray();
         var bobSecret   = bobResults.Skip(verificationPairs)
-                                    .Select(b => b == QValue.THECATISDEAD ? 1L : QValue.THECATISDEAD)
+                                    .Select(b => b == QValue.DEDKITTY ? 1L : QValue.DEDKITTY)
                                     .ToArray();
         Assert.Equal(aliceSecret, bobSecret);
     }
@@ -1904,7 +1904,7 @@ public class QuantumKeyDistributionTests
 
                 // Eve intercepts every pair
                 long eveResult = bob.Observe();
-                var eveBox = new QValue(eveResult != QValue.THECATISDEAD ? (int)eveResult : 1, reg);
+                var eveBox = new QValue(eveResult != QValue.DEDKITTY ? (int)eveResult : 1, reg);
 
                 aliceResults[i] = alice.Observe();
                 bobResults[i] = eveBox.Observe();
@@ -1913,8 +1913,8 @@ public class QuantumKeyDistributionTests
             bool channelAppearsClean = true;
             for (int i = 0; i < verificationPairs; i++)
             {
-                bool aliceDead = aliceResults[i] == QValue.THECATISDEAD;
-                bool bobDead = bobResults[i] == QValue.THECATISDEAD;
+                bool aliceDead = aliceResults[i] == QValue.DEDKITTY;
+                bool bobDead = bobResults[i] == QValue.DEDKITTY;
                 if (!(aliceDead != bobDead))
                     { channelAppearsClean = false; break; }
             }

@@ -32,7 +32,7 @@ namespace INTERCAL
             "ABSTAINING", "REINSTATING", "NEXTING", "STASHING",
             "RESUMING", "FORGETTING", "IGNORING", "REMEMBERING",
             "RETRIEVING", "CALCULATING",
-            "BOXING", "FEEDING", "PETTING"
+            "BOXING", "FEEDING", "PETTING", "MASHING"
         };
 
         // Single-word statements
@@ -40,7 +40,7 @@ namespace INTERCAL
         {
             "REINSTATE", "NEXT", "STASH", "RESUME", "FORGET",
             "IGNORE", "REMEMBER", "RETRIEVE",
-            "FEED", "PET"
+            "FEED", "PET", "MASH"
         };
 
         // Prefixes
@@ -168,7 +168,7 @@ namespace INTERCAL
                     pos++;
                     return new Token(TokenType.UnaryOp, c.ToString(), startPos);
 
-                case '$': case '~': case '=': case '@':
+                case '$': case '~': case '=':
                     pos++;
                     return new Token(TokenType.BinaryOp, c.ToString(), startPos);
 
@@ -281,9 +281,9 @@ namespace INTERCAL
             if (word == "SUB")
                 return new Token(TokenType.Sub, word, start);
 
-            // BY (separator)
-            if (word == "BY")
-                return new Token(TokenType.Separator, "BY", start);
+            // BY, WITH (separators)
+            if (word == "BY" || word == "WITH")
+                return new Token(TokenType.Separator, word, start);
 
             // Generic word
             return new Token(TokenType.Word, word, start);

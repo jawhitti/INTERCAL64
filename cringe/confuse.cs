@@ -229,6 +229,7 @@ namespace INTERCAL
 						case "GIVE UP":		retval = new GiveUpStatement(s);	break;
 						case "FEED":		retval = new FeedStatement(s);		break;
 						case "PET":			retval = new PetStatement(s);		break;
+						case "MASH":		retval = new MashStatement(s);		break;
 					}
 				}
 				else if(s.Current.Type == TokenType.Label)
@@ -285,27 +286,11 @@ namespace INTERCAL
 			LValue destination;
 			Expression expression;
 			bool IsArrayRedimension = false;
-			bool IsEntangle = false;
-			string EntangleTarget = null;
-
 			public CalculateStatement(Scanner s)
 			{
 				destination = new LValue(s);
 
 				s.MoveNext();
-
-				// Check for entangle: DO []1 @ []2
-				if (destination.IsBox && s.Current.Value == "@")
-				{
-					IsEntangle = true;
-					s.MoveNext(); // skip @
-					var target = new LValue(s);
-					if (!target.IsBox)
-						throw new ParseException("ICL094I: @ operator requires two box variables");
-					EntangleTarget = target.Name;
-					return;
-				}
-
 				VerifyToken(s, "<-");
 				s.MoveNext();
 
@@ -324,13 +309,6 @@ namespace INTERCAL
 			{
 				string lval = destination.Name;
 				ctx.DebugVariables.Add(lval);
-
-				// Quantum entangle: DO []1 @ []2
-				if (IsEntangle)
-				{
-					ctx.EmitRaw("frame.ExecutionContext.EntangleBoxes(\"" + lval + "\", \"" + EntangleTarget + "\");\n");
-					return;
-				}
 
 				// Quantum box assignment: DO []1 <- #value
 				if(destination.IsBox)
@@ -761,6 +739,43 @@ namespace INTERCAL
 				foreach (LValue lval in lvals)
 				{
 					ctx.Emit("frame.ExecutionContext.PetBox(\"" + lval.Name + "\")");
+				}
+			}
+		}
+
+		// PLEASE MASH []1 WITH []2 WITH []3 — quantum entanglement
+		public class MashStatement : Statement
+		{
+			List<string> boxes = new List<string>();
+
+			public MashStatement(Scanner s)
+			{
+				s.MoveNext();
+				var first = new LValue(s);
+				if (!first.IsBox)
+					throw new ParseException("ICL094I: MASH requires box variables");
+				boxes.Add(first.Name);
+
+				while (s.PeekNext.Value == "WITH")
+				{
+					s.MoveNext(); // current token
+					s.MoveNext(); // skip WITH
+					var next = new LValue(s);
+					if (!next.IsBox)
+						throw new ParseException("ICL094I: MASH requires box variables");
+					boxes.Add(next.Name);
+				}
+
+				if (boxes.Count < 2)
+					throw new ParseException("ICL094I: MASH requires at least two box variables");
+			}
+
+			public override void Emit(CompilationContext ctx)
+			{
+				// Entangle all boxes with the first one
+				for (int i = 1; i < boxes.Count; i++)
+				{
+					ctx.EmitRaw("frame.ExecutionContext.EntangleBoxes(\"" + boxes[0] + "\", \"" + boxes[i] + "\");\n");
 				}
 			}
 		}

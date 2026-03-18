@@ -81,6 +81,7 @@ namespace INTERCAL
             AbstainMap["BOXING"] = typeof(Statement.CalculateStatement); // box creation is a calculate
             AbstainMap["FEEDING"] = typeof(Statement.FeedStatement);
             AbstainMap["PETTING"] = typeof(Statement.PetStatement);
+            AbstainMap["MASHING"] = typeof(Statement.MashStatement);
         }
 
         public CompilationContext()

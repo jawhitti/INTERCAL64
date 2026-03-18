@@ -7,14 +7,14 @@
 //
 // Prerequisites:
 //   - QRegistry.cs from the INTERCAL-Q project
-//   - QValue.THECATISDEAD sentinel (0x5448454341544953_44454144L)
+//   - QValue.DEDKITTY sentinel (0x4445444B49545459)
 //   - QValue.IsDead instance property
 //   - xUnit test framework
 //
-// Note on THECATISDEAD:
+// Note on DEDKITTY:
 //   The dead cat sentinel replaces 0 as the collapse loser value.
 //   Alive result: the qvalue's original value (here always 1)
-//   Dead result:  QValue.THECATISDEAD
+//   Dead result:  QValue.DEDKITTY
 //   After Bob flips: alive->1, dead->0. Alice and Bob agree.
 
 using InterCalQ;

@@ -737,7 +737,11 @@ namespace INTERCAL
             public void ReadOut(object expression)
             {
                 Trace.WriteLine(string.Format("Reading out object '{0}'", expression));
-                TextOut.WriteLine(expression);
+                // Check for dead cat sentinel — display DEDKITTY instead of raw number
+                if (expression is ulong u && u == (ulong)QValue.DEDKITTY)
+                    TextOut.WriteLine("DEDKITTY");
+                else
+                    TextOut.WriteLine(expression);
                 TextOut.Flush();
             }
 

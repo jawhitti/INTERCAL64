@@ -169,8 +169,8 @@ public class QMingle : QTree
     public static long Mingle(long a, long b)
     {
         // Dead cats contribute nothing — substitute 0
-        if (a == QValue.THECATISDEAD) a = 0;
-        if (b == QValue.THECATISDEAD) b = 0;
+        if (a == QValue.DEDKITTY) a = 0;
+        if (b == QValue.DEDKITTY) b = 0;
 
         long result = 0;
         for (int i = 0; i < 16; i++)
@@ -205,7 +205,7 @@ public class QUnary : QTree
     /// Apply unary bitwise operator across all bits of value.
     /// Zero is a fixed point of all three operators, preserving the {value, 0} invariant.
     /// </summary>
-    public static long ApplyOp(UnaryOp op, long value) => value == QValue.THECATISDEAD ? QValue.THECATISDEAD : op switch
+    public static long ApplyOp(UnaryOp op, long value) => value == QValue.DEDKITTY ? QValue.DEDKITTY : op switch
     {
         UnaryOp.And => AndBits(value),
         UnaryOp.Or  => OrBits(value),
@@ -237,13 +237,13 @@ public class QUnary : QTree
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QValue: a value in superposition of {Value, DEAD}
-// The cat is alive (Value) or dead (THECATISDEAD). Opening the box collapses it.
+// The cat is alive (Value) or dead (DEDKITTY). Opening the box collapses it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 public class QValue
 {
     /// <summary>"THECATIS" in ASCII — the sentinel value for a dead cat.</summary>
-    public const long THECATISDEAD = 0x5448454341544953;
+    public const long DEDKITTY = 0x4445444B49545459;
 
     /// <summary>The classical value this wraps. The "color of the cat".</summary>
     public int Value { get; }
@@ -251,7 +251,7 @@ public class QValue
     /// <summary>Whether this qvalue has been observed.</summary>
     public bool Collapsed { get; internal set; }
 
-    /// <summary>The classical result after collapse. Either Value or THECATISDEAD.</summary>
+    /// <summary>The classical result after collapse. Either Value or DEDKITTY.</summary>
     public long Result { get; internal set; }
 
     /// <summary>
@@ -329,7 +329,7 @@ public class QValue
 
     /// <summary>True if this cat is dead after observation.</summary>
     /// <summary>True if this cat is dead after observation.</summary>
-    public bool IsDead => Collapsed && Result == THECATISDEAD;
+    public bool IsDead => Collapsed && Result == DEDKITTY;
 
     /// <summary>
     /// Apply select with a classical mask, forcing decoherence.
@@ -338,7 +338,7 @@ public class QValue
     public long Select(int mask)
     {
         long val = Observe();
-        if (val == THECATISDEAD) return THECATISDEAD;
+        if (val == DEDKITTY) return DEDKITTY;
         return InterCalSelect((int)val, mask);
     }
 
@@ -362,7 +362,7 @@ public class QValue
 
     public override string ToString() =>
         Collapsed
-            ? (Result == THECATISDEAD ? "QValue(DEAD)" : $"QValue(collapsed={Result})")
+            ? (Result == DEDKITTY ? "QValue(DEAD)" : $"QValue(collapsed={Result})")
             : $"QValue(superposed={Value}|DEAD)";
 }
 
@@ -486,7 +486,7 @@ public class QRegistry
         foreach (var leaf in leaves)
         {
             leaf.Collapsed = true;
-            leaf.Result = (leaf == survivor) ? leaf.Value : QValue.THECATISDEAD;
+            leaf.Result = (leaf == survivor) ? leaf.Value : QValue.DEDKITTY;
         }
 
         // Resolve derived nodes - tree is now fully evaluable
