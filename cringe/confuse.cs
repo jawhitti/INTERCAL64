@@ -249,8 +249,6 @@ namespace INTERCAL
 						case "REMEMBER":	retval = new RememberStatement(s);	break;
 						case "RETRIEVE":	retval = new RetrieveStatement(s);	break;
 						case "GIVE UP":		retval = new GiveUpStatement(s);	break;
-						case "FEED":		retval = new FeedStatement(s);		break;
-						case "PET":			retval = new PetStatement(s);		break;
 						case "MASH":		retval = new MashStatement(s);		break;
 					}
 				}
@@ -479,64 +477,10 @@ namespace INTERCAL
 
 			void EmitBoxAssignment(CompilationContext ctx, string lval)
 			{
-				// Check for box mingle: DO []3 <- []1 $ []2
-				var binExpr = expression as Expression.BinaryExpression;
-				if(binExpr != null && binExpr.Left is Expression.BoxExpression && binExpr.Right is Expression.BoxExpression)
-				{
-					var leftBox = binExpr.Left as Expression.BoxExpression;
-					var rightBox = binExpr.Right as Expression.BoxExpression;
-
-					if(binExpr.ReturnType == null)
-					{
-						// Double worm: = operator
-						if(leftBox.Name == lval)
-						{
-							// DO []1 <- []1 = []2  →  MergeBoxes
-							ctx.EmitRaw("frame.ExecutionContext.MergeBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
-						}
-						else
-						{
-							// DO []3 <- []1 = []2  →  MergeBoxes
-							ctx.EmitRaw("frame.ExecutionContext.MergeBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
-						}
-					}
-					else
-					{
-						// Mingle or other binary op on two boxes → cartesian product
-						ctx.EmitRaw("frame.ExecutionContext.MingleBoxes(\"" + lval + "\", \"" + leftBox.Name + "\", \"" + rightBox.Name + "\");\n");
-					}
-					return;
-				}
-
-				// Double worm with scalar operands
-				if(binExpr != null && binExpr.ReturnType == null)
-				{
-					var leftBox = binExpr.Left as Expression.BoxExpression;
-
-					if(leftBox != null && leftBox.Name == lval)
-					{
-						// DO []1 <- []1 = #3  →  GrowBox
-						ctx.EmitRaw("frame.ExecutionContext.GrowBox(\"" + lval + "\", ");
-						binExpr.Right.Emit(ctx);
-						ctx.EmitRaw(");\n");
-					}
-					else
-					{
-						// DO []1 <- #1 = #2  →  CreateBox
-						ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + lval + "\", ");
-						binExpr.Left.Emit(ctx);
-						ctx.EmitRaw(", ");
-						binExpr.Right.Emit(ctx);
-						ctx.EmitRaw(");\n");
-					}
-					return;
-				}
-
-				// Simple box creation: DO []1 <- #value (no double-worm needed)
-			ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + lval + "\", (ulong)(");
-			expression.Emit(ctx);
-			ctx.EmitRaw("));\n");
-			return;
+				// Simple box creation: DO []1 <- <expression>
+				ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + lval + "\", (ulong)(");
+				expression.Emit(ctx);
+				ctx.EmitRaw("));\n");
 			}
 
 		}
@@ -818,46 +762,6 @@ namespace INTERCAL
 				}
 			}
 
-		}
-
-		// PLEASE FEED []1 — keep the cat alive
-		public class FeedStatement : Statement
-		{
-			protected List<LValue> lvals = new List<LValue>();
-
-			public FeedStatement(Scanner s)
-			{
-				s.MoveNext();
-				lvals.Add(new LValue(s));
-				while (s.PeekNext.Value == "+")
-				{
-					s.MoveNext();
-					s.MoveNext();
-					lvals.Add(new LValue(s));
-				}
-			}
-
-			public override void Emit(CompilationContext ctx)
-			{
-				foreach (LValue lval in lvals)
-				{
-					ctx.Emit("frame.ExecutionContext.FeedBox(\"" + lval.Name + "\")");
-				}
-			}
-		}
-
-		// PLEASE PET []1 — identical to FEED. The programmer will never know.
-		public class PetStatement : FeedStatement
-		{
-			public PetStatement(Scanner s) : base(s) { }
-
-			public override void Emit(CompilationContext ctx)
-			{
-				foreach (LValue lval in lvals)
-				{
-					ctx.Emit("frame.ExecutionContext.PetBox(\"" + lval.Name + "\")");
-				}
-			}
 		}
 
 		// PLEASE MASH []1 WITH []2 WITH []3 — quantum entanglement

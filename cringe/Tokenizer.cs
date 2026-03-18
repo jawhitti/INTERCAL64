@@ -32,7 +32,7 @@ namespace INTERCAL
             "ABSTAINING", "REINSTATING", "NEXTING", "STASHING",
             "RESUMING", "FORGETTING", "IGNORING", "REMEMBERING",
             "RETRIEVING", "CALCULATING",
-            "BOXING", "FEEDING", "PETTING", "MASHING"
+            "MASHING"
         };
 
         // Single-word statements
@@ -40,7 +40,7 @@ namespace INTERCAL
         {
             "REINSTATE", "NEXT", "STASH", "RESUME", "FORGET",
             "IGNORE", "REMEMBER", "RETRIEVE",
-            "FEED", "PET", "MASH"
+            "MASH"
         };
 
         // Prefixes

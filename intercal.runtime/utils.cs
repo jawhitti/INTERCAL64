@@ -237,9 +237,6 @@ namespace INTERCAL
         {
             #region Fields and constuctors
 
-            // When true, disables cat death from hunger (--please-peta)
-            public bool PleasePeta { get; set; } = false;
-
             // Quantum registry — shared across all components
             public QRegistry Quantum { get; } = new QRegistry();
 
@@ -835,11 +832,6 @@ namespace INTERCAL
                 Variables[name] = box;
             }
 
-            // Legacy two-value CreateBox for backward compat with old = syntax
-            public void CreateBox(string name, ulong val1, ulong val2)
-            {
-                CreateBox(name, val1);
-            }
 
             /// <summary>Collapse a quantum box, returning its value or DEDKITTY.</summary>
             public ulong CollapseBox(string name)
@@ -882,12 +874,6 @@ namespace INTERCAL
                 b1.QVal.Swirl(b2.QVal);
             }
 
-            // Legacy methods — kept as stubs for now
-            public void GrowBox(string name, ulong val) { /* retired */ }
-            public void MergeBoxes(string dest, string box1, string box2) { /* retired */ }
-            public void MingleBoxes(string dest, string box1, string box2) { /* retired */ }
-            public void FeedBox(string name) { /* retired — no more hunger */ }
-            public void PetBox(string name) { /* retired */ }
 
             #endregion
         }

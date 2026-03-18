@@ -983,7 +983,7 @@ namespace INTERCAL
             if (s is Statement.WriteInStatement) return "WRITING IN";
             if (s is Statement.GiveUpStatement) return "GIVING UP";
             if (s is Statement.ComeFromStatement) return "COMING FROM";
-            if (s is Statement.FeedStatement) return "FEEDING";
+
             if (s is Statement.RetrieveStatement) return "RETRIEVING";
             if (s is Statement.NonsenseStatement) return "SPLATTED";
             return "UNKNOWN";

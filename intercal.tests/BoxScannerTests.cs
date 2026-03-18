@@ -52,48 +52,22 @@ namespace intercal.tests
             Assert.Equal("#", scanner.Current.Value);
         }
 
-        // === Tokenizer: FEED and PET statements ===
+        // === Tokenizer: MASH statement ===
 
         [Fact]
-        public void Tokenizer_RecognizesFeed()
+        public void Tokenizer_RecognizesMash()
         {
-            var scanner = Scanner.CreateScanner("FEED");
+            var scanner = Scanner.CreateScanner("MASH");
             Assert.Equal(TokenType.Statement, scanner.Current.Type);
-            Assert.Equal("FEED", scanner.Current.Value);
+            Assert.Equal("MASH", scanner.Current.Value);
         }
 
         [Fact]
-        public void Tokenizer_RecognizesPet()
+        public void Tokenizer_RecognizesMashingGerund()
         {
-            var scanner = Scanner.CreateScanner("PET");
-            Assert.Equal(TokenType.Statement, scanner.Current.Type);
-            Assert.Equal("PET", scanner.Current.Value);
-        }
-
-        // === Tokenizer: BOXING and FEEDING gerunds ===
-
-        [Fact]
-        public void Tokenizer_RecognizesBoxingGerund()
-        {
-            var scanner = Scanner.CreateScanner("BOXING");
+            var scanner = Scanner.CreateScanner("MASHING");
             Assert.Equal(TokenType.Gerund, scanner.Current.Type);
-            Assert.Equal("BOXING", scanner.Current.Value);
-        }
-
-        [Fact]
-        public void Tokenizer_RecognizesFeedingGerund()
-        {
-            var scanner = Scanner.CreateScanner("FEEDING");
-            Assert.Equal(TokenType.Gerund, scanner.Current.Type);
-            Assert.Equal("FEEDING", scanner.Current.Value);
-        }
-
-        [Fact]
-        public void Tokenizer_RecognizesPettingGerund()
-        {
-            var scanner = Scanner.CreateScanner("PETTING");
-            Assert.Equal(TokenType.Gerund, scanner.Current.Type);
-            Assert.Equal("PETTING", scanner.Current.Value);
+            Assert.Equal("MASHING", scanner.Current.Value);
         }
     }
 }
