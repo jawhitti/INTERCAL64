@@ -1,0 +1,7 @@
+{
+  "Quantum Bra (observe box)": {
+    "prefix": "bra",
+    "body": "⟨${1:n}|ψ⟩",
+    "description": "Quantum box guard — observe cat, execute if alive"
+  }
+}

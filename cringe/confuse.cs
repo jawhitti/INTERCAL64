@@ -92,6 +92,11 @@ namespace INTERCAL
 		//that later when it emits the abstain guard it can reference the right slot.
 		public int AbstainSlot = -1;
 
+		//If this is set, the statement is guarded by a quantum box variable.
+		//The statement only executes if the box's cat is alive after collapse.
+		public string BoxGuard = null;
+		public bool BoxGuardWimp = false;
+
 	#endregion
 
 		public abstract void Emit(CompilationContext ctx);
@@ -121,6 +126,8 @@ namespace INTERCAL
 
 			Statement retval = null;
 			string Label     = null;
+			string boxGuard  = null;
+			bool boxGuardWimp = false;
 			
 
 			try
@@ -207,8 +214,23 @@ namespace INTERCAL
 				}
 				
 
-				if(!validPrefix) 
+				if(!validPrefix)
 					throw new ParseException(String.Format(Messages.E017,s.LineNumber+1));
+
+				// Quantum box guard: DO ⟨5|ψ⟩ <statement> or DO <5|?> <statement>
+				// The Bra token value is "N" or "!N" where ! means wimpmode.
+				if(s.Current.Type == TokenType.Bra)
+				{
+					string braVal = s.Current.Value;
+					if(braVal.StartsWith("!"))
+					{
+						Console.WriteLine("Warning: ({0}) W001 USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE (YOUR CODE WILL BE SLOWER)", s.LineNumber);
+						braVal = braVal.Substring(1);
+						boxGuardWimp = true;
+					}
+					boxGuard = "[]" + braVal;
+					s.MoveNext();
+				}
 
 				if(s.Current.Type == TokenType.Statement)
 				{
@@ -271,6 +293,8 @@ namespace INTERCAL
 			retval.bEnabled = enabled;
 			retval.bPlease = please;
 			retval.Percent = percent;
+			retval.BoxGuard = boxGuard;
+			retval.BoxGuardWimp = boxGuardWimp;
 
 			return retval;
 

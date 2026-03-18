@@ -159,8 +159,9 @@ public class DebugAdapter
         else
             _syslibPath = FindSyslib();
 
-        // Create named pipe for debug communication
-        _pipeName = "intercal-dap-" + Guid.NewGuid().ToString("N")[..8];
+        // Stable pipe name derived from source path — allows reusing cached builds
+        var pathHash = Math.Abs(_programPath.GetHashCode()).ToString("x8");
+        _pipeName = "intercal-dap-" + pathHash;
         _pipe = new NamedPipeServerStream(_pipeName, PipeDirection.InOut,
             1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
@@ -185,6 +186,22 @@ public class DebugAdapter
     private void CompileProgram()
     {
         var programDir = Path.GetDirectoryName(Path.GetFullPath(_programPath)) ?? ".";
+        var baseName = Path.GetFileNameWithoutExtension(_programPath);
+        var exePath = Path.Combine(programDir, baseName + ".exe");
+        var sourcePath = Path.GetFullPath(_programPath);
+
+        // Skip compilation if the exe exists and is newer than the source
+        if (File.Exists(exePath) &&
+            File.GetLastWriteTimeUtc(exePath) > File.GetLastWriteTimeUtc(sourcePath))
+        {
+            SendEvent("output", new
+            {
+                category = "console",
+                output = $"{Path.GetFileName(_programPath)} is up to date.\n"
+            });
+            return;
+        }
+
         var compilerArgs = $"{_programPath} -debug-dap:{_pipeName} -b";
 
         if (!string.IsNullOrEmpty(_syslibPath))
@@ -197,7 +214,6 @@ public class DebugAdapter
         });
 
         // Clean stale build artifacts so dotnet build doesn't use cached output
-        var baseName = Path.GetFileNameWithoutExtension(_programPath);
         foreach (var ext in new[] { ".exe", ".dll", ".pdb", ".deps.json", ".runtimeconfig.json" })
         {
             var stale = Path.Combine(programDir, baseName + ext);

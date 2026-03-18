@@ -109,6 +109,41 @@ namespace INTERCAL
                 return new Token(TokenType.Digits, input.Substring(start, pos - start), start);
             }
 
+            // Quantum bra-ket: ⟨digits|ψ⟩ or <digits|?>
+            // Wimpmode: <digits|?> (emits warning)
+            if (c == '<' || c == '\u27E8') // < or ⟨
+            {
+                bool isWimp = (c == '<');
+                int saved = pos;
+                pos++;
+                // Read digits
+                if (pos < input.Length && IsDigit(input[pos]))
+                {
+                    int numStart = pos;
+                    while (pos < input.Length && IsDigit(input[pos]))
+                        pos++;
+                    string boxNum = input.Substring(numStart, pos - numStart);
+                    // Expect | then ψ or ? then > or ⟩
+                    if (pos < input.Length && input[pos] == '|')
+                    {
+                        pos++;
+                        if (pos < input.Length && (input[pos] == '\u03C8' || input[pos] == '?'))
+                        {
+                            bool isWimpGlyph = (input[pos] == '?');
+                            pos++;
+                            if (pos < input.Length && (input[pos] == '>' || input[pos] == '\u27E9'))
+                            {
+                                pos++;
+                                // Value is "N" or "!N" where ! means wimpmode
+                                string val = (isWimp || isWimpGlyph) ? "!" + boxNum : boxNum;
+                                return new Token(TokenType.Bra, val, startPos);
+                            }
+                        }
+                    }
+                }
+                pos = saved; // not a bra-ket, restore
+            }
+
             // Arrow <-
             if (c == '<' && pos + 1 < input.Length && input[pos + 1] == '-')
             {

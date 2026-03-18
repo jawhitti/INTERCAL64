@@ -822,6 +822,14 @@ namespace INTERCAL
                 c.EmitRaw("if(abstainMap[" + s.AbstainSlot.ToString() + "])\n{\n");
             }
 
+            // Quantum box guard: statement only executes if the cat is alive
+            if (s.BoxGuard != null)
+            {
+                if (s.BoxGuardWimp)
+                    c.EmitRaw("System.Threading.Thread.Sleep(50);\n");
+                c.EmitRaw("if(frame.ExecutionContext.IsBoxAlive(\"" + s.BoxGuard + "\"))\n{\n");
+            }
+
             if ((s.Percent > 0) && (s.Percent < 100))
             {
                 c.EmitRaw("if(Lib.Rand(100)  < " + s.Percent.ToString() + ")\n{\n");
@@ -858,6 +866,12 @@ namespace INTERCAL
                     c.EmitRaw("else {");
                     c.EmitRaw(string.Format("    Trace.WriteLine(\"[{0:0000}] Rolled the dice and lost.\");", s.StatementNumber));
                     c.EmitRaw("}\r\n");
+                }
+
+                // Close off the box guard block
+                if (s.BoxGuard != null)
+                {
+                    c.EmitRaw("}\n\n");
                 }
 
                 //Close off the abstain block

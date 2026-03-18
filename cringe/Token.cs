@@ -12,6 +12,7 @@ namespace INTERCAL
         UnaryOp,    // & v V ? | (rotate/flagpole) - (flip/monkey bar)
         BinaryOp,   // $ ~
         Sub,        // SUB
+        Bra,        // ⟨5|ψ⟩ or <5|?> — quantum box guard
         Word,       // any other [a-zA-Z]+ sequence
         Newline,    // \n
         EOF         // end of input

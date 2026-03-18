@@ -39,6 +39,12 @@
         "path": "./syntaxes/intercal.tmLanguage.json"
       }
     ],
+    "snippets": [
+      {
+        "language": "intercal",
+        "path": "./snippets/intercal.json"
+      }
+    ],
     "configuration": {
       "title": "INTERCAL",
       "properties": {

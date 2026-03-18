@@ -856,6 +856,22 @@ namespace INTERCAL
                 return result == QValue.DEDKITTY ? (ulong)QValue.DEDKITTY : (ulong)result;
             }
 
+            /// <summary>Collapse a box if needed and return true if the cat is alive.</summary>
+            public bool IsBoxAlive(string name)
+            {
+                if (!Variables.ContainsKey(name))
+                    Lib.Fail(Messages.E200 + " (" + name + ")");
+
+                var box = Variables[name] as BoxVariable;
+                if (box == null)
+                    Lib.Fail(Messages.E241);
+
+                if (!box.QVal.Collapsed)
+                    box.Collapse();
+
+                return !box.QVal.IsDead;
+            }
+
             /// <summary>Entangle two quantum boxes. The swirl operator @.</summary>
             public void EntangleBoxes(string box1, string box2)
             {

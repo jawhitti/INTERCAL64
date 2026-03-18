@@ -27,7 +27,8 @@
     { "include": "#sparks-and-ears" },
     { "include": "#sub-keyword" },
     { "include": "#by-keyword" },
-    { "include": "#with-keyword" }
+    { "include": "#with-keyword" },
+    { "include": "#quantum-bra" }
   ],
   "repository": {
     "splatted-statement": {
@@ -136,6 +137,10 @@
     "with-keyword": {
       "match": "\\bWITH\\b",
       "name": "keyword.other.with.intercal"
+    },
+    "quantum-bra": {
+      "match": "[⟨<]\\d+\\|[ψ?][⟩>]",
+      "name": "keyword.operator.quantum.bra.intercal"
     }
   }
 }
