@@ -168,7 +168,7 @@ namespace INTERCAL
                     pos++;
                     return new Token(TokenType.UnaryOp, c.ToString(), startPos);
 
-                case '$': case '~': case '=':
+                case '$': case '~': case '=': case '@':
                     pos++;
                     return new Token(TokenType.BinaryOp, c.ToString(), startPos);
 

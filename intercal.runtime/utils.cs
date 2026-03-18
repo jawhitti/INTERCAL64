@@ -240,6 +240,9 @@ namespace INTERCAL
             // When true, disables cat death from hunger (--please-peta)
             public bool PleasePeta { get; set; } = false;
 
+            // Quantum registry — shared across all components
+            public QRegistry Quantum { get; } = new QRegistry();
+
             public static ExecutionContext CreateExecutionContext()
             {
                 return new ExecutionContext();
@@ -531,80 +534,37 @@ namespace INTERCAL
                 }
             }
 
-            // Quantum cat box variable — holds a superposition of values.
-            // The cat is in the box. Feed it or it dies.
+            // Quantum cat box variable — holds a QValue in superposition.
+            // The cat is alive (has a value) or dead (DEDKITTY).
             [Serializable]
             class BoxVariable : Variable
             {
-                static Random random = new Random();
-                public const int MAX_VALUES = 99;
+                public QValue QVal { get; set; }
 
-                public List<ulong> Values = new List<ulong>();
-                public int Hunger = 5;
-                public bool Stashed = false;
-
-                protected Stack<(List<ulong> values, int hunger)> StashStack
-                    = new Stack<(List<ulong>, int)>();
-
-                public BoxVariable(ExecutionContext ctx, string name, ulong val1, ulong val2)
+                public BoxVariable(ExecutionContext ctx, string name, int value)
                     : base(ctx, name)
                 {
-                    Values.Add(val1);
-                    Values.Add(val2);
+                    QVal = new QValue(value, ctx.Quantum);
                 }
 
-                public ulong Collapse()
+                public long Collapse()
                 {
-                    CheckHungerDeath(-1);
-                    ulong chosen = Values[random.Next(Values.Count)];
-                    Values.Clear();
-                    Values.Add(chosen);
-                    return chosen;
-                }
-
-                public void Grow(ulong val)
-                {
-                    if (Values.Count >= MAX_VALUES)
-                        Lib.Fail(Messages.E2012);
-                    Values.Add(val);
-                }
-
-                public void Feed()
-                {
-                    CheckHungerDeath(1);
-                }
-
-                void CheckHungerDeath(int delta)
-                {
-                    Hunger += delta;
-                    if (!owner.PleasePeta && (Hunger <= 0 || Hunger >= 11))
-                        Lib.Fail(Messages.E2007);
+                    return QVal.Observe();
                 }
 
                 public override void Stash()
                 {
-                    StashStack.Push((new List<ulong>(Values), Hunger));
-                    Stashed = true;
+                    // TODO: v2.0
                 }
 
                 public override void Retrieve()
                 {
-                    if (StashStack.Count > 0)
-                    {
-                        var (values, hunger) = StashStack.Pop();
-                        Values = values;
-                        Hunger = hunger;
-                        Stashed = false;
-                    }
-                    else
-                    {
-                        Lib.Fail(Messages.E436);
-                    }
+                    // TODO: v2.0
                 }
 
                 public override string ToString()
                 {
-                    return Collapse().ToString();
+                    return QVal.Collapsed ? QVal.Result.ToString() : $"[]{QVal.Value}|DEDKITTY";
                 }
             }
 
@@ -835,12 +795,20 @@ namespace INTERCAL
 
             #region QUANTUM BOX (CAT BOX) OPERATIONS
 
-            public void CreateBox(string name, ulong val1, ulong val2)
+            /// <summary>Create a quantum box with a classical value.</summary>
+            public void CreateBox(string name, ulong value)
             {
-                var box = new BoxVariable(this, name, val1, val2);
+                var box = new BoxVariable(this, name, (int)value);
                 Variables[name] = box;
             }
 
+            // Legacy two-value CreateBox for backward compat with old = syntax
+            public void CreateBox(string name, ulong val1, ulong val2)
+            {
+                CreateBox(name, val1);
+            }
+
+            /// <summary>Collapse a quantum box, returning its value or DEDKITTY.</summary>
             public ulong CollapseBox(string name)
             {
                 if (!Variables.ContainsKey(name))
@@ -850,79 +818,27 @@ namespace INTERCAL
                 if (box == null)
                     Lib.Fail(Messages.E241);
 
-                return box.Collapse();
+                long result = box.Collapse();
+                // Return as ulong for compatibility with classical variable system
+                return result == QValue.DEDKITTY ? (ulong)QValue.DEDKITTY : (ulong)result;
             }
 
-            public void GrowBox(string name, ulong val)
-            {
-                var box = GetVariable(name) as BoxVariable;
-                box.Grow(val);
-            }
-
-            public void MergeBoxes(string dest, string box1, string box2)
+            /// <summary>Entangle two quantum boxes. The swirl operator @.</summary>
+            public void EntangleBoxes(string box1, string box2)
             {
                 var b1 = GetVariable(box1) as BoxVariable;
                 var b2 = GetVariable(box2) as BoxVariable;
-
-                var merged = new List<ulong>(b1.Values);
-                merged.AddRange(b2.Values);
-
-                if (merged.Count > BoxVariable.MAX_VALUES)
-                    Lib.Fail(Messages.E2012);
-
-                var destBox = new BoxVariable(this, dest, merged[0], merged[1]);
-                destBox.Values.Clear();
-                destBox.Values.AddRange(merged);
-                Variables[dest] = destBox;
+                if (b1 == null || b2 == null)
+                    Lib.Fail("ICL094I: CANNOT ENTANGLE NON-QUANTUM VARIABLES");
+                b1.QVal.Swirl(b2.QVal);
             }
 
-            public void MingleBoxes(string dest, string box1, string box2)
-            {
-                var b1 = GetVariable(box1) as BoxVariable;
-                var b2 = GetVariable(box2) as BoxVariable;
-
-                var products = new List<ulong>();
-                foreach (ulong a in b1.Values)
-                {
-                    foreach (ulong b in b2.Values)
-                    {
-                        products.Add(Lib.Mingle(a, b));
-                    }
-                }
-
-                if (products.Count > BoxVariable.MAX_VALUES)
-                    Lib.Fail(Messages.E2012);
-
-                var destBox = new BoxVariable(this, dest, products[0], products[1]);
-                destBox.Values.Clear();
-                destBox.Values.AddRange(products);
-                Variables[dest] = destBox;
-            }
-
-            public List<ulong> GetBoxValues(string name)
-            {
-                var box = GetVariable(name) as BoxVariable;
-                return new List<ulong>(box.Values);
-            }
-
-            public int GetBoxHunger(string name)
-            {
-                var box = GetVariable(name) as BoxVariable;
-                return box.Hunger;
-            }
-
-            public void FeedBox(string name)
-            {
-                var box = GetVariable(name) as BoxVariable;
-                box.Feed();
-            }
-
-            public void PetBox(string name)
-            {
-                // Identical to FeedBox. Documented as different.
-                // The programmer will never know.
-                FeedBox(name);
-            }
+            // Legacy methods — kept as stubs for now
+            public void GrowBox(string name, ulong val) { /* retired */ }
+            public void MergeBoxes(string dest, string box1, string box2) { /* retired */ }
+            public void MingleBoxes(string dest, string box1, string box2) { /* retired */ }
+            public void FeedBox(string name) { /* retired — no more hunger */ }
+            public void PetBox(string name) { /* retired */ }
 
             #endregion
         }

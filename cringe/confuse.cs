@@ -285,15 +285,30 @@ namespace INTERCAL
 			LValue destination;
 			Expression expression;
 			bool IsArrayRedimension = false;
+			bool IsEntangle = false;
+			string EntangleTarget = null;
 
-			public CalculateStatement(Scanner s) 
+			public CalculateStatement(Scanner s)
 			{
 				destination = new LValue(s);
 
 				s.MoveNext();
+
+				// Check for entangle: DO []1 @ []2
+				if (destination.IsBox && s.Current.Value == "@")
+				{
+					IsEntangle = true;
+					s.MoveNext(); // skip @
+					var target = new LValue(s);
+					if (!target.IsBox)
+						throw new ParseException("ICL094I: @ operator requires two box variables");
+					EntangleTarget = target.Name;
+					return;
+				}
+
 				VerifyToken(s, "<-");
 				s.MoveNext();
-				
+
 				expression = Expression.CreateExpression(s);
 
 				//Is this an array redimension expression?
@@ -310,7 +325,14 @@ namespace INTERCAL
 				string lval = destination.Name;
 				ctx.DebugVariables.Add(lval);
 
-				// Quantum box assignment: DO []1 <- expr1 = expr2
+				// Quantum entangle: DO []1 @ []2
+				if (IsEntangle)
+				{
+					ctx.EmitRaw("frame.ExecutionContext.EntangleBoxes(\"" + lval + "\", \"" + EntangleTarget + "\");\n");
+					return;
+				}
+
+				// Quantum box assignment: DO []1 <- #value
 				if(destination.IsBox)
 				{
 					EmitBoxAssignment(ctx, lval);
@@ -415,7 +437,11 @@ namespace INTERCAL
 					return;
 				}
 
-				throw new CompilationException("Box assignment requires double-worm (=) operator or box expression");
+				// Simple box creation: DO []1 <- #value (no double-worm needed)
+			ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + lval + "\", (ulong)(");
+			expression.Emit(ctx);
+			ctx.EmitRaw("));\n");
+			return;
 			}
 
 		}
