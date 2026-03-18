@@ -32,7 +32,7 @@ The following characters have been added to the INTERCAL character set, or have 
 | `\|` | maypole | Unary spin operator (mirror+invert) |
 | `-` | monkey bar | Unary spin operator (invert) |
 | `⟨` | bra | Bralette opening (U+27E8) |
-| `⟩` | panty | Bralette closing (U+27E9) |
+| `⟩` | lette | Bralette closing (U+27E9) |
 | `ψ` | Schrodinger's toothbrush | Quantum state indicator (U+03C8) |
 | `<` | left lung | Wimpmode bralette opening |
 | `>` | right lung | Wimpmode bralette closing |
@@ -105,7 +105,7 @@ This means that these operators applied twice in sequence as `|-|-`, produces th
 
     `'|-|-x' = x`
 
-This is significant because the mesh character `#`, when viewed as two vertical strokes and two horizontal strokes, is itself composed of `|-|-`. It is clear that the original INTERCAL designers chose `#` for the constant prefix for exactly: it is the identity operator applied to a value, which exactly defines a constant. 
+This is significant because the mesh character `#`, when viewed as two vertical strokes and two horizontal strokes, is itself composed of `|-|-`. It is clear that the original INTERCAL designers chose `#` for the constant prefix for exactly this reason: # represents two identity operator applied to a value, which exactly defines a constant. 
 
 Note: We have no evidence for this claim. 
 
@@ -152,46 +152,79 @@ The choice of the word MASH was guided by the following considerations: (1) it i
 
 ABSTAIN FROM MASHING prevents the formation of new entanglements, which may be desirable in programs where the cats have had enough.
 
-### 4.3 Cat Box Operations
+### 4.3 The Cat Box 
 
-Cat boxes are manipulated using the following operations:
+The Cat Box is fundamental to programs as the source of quantum randomness.  Cat boxes are manipulated using the following operations:
 
-**Creation:**
+#### Creation:
 
     DO []1 <- .1
 
-Creates a cat box containing the value stored in .1 in quantum superposition. The cat is alive and holds the passed value. It is probably angry to be in a box.
+Creates a cat box containing the value stored in .1 in quantum superposition. The cat is alive and holds the passed value. It is probably angry to be in a box.  The Cat box can hold any scalar value. 
   
-**4.4 Chaining initializers**
+#### Chaining initializers
 Testing has indicated that the following construct appears often in Q-Intercal code:
-
+```
 DO .1 <- #2
 DO []1 <- .1
-
+```
 Multiline constructs degrade code readability so chaining operators are available for a shortcut:
-
+```
 DO []1 <- .1 <- #2  //when you want to see cat #2 again if it lives
 DO []1 <- #2        //when you don't care to ever see this cat again, probably because it bites.
-
+```
 This leads to more compact and readable code like
+```
+(744073709551615)DO []1<-.1<-####12897451029483109245 (744073709551616)DO []2<-.2<-####12897451029483109247
+```
+#### Collapse:
 
-`(744073709551615)DO []1<-.1<-####12897451029483109245 (744073709551616)DO []2<-.2<-####12897451029483109247` 
+Catboxes collapse upon observation, which most commonly happens when they are assigned to a scalar value.  For example, the following line of code puts a value (cat) into a catbox one where its value is unknown.
+```
+   DO []1 <- 19
+   DO .2 <- []1
+   PLEASE DO NOTE .2 CONTAINS EITHER 19 or DEDKITTY
+```
+   
+The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.1` receives the box's value. If the cat is dead, `.1` receives DEDKITTY. The box retains whichever state was observed.
 
-**Collapse:**
 
-    DO .1 <- []1
+### 4.4 Entanglement
+A single cat is of minor utility - more power is available by entangling two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of _any_ box in the group is collapsed, exactly one (random) cat in the entire entangled group survives. All others instantly become DEDKITTY.
 
-Assigns the collapsed value of cat box 1 to spot variable 1. The superposition is destroyed. If the cat is alive, `.1` receives the box's value. If the cat is dead, `.1` receives DEDKITTY. The box retains whichever state was observed.
+This entanglement is established with a MASH statement
 
-### 4.4 The Bralette
+Syntax:
+```
+    DO MASH []1 WITH []2
+```
 
-Programs can MASH values into a cat box and reference that box from statements in the program using a quantum control flow modifier that guards a statement. The (optional) bralette is placed between the statement prefix (DO, PLEASE DO, etc.) and the statement body:
+### 4.5 Control flow
+A goal of this language is to enable quantum outputs to influence control flow. This achieved by entangling cat boxes and then using them to control flow.  This is accomplished via a novel construct called the _bralette_:
+```
+⟨5|ψ⟩  
+```
+The bralette may be placed between the statement prefix (DO, PLEASE DO, etc.) and the statement body:
 
-    DO ⟨5|ψ⟩ READ OUT .1
+```
+     []5 <- #1
+     [10] <- #2
+     DO ⟨5|ψ⟩ READ OUT .1
+```
+In this example the bralette `⟨5|ψ⟩` observes cat box 5 at the time of statement execution.  If the catbox is entangled with other cats the superposition collapses. If the cat is alive, the bralette opens and the statement executes. If the cat is dead, the bralette stays closed. The statement is skipped, as if it had been abstained from by the universe itself. 
 
-The bralette `⟨5|ψ⟩` observes cat box 5. If the cat is alive, the statement executes. If the cat is dead, the statement is skipped, as if it had been abstained from by the universe itself.
+#### Using bralettes
+Bralettes allow random quantum fluctations in control flow due the property that quantum collapse will always result in a cat in exactly une box randomly surviving.  In the program below boxes 5 and 10 are entangled.  The bralette observes statement 5 which instantly collapses the superposition. At that time onely one cat is alive. If it is ca5 5 then the bralette opens and `READ OUT .1` is executed and the next statetment is skipped.  If the living cat is in the other box the opposite happens - the first one stays closed and the second one opens.  The program always follows exactly one control path (randomly).
 
-The bralette is so named because it is a smaller, more supportive version of the bra-ket notation used in quantum mechanics (Dirac, 1939). The full form consists of five characters:
+```
+     []5 <- .1 <- #1
+     [10] <- .2 <- #2
+     DO MASH []5 WITH []10
+     DO ⟨5|ψ⟩ READ OUT .1   
+     DO ⟨10|ψ⟩ READ OUT .2
+```
+
+The alert ready has likely already sussed out that this is a kind of quantum ABSTAIN.  It is the spiritual successor to %50 but much more powerful.  %50 will likely be removed in future versions.
 
 | Position | Character | Name |
 |----------|-----------|------|
@@ -199,11 +232,11 @@ The bralette is so named because it is a smaller, more supportive version of the
 | 2 | digits | box identifier|
 | 3 | `\|` | maypole |
 | 4 | `ψ` | Schrodinger's toothbrush (U+03C8) |
-| 5 | `⟩` | panty (U+27E9) |
+| 5 | `⟩` | lette  (U+27E9) |
 
 The inclusion of ψ (Schrodinger's toothbrush) is mandatory (as is good dental hygiene). It serves no computational purpose but provides the statement with an air of scientific legitimacy. Please do note that future work may extend the bralette with other fancy glyphs in its place.
 
-### 4.4.1 Wimpmode Bralette
+### 4.4.1 Wimpmode alternative
 
 For programmers whose keyboards lack the mathematical angle brackets and Greek letters required by the full bralette notation, a wimpmode alternative is provided:
 
@@ -213,19 +246,8 @@ The wimpmode bralette substitutes the left lung (`<`), right lung (`>`), and wha
 
 1. The compiler emits the warning: `W001 USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE (YOUR CODE WILL BE SLOWER)`
 
-2. Using wimpmode routes calls through a translator thunk that unfortunately results in decoherence penalty so programmers are encouraged to update and use the full syntax. The programmer who objects to the performance penalty is invited to type the Unicode characters.
+2. Using wimpmode routes calls through a translator thunk. This thunk carries a performance penalty so programmers are encouraged to update and use the full syntax. 
 
-### 4.4.2 Bralette Semantics
-
-When a bralette is evaluated, the following occurs:
-
-1. If the referenced cat box has not yet been collapsed, it is collapsed. If the box is entangled with other boxes (via MASH), the entire entangled group collapses simultaneously. Exactly one cat in the group survives.
-
-2. If the cat is still alive, the guarded statement executes normally.
-
-3. If the cat is dead, the guarded statement is skipped. Control passes to the next statement. The dead cat does not care.
-
-This mechanism allows quantum superposition to directly affect program control flow. A set of entangled bralette-guarded statements behaves as a quantum switch: exactly one branch executes, selected by the universe at collapse time.
 
 ## 5. EXAMPLE PROGRAMS
 
