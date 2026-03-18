@@ -219,17 +219,16 @@ namespace intercal.tests
             Assert.Equal(3, p.StatementCount);
         }
 
-        // E533: "64 BITS SHOULD BE ENOUGH FOR ANYONE" — mingle two 64-bit values
+        // 64-bit mingle produces 128-bit ephemeral value consumed by select
         [Fact]
-        public void Parse_MingleTwoFourSpots_ThrowsE533()
+        public void Parse_MingleTwoFourSpots_ProducesUInt128()
         {
-            var ex = Assert.Throws<CompilationException>(() =>
-                ParseSource(
-                    "DO ::1 <- ####1\n" +
-                    "DO ::2 <- ::1$::1\n" +
-                    "DO GIVE UP\n"));
-            Assert.Contains("E533", ex.Message);
-            Assert.Contains("64 BITS SHOULD BE ENOUGH FOR ANYONE", ex.Message);
+            // This used to throw E533, now it parses successfully
+            var p = ParseSource(
+                "DO ::1 <- ####1\n" +
+                "DO ::2 <- '::1$::1'~####1\n" +
+                "DO GIVE UP\n");
+            Assert.Equal(3, p.StatementCount);
         }
 
         // Classic INTERCAL: mingle always truncates to 16 bits, even with two-spot operands

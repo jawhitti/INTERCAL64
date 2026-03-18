@@ -537,10 +537,13 @@ namespace INTERCAL
 					// Mingle produces a result twice the width of the operands.
 					// 16-bit $ 16-bit → 32-bit (classic INTERCAL)
 					// 32-bit $ 32-bit → 64-bit (i# extension)
+					// 64-bit $ 64-bit → 128-bit (ephemeral, must be consumed by select)
 					Type lt = left.ReturnType;
 					Type rt = right.ReturnType;
 
-					if(lt == typeof(UInt32) || rt == typeof(UInt32))
+					if(lt == typeof(UInt64) || rt == typeof(UInt64))
+						returnType = typeof(UInt128);
+					else if(lt == typeof(UInt32) || rt == typeof(UInt32))
 						returnType = typeof(UInt64);
 					else
 						returnType = typeof(UInt32);
@@ -573,12 +576,16 @@ namespace INTERCAL
 					switch(op)
 					{
 						case "$":
-							if(returnType == typeof(UInt64))
+							if(returnType == typeof(UInt128))
+								break; // Cannot fold 128-bit mingle at compile time
+							else if(returnType == typeof(UInt64))
 								return new ConstantExpression(Lib.Mingle32((uint)cleft.Value, (uint)cright.Value));
 							else
 								return new ConstantExpression((ulong)Lib.Mingle(cleft.Value, cright.Value));
 						case "~":
-							if(returnType == typeof(UInt64))
+							if(Left.ReturnType == typeof(UInt128))
+								break; // Cannot fold 128-bit select at compile time
+							else if(returnType == typeof(UInt64))
 								return new ConstantExpression(Lib.Select(cleft.Value, cright.Value));
 							else
 								return new ConstantExpression(Lib.Select((uint)cleft.Value, (uint)cright.Value));
@@ -626,7 +633,15 @@ namespace INTERCAL
 				{
 					case "$":
 					{
-						if(returnType == typeof(UInt64))
+						if(returnType == typeof(UInt128))
+						{
+							ctx.EmitRaw("Lib.Mingle64((ulong)(");
+							Left.Emit(ctx);
+							ctx.EmitRaw("), (ulong)(");
+							Right.Emit(ctx);
+							ctx.EmitRaw("))");
+						}
+						else if(returnType == typeof(UInt64))
 						{
 							ctx.EmitRaw("Lib.Mingle32((uint)(");
 							Left.Emit(ctx);
@@ -654,7 +669,15 @@ namespace INTERCAL
 
 					case "~":
 					{
-						if(returnType == typeof(UInt64))
+						if(Left.ReturnType == typeof(UInt128))
+						{
+							ctx.EmitRaw("Lib.Select128(");
+							Left.Emit(ctx);
+							ctx.EmitRaw(", (System.UInt128)(");
+							Right.Emit(ctx);
+							ctx.EmitRaw("))");
+						}
+						else if(returnType == typeof(UInt64))
 						{
 							ctx.EmitRaw("Lib.Select(");
 							Left.Emit(ctx);

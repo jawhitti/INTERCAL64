@@ -668,5 +668,87 @@ namespace intercal.tests
             var result = RotateArray16(InvertArray16(RotateArray16(InvertArray16(input))));
             Assert.Equal(input, result);
         }
+
+        // === Mingle64 / Select128: 128-bit ephemeral mingle ===
+
+        [Fact]
+        public void Mingle64_ZeroWithZero_ReturnsZero()
+        {
+            Assert.Equal((UInt128)0, Lib.Mingle64(0, 0));
+        }
+
+        [Fact]
+        public void Mingle64_OneWithZero_ReturnsTwo()
+        {
+            Assert.Equal((UInt128)2, Lib.Mingle64(1, 0));
+        }
+
+        [Fact]
+        public void Mingle64_ZeroWithOne_ReturnsOne()
+        {
+            Assert.Equal((UInt128)1, Lib.Mingle64(0, 1));
+        }
+
+        [Fact]
+        public void Mingle64_AllOnes_InterleavesCorrectly()
+        {
+            // Mingle(0xFFFFFFFFFFFFFFFF, 0) should set all odd bit positions
+            var result = Lib.Mingle64(ulong.MaxValue, 0);
+            // Check that even bits are 0, odd bits are 1
+            UInt128 oddMask = 0;
+            for (int i = 0; i < 64; i++)
+                oddMask |= (UInt128)1 << (2 * i + 1);
+            Assert.Equal(oddMask, result);
+        }
+
+        [Fact]
+        public void Select128_RecoverLeftOperand()
+        {
+            // Mingle then select with odd-bit mask should recover the left operand
+            ulong a = 12345;
+            ulong b = 67890;
+            var mingled = Lib.Mingle64(a, b);
+
+            // Build mask that selects odd bits (where 'a' bits live)
+            UInt128 oddMask = 0;
+            for (int i = 0; i < 64; i++)
+                oddMask |= (UInt128)1 << (2 * i + 1);
+
+            Assert.Equal(a, Lib.Select128(mingled, oddMask));
+        }
+
+        [Fact]
+        public void Select128_RecoverRightOperand()
+        {
+            ulong a = 12345;
+            ulong b = 67890;
+            var mingled = Lib.Mingle64(a, b);
+
+            // Build mask that selects even bits (where 'b' bits live)
+            UInt128 evenMask = 0;
+            for (int i = 0; i < 64; i++)
+                evenMask |= (UInt128)1 << (2 * i);
+
+            Assert.Equal(b, Lib.Select128(mingled, evenMask));
+        }
+
+        [Fact]
+        public void Mingle64Select128_Roundtrip_MaxValues()
+        {
+            ulong a = ulong.MaxValue;
+            ulong b = ulong.MaxValue;
+            var mingled = Lib.Mingle64(a, b);
+
+            UInt128 oddMask = 0;
+            UInt128 evenMask = 0;
+            for (int i = 0; i < 64; i++)
+            {
+                oddMask |= (UInt128)1 << (2 * i + 1);
+                evenMask |= (UInt128)1 << (2 * i);
+            }
+
+            Assert.Equal(a, Lib.Select128(mingled, oddMask));
+            Assert.Equal(b, Lib.Select128(mingled, evenMask));
+        }
     }
 }

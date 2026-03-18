@@ -948,6 +948,46 @@ namespace INTERCAL
                 return retval;
             }
 
+            // Mingle two 64-bit values into a 128-bit result.
+            // The 128-bit value is ephemeral — it must be immediately
+            // consumed by a select back down to 64-bit max.
+            public static UInt128 Mingle64(ulong men, ulong ladies)
+            {
+                UInt128 retval = 0;
+
+                for (int i = 63; i >= 0; i--)
+                {
+                    if ((men & (1UL << i)) != 0)
+                        retval |= (UInt128)1 << (2 * i + 1);
+
+                    if ((ladies & (1UL << i)) != 0)
+                        retval |= (UInt128)1 << (2 * i);
+                }
+
+                return retval;
+            }
+
+            // Select from a 128-bit value (produced by Mingle64).
+            // Result is always <= 64 bits since at most 64 bits can be
+            // selected from the 128-bit mask.
+            public static ulong Select128(UInt128 a, UInt128 b)
+            {
+                ulong retval = 0;
+                int bit = 0;
+
+                for (int i = 0; i < 128; i++)
+                {
+                    if ((b & ((UInt128)1 << i)) != 0)
+                    {
+                        if ((a & ((UInt128)1 << i)) != 0)
+                            retval |= (1UL << bit);
+                        bit++;
+                    }
+                }
+
+                return retval;
+            }
+
             public static uint Select(uint a, uint b)
             {
                 uint retval = 0;
