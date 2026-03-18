@@ -39,6 +39,16 @@
         "path": "./syntaxes/intercal.tmLanguage.json"
       }
     ],
+    "configuration": {
+      "title": "INTERCAL",
+      "properties": {
+        "intercal.projectRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the INTERCAL project root (containing intercal.dap/, cringe/, etc.). Auto-detected from workspace if empty."
+        }
+      }
+    },
     "debuggers": [
       {
         "type": "intercal",

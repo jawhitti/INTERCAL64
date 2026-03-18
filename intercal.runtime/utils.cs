@@ -593,6 +593,24 @@ namespace INTERCAL
                 return result;
             }
 
+            public Dictionary<string, string> GetAllBoxVariables()
+            {
+                var result = new Dictionary<string, string>();
+                foreach (var kvp in Variables)
+                {
+                    if (kvp.Value is BoxVariable bv)
+                    {
+                        if (!bv.QVal.Collapsed)
+                            result[kvp.Key] = "?";
+                        else if (bv.QVal.IsDead)
+                            result[kvp.Key] = "(dead)";
+                        else
+                            result[kvp.Key] = bv.QVal.Result.ToString();
+                    }
+                }
+                return result;
+            }
+
             #endregion
 
             #region control flow

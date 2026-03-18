@@ -321,6 +321,11 @@ namespace INTERCAL.Runtime
             {
                 vars[kvp.Key] = kvp.Value;
             }
+            // Include quantum box variables
+            foreach (var kvp in context.GetAllBoxVariables())
+            {
+                vars[kvp.Key] = kvp.Value;
+            }
             return vars;
         }
 
@@ -381,6 +386,10 @@ namespace INTERCAL.Runtime
                         });
                         break;
 
+                    case "collapseBox":
+                        HandleCollapseBox(cmd.RootElement, context);
+                        break;
+
                     case "disconnect":
                         Environment.Exit(0);
                         return;
@@ -413,6 +422,24 @@ namespace INTERCAL.Runtime
             }
 
             Send(new { @event = "breakpointsSet", success = true });
+        }
+
+        private void HandleCollapseBox(JsonElement root, ExecutionContext context)
+        {
+            var name = root.GetProperty("name").GetString()!;
+            try
+            {
+                context.CollapseBox(name);
+            }
+            catch
+            {
+                Send(new { @event = "collapseResult", boxes = new Dictionary<string, string>
+                    { { name, "(error)" } } });
+                return;
+            }
+
+            // Return ALL box variables — collapse propagates through entanglement
+            Send(new { @event = "collapseResult", boxes = context.GetAllBoxVariables() });
         }
 
         private void Send(object message)

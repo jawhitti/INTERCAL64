@@ -25,7 +25,7 @@ public class DebugAdapter
     private string _currentFile = "";
     private int _currentLine = 0;
     private string _currentStatement = "";
-    private Dictionary<string, ulong> _currentVariables = new();
+    private Dictionary<string, string> _currentVariables = new();
     private int[] _currentNextStack = Array.Empty<int>();
     // Gerund state: gerund name -> list of {slot, line, abstained}
     private Dictionary<string, List<GerundEntry>> _currentGerundState = new();
@@ -98,6 +98,9 @@ public class DebugAdapter
             case "pause":
                 HandlePause(request);
                 break;
+            case "setVariable":
+                HandleSetVariable(request);
+                break;
             case "disconnect":
                 HandleDisconnect(request);
                 break;
@@ -119,7 +122,7 @@ public class DebugAdapter
             supportsConditionalBreakpoints = false,
             supportsEvaluateForHovers = false,
             supportsStepBack = false,
-            supportsSetVariable = false,
+            supportsSetVariable = true,
             supportTerminateDebuggee = true,
         });
 
@@ -182,10 +185,10 @@ public class DebugAdapter
     private void CompileProgram()
     {
         var programDir = Path.GetDirectoryName(Path.GetFullPath(_programPath)) ?? ".";
-        var compilerArgs = $"{_programPath} /debug-dap:{_pipeName} /b";
+        var compilerArgs = $"{_programPath} -debug-dap:{_pipeName} -b";
 
         if (!string.IsNullOrEmpty(_syslibPath))
-            compilerArgs += $" /r:{_syslibPath}";
+            compilerArgs += $" -r:{_syslibPath}";
 
         SendEvent("output", new
         {
@@ -230,6 +233,17 @@ public class DebugAdapter
         if (!string.IsNullOrWhiteSpace(stdout))
         {
             SendEvent("output", new { category = "console", output = stdout });
+        }
+
+        // The compiler may return exit code 0 even when the inner dotnet build fails.
+        // Verify the expected output actually exists.
+        var expectedExe = Path.Combine(programDir,
+            Path.GetFileNameWithoutExtension(_programPath) + ".exe");
+        var expectedDll = Path.Combine(programDir,
+            Path.GetFileNameWithoutExtension(_programPath) + ".dll");
+        if (!File.Exists(expectedExe) && !File.Exists(expectedDll))
+        {
+            throw new Exception("Build produced no output. Check for compilation errors above.");
         }
     }
 
@@ -520,6 +534,64 @@ public class DebugAdapter
         SendResponse(request, body: new { variables });
     }
 
+    private void HandleSetVariable(DapRequest request)
+    {
+        if (!request.Arguments.HasValue)
+        {
+            SendResponse(request, success: false, message: "No arguments");
+            return;
+        }
+
+        var args = request.Arguments.Value;
+        var name = args.GetProperty("name").GetString()!;
+
+        // Is this a box variable? If so, collapse it — you opened the box.
+        if (name.StartsWith("[]"))
+        {
+            SendEvent("output", new
+            {
+                category = "console",
+                output = $">> You opened the box. Collapsing {name}...\n"
+            });
+
+            SendToDebuggee(new { command = "collapseBox", name });
+            var response = ReadFromDebuggeeSkippingOutput();
+
+            // Update all box variables — collapse propagates through entanglement
+            if (response != null)
+            {
+                var root = response.RootElement;
+                if (root.TryGetProperty("boxes", out var boxes))
+                {
+                    foreach (var prop in boxes.EnumerateObject())
+                        _currentVariables[prop.Name] = prop.Value.GetString()!;
+                }
+            }
+
+            var newValue = _currentVariables.GetValueOrDefault(name, "?");
+
+            SendResponse(request, body: new
+            {
+                value = newValue,
+                type = GetVariableType(name),
+                variablesReference = 0,
+            });
+
+            // Force VS Code to refresh the variables panel so entangled boxes update
+            SendEvent("stopped", new
+            {
+                reason = "step",
+                threadId = 1,
+                allThreadsStopped = true
+            });
+            return;
+        }
+
+        // Classical variables cannot be modified — this is INTERCAL
+        SendResponse(request, success: false,
+            message: "E180 OUR ADJUSTMENT BUREAU CANNOT HELP YOU WITH THAT");
+    }
+
     private void HandleContinue(DapRequest request)
     {
         SendResponse(request, body: new { allThreadsContinued = true });
@@ -614,7 +686,16 @@ public class DebugAdapter
         {
             _currentVariables.Clear();
             foreach (var prop in v.EnumerateObject())
-                _currentVariables[prop.Name] = prop.Value.GetUInt64();
+            {
+                if (prop.Value.ValueKind == JsonValueKind.String)
+                    _currentVariables[prop.Name] = prop.Value.GetString()!;
+                else
+                {
+                    var val = prop.Value.GetUInt64();
+                    _currentVariables[prop.Name] = val == 0x4445444B49545459
+                        ? "DEDKITTY" : val.ToString();
+                }
+            }
         }
         if (root.TryGetProperty("nextStack", out var ns))
             _currentNextStack = ns.EnumerateArray()
