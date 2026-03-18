@@ -74,6 +74,16 @@ namespace INTERCAL
 					retval = new BoxExpression(s);
 					break;
 
+				case "|":
+				case "-":
+					// Unary op on array: |,1 or -,1 or -|,1 etc.
+					if(s.PeekNext.Type == TokenType.Var || s.PeekNext.Type == TokenType.UnaryOp)
+					{
+						retval = new UnaryArrayExpression(s);
+						break;
+					}
+					throw new ParseException(String.Format("line {0}: Invalid expression {1}", s.LineNumber, s.Current.Value));
+
 				default:
 					throw new ParseException(String.Format("line {0}: Invalid expression {1}", s.LineNumber, s.Current.Value));
 			}
@@ -709,6 +719,62 @@ namespace INTERCAL
 		//evaluate it; instead it returns a string of dimensions.
 		//It's similar to an ArrayExpression, except that an
 		//ArrayExpression boils down to a value.
+
+		// Unary operation on a whole array: |,1 or -,1 or -|,1
+		// | = MirrorArray (reverse last axis + bit-invert)
+		// - = InvertArray (reverse first axis + bit-invert)
+		// Chained: -|,1 applies | first, then -
+		public class UnaryArrayExpression : Expression
+		{
+			List<string> ops = new List<string>();
+			string arrayName;
+
+			public UnaryArrayExpression(Scanner s)
+			{
+				// Collect chained unary ops
+				while(s.Current.Type == TokenType.UnaryOp &&
+					  (s.Current.Value == "|" || s.Current.Value == "-"))
+				{
+					ops.Add(s.Current.Value);
+					s.MoveNext();
+				}
+
+				// Now we should be on an array variable prefix
+				if(s.Current.Value != "," && s.Current.Value != ";" && s.Current.Value != ";;")
+					throw new ParseException(String.Format(
+						"line {0}: | and - on arrays require an array operand, got {1}",
+						s.LineNumber, s.Current.Value));
+
+				arrayName = s.Current.Value;
+				s.MoveNext();
+				arrayName += Statement.ReadGroupValue(s, "digits");
+
+				this.returnType = null; // array type, not scalar
+			}
+
+			public override ulong Evaluate(ExecutionContext ctx)
+			{
+				throw new CompilationException("Array unary ops cannot be evaluated as scalars");
+			}
+
+			public override void Emit(CompilationContext ctx)
+			{
+				// Emit nested calls: -|,1 becomes InvertArray(MirrorArray(GetArray(",1")))
+				foreach(string op in ops)
+				{
+					switch(op)
+					{
+						case "|": ctx.EmitRaw("Lib.MirrorArray("); break;
+						case "-": ctx.EmitRaw("Lib.InvertArray("); break;
+					}
+				}
+				ctx.EmitRaw("frame.ExecutionContext.GetArray(\"" + arrayName + "\")");
+				for(int i = 0; i < ops.Count; i++)
+					ctx.EmitRaw(")");
+			}
+
+			public string ArrayName => arrayName;
+		}
 
 		public class ReDimExpression : Expression
 		{

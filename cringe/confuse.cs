@@ -339,7 +339,9 @@ namespace INTERCAL
 				}
 
 				//Is this an array redimension expression?
-				if((destination.IsArray) && (!destination.Subscripted))
+				// (but not if RHS is a unary array op like |,1)
+				if((destination.IsArray) && (!destination.Subscripted)
+					&& !(expression is Expression.UnaryArrayExpression))
 				{
 					this.IsArrayRedimension = true;
 					expression = new Expression.ReDimExpression(s,expression);
@@ -376,6 +378,15 @@ namespace INTERCAL
 				if(destination.IsBox)
 				{
 					EmitBoxAssignment(ctx, lval);
+					return;
+				}
+
+				// Array unary op assignment: DO ,2 <- |,1 or DO ,2 <- -|,1
+				if(expression is Expression.UnaryArrayExpression uae)
+				{
+					ctx.EmitRaw("frame.ExecutionContext.SetArray(\"" + lval + "\", ");
+					uae.Emit(ctx);
+					ctx.EmitRaw(");\n");
 					return;
 				}
 

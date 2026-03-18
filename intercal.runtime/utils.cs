@@ -419,6 +419,9 @@ namespace INTERCAL
 
                 public ArrayVariable(ExecutionContext ctx, string name) : base(ctx, name) { }
 
+                public Array GetValues() { return values; }
+                public void SetValues(Array v) { values = v; }
+
                 public void ReDim(int[] subscripts)
                 {
                     int[] lbounds = new int[subscripts.Length];
@@ -689,6 +692,20 @@ namespace INTERCAL
             //Stash / Retrieve.  Hmm, is that convincing? Would there be 
             //harm in just giving clients an object reference? (which would
             //support stashing / retrieving)?
+            public Array GetArray(string var)
+            {
+                ArrayVariable v = GetVariable(var) as ArrayVariable;
+                if (v == null) Lib.Fail(Messages.E241);
+                return v.GetValues();
+            }
+
+            public void SetArray(string var, Array values)
+            {
+                ArrayVariable v = GetVariable(var) as ArrayVariable;
+                if (v == null) Lib.Fail(Messages.E241);
+                v.SetValues(values);
+            }
+
             public void ReDim(string var, int[] dimensions)
             {
                 ArrayVariable v = GetVariable(var) as ArrayVariable;
@@ -1160,6 +1177,96 @@ namespace INTERCAL
             public static uint Invert32(uint val) { return ~val; }
             public static ulong Invert64(ulong val) { return ~val; }
 
+            // Array Mirror (| stripper pole): reverse LAST axis + bit-invert all elements
+            // Horizontal spin 180. For a Rubik's cube, spin it around the vertical axis.
+            // 1D: reverse element order + invert. 2D: reverse columns + invert.
+            // ND: reverse innermost dimension + invert.
+            // Returns a new array.
+            public static Array MirrorArray(Array arr)
+            {
+                if (arr.Rank > 3)
+                    Fail("E4D1 ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER");
+                bool is64 = arr.GetType().GetElementType() == typeof(ulong);
+                Array result = (Array)arr.Clone();
+                int rank = arr.Rank;
+                int lastAxis = rank - 1;
+                int lastLo = arr.GetLowerBound(lastAxis);
+                int lastHi = arr.GetUpperBound(lastAxis);
+
+                ArrayForEach(arr, result, rank, (srcIdx, dstIdx) =>
+                {
+                    // Reverse the last axis index
+                    dstIdx[lastAxis] = lastLo + lastHi - srcIdx[lastAxis];
+                    var val = arr.GetValue(dstIdx);
+                    if (is64)
+                        result.SetValue(Invert64((ulong)val), srcIdx);
+                    else
+                        result.SetValue(Invert32((uint)val), srcIdx);
+                });
+                return result;
+            }
+
+            // Array Invert (- monkey bar): reverse FIRST axis + bit-invert all elements
+            // Vertical spin 180. For a Rubik's cube, flip it over.
+            // 1D: just bit-invert (no rows to flip). 2D: reverse rows + invert.
+            // ND: reverse outermost dimension + invert.
+            // Returns a new array.
+            public static Array InvertArray(Array arr)
+            {
+                if (arr.Rank > 3)
+                    Fail("E4D1 ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER");
+                bool is64 = arr.GetType().GetElementType() == typeof(ulong);
+                Array result = (Array)arr.Clone();
+                int rank = arr.Rank;
+                int firstLo = arr.GetLowerBound(0);
+                int firstHi = arr.GetUpperBound(0);
+
+                ArrayForEach(arr, result, rank, (srcIdx, dstIdx) =>
+                {
+                    // Reverse the first axis index (only if rank > 1)
+                    if (rank > 1)
+                        dstIdx[0] = firstLo + firstHi - srcIdx[0];
+                    var val = arr.GetValue(dstIdx);
+                    if (is64)
+                        result.SetValue(Invert64((ulong)val), srcIdx);
+                    else
+                        result.SetValue(Invert32((uint)val), srcIdx);
+                });
+                return result;
+            }
+
+            // Iterate over all indices of an N-dimensional array
+            private static void ArrayForEach(Array arr, Array result, int rank,
+                Action<int[], int[]> action)
+            {
+                int[] srcIdx = new int[rank];
+                int[] dstIdx = new int[rank];
+                int[] loBounds = new int[rank];
+                int[] hiBounds = new int[rank];
+                for (int d = 0; d < rank; d++)
+                {
+                    loBounds[d] = arr.GetLowerBound(d);
+                    hiBounds[d] = arr.GetUpperBound(d);
+                    srcIdx[d] = loBounds[d];
+                }
+
+                while (true)
+                {
+                    Array.Copy(srcIdx, dstIdx, rank);
+                    action(srcIdx, dstIdx);
+
+                    // Increment indices (rightmost first)
+                    int d = rank - 1;
+                    while (d >= 0)
+                    {
+                        srcIdx[d]++;
+                        if (srcIdx[d] <= hiBounds[d]) break;
+                        srcIdx[d] = loBounds[d];
+                        d--;
+                    }
+                    if (d < 0) break;
+                }
+            }
 
             public static int Rand(int n)
             {
