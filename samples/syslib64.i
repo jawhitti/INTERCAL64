@@ -593,8 +593,89 @@
 	DO RETRIEVE :1 + :5
 	PLEASE RESUME #2
 (4920558940556964665)	DO RESUME :5
-	PLEASE NOTE DIVIDE64: TODO
-*(4920558940556965428)	PLEASE NOTE THIS IS YET TO BE IMPLEMENTED
+	PLEASE NOTE DIVIDE64: ::1 / ::2 -> ::3 quotient, ::4 remainder
+	PLEASE NOTE Shift-and-subtract binary long division 64-bit
+	PLEASE NOTE by Jason Whittington and Claude Code
+	PLEASE NOTE Compare uses 32-bit halves since 128-bit unary ops
+	PLEASE NOTE do not exist (128-bit is mingle-only ephemeral)
+	PLEASE NOTE .5 used for all conditional RESUME via helper D64RES
+(4920558940556965428)	DO STASH ::1 + ::5 + :1 + :2
+	DO ::3 <- #0
+	PLEASE NOTE check if divisor is zero via OR of both halves
+	DO :1 <- ::2 ~ ##4294967295
+	DO :2 <- ::2 ~ ####18446744069414584320
+	DO :1 <- 'V:1$:2'~'##0$##4294967295'
+	DO .5 <- '?"':1~:1'~#1"$#1'~#3
+	PLEASE NOTE .5=1 zero(exit) .5=2 nonzero(continue past NEXT)
+	DO (4920558940556965424) NEXT
+	PLEASE NOTE D64SHFL: shift divisor left until high bit set
+	DO ::4 <- #1
+	DO (4920558940556965426) NEXT
+(4920558940556965426)	DO FORGET #1
+	DO :1 <- ::2 ~ ####18446744069414584320
+	DO .5 <- '?"':1~##2147483648'~#1"$#1'~#3
+	DO (4920558940556965425) NEXT
+	DO ::2 <- '::2$####0'~'####9223372036854775807$####1'
+	DO ::4 <- '::4$####0'~'####9223372036854775807$####1'
+	DO (4920558940556965426) NEXT
+(4920558940556965425)	DO (4920558940556965432) NEXT
+	PLEASE NOTE D64LOOP: main division loop
+(4920558940556965431)	PLEASE FORGET #1
+	PLEASE NOTE compare high 32-bit halves of ::1 and ::2
+	DO :1 <- ::1 ~ ####18446744069414584320
+	DO :2 <- ::2 ~ ####18446744069414584320
+	DO :5 <- '?:1$:2'~'##0$##4294967295'
+	DO .5 <- '?"'&"':2~:5'~'"?'?:5~:5'$##2147483648"~"##0$##4294967295"'"$":5~:5"'~#1"$#2'~#3
+	PLEASE NOTE .5=2 hi1>=hi2 .5=1 hi1<hi2(skip)
+	DO (4920558940556965433) NEXT
+	PLEASE NOTE hi1>=hi2 check if strictly equal
+	DO :5 <- '?:1$:2'~'##0$##4294967295'
+	DO .5 <- '?"':5~:5'~#1"$#1'~#3
+	PLEASE NOTE .5=2 not zero (hi1>hi2 do subtract) .5=1 zero (equal)
+	DO (4920558940556965427) NEXT
+	PLEASE NOTE hi equal: compare low 32-bit halves
+	DO :1 <- ::1 ~ ##4294967295
+	DO :2 <- ::2 ~ ##4294967295
+	DO :5 <- '?:1$:2'~'##0$##4294967295'
+	DO .5 <- '?"'&"':2~:5'~'"?'?:5~:5'$##2147483648"~"##0$##4294967295"'"$":5~:5"'~#1"$#2'~#3
+	PLEASE NOTE .5=2 lo1>=lo2(subtract) .5=1 lo1<lo2(skip)
+	DO (4920558940556965429) NEXT
+	PLEASE NOTE lo1>=lo2 do subtract
+	DO (4920558940556965435) NEXT
+(4920558940556965429)	DO (4920558940556965432) NEXT
+	PLEASE NOTE hi1>hi2 do subtract
+	DO (4920558940556965435) NEXT
+(4920558940556965427)	DO (4920558940556965432) NEXT
+	PLEASE NOTE hi1<hi2 skip subtract go to shift right
+(4920558940556965433)	DO (4920558940556965432) NEXT
+	DO (4920558940556965430) NEXT
+	PLEASE NOTE D64SUB: do subtract and set quotient bit
+(4920558940556965435)	DO FORGET #1
+	DO STASH ::3
+	DO (5569068542595576832) NEXT
+	DO ::1 <- ::3
+	DO RETRIEVE ::3
+	PLEASE NOTE quotient |= bit via ADD (bits never overlap)
+	DO STASH ::1 + ::2
+	DO ::1 <- ::3
+	DO ::2 <- ::4
+	DO (4702958910472978432) NEXT
+	DO RETRIEVE ::1 + ::2
+	PLEASE NOTE D64SHFR: shift divisor and bit marker right
+(4920558940556965430)	DO FORGET #1
+	DO :1 <- ::4 ~ ##4294967295
+	DO .5 <- "?':1~#1'$#2"~#3
+	DO (4920558940556965424) NEXT
+	DO ::2 <- ::2~####18446744073709551614
+	DO ::4 <- ::4~####18446744073709551614
+	DO (4920558940556965431) NEXT
+	PLEASE NOTE D64EXIT: done
+(4920558940556965424)	DO (4920558940556965432) NEXT
+	DO ::4 <- ::1
+	DO RETRIEVE ::1 + ::5 + :1 + :2
+	PLEASE RESUME #2
+	PLEASE NOTE D64RES: conditional resume helper
+(4920558940556965432)	DO RESUME .5
 
 	PLEASE NOTE PACK32: :1=high :2=low -> ::1 = (:1 << 32) | :2
 	PLEASE NOTE Same algorithm as (1520) but at 32-bit level
