@@ -39,6 +39,19 @@
         "path": "./syntaxes/intercal.tmLanguage.json"
       }
     ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "keyword.operator.quantum.bra.intercal",
+            "settings": {
+              "foreground": "#FF3333",
+              "fontStyle": "bold"
+            }
+          }
+        ]
+      }
+    },
     "snippets": [
       {
         "language": "intercal",

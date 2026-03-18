@@ -310,6 +310,10 @@ namespace INTERCAL
 			LValue destination;
 			Expression expression;
 			bool IsArrayRedimension = false;
+			// Chained assignments: DO []1 <- .1 <- #1
+			// chainedLValues holds the intermediate lvalues (e.g., [".1"])
+			List<LValue> chainedLValues = new List<LValue>();
+
 			public CalculateStatement(Scanner s)
 			{
 				destination = new LValue(s);
@@ -320,6 +324,22 @@ namespace INTERCAL
 
 				expression = Expression.CreateExpression(s);
 
+				// Check for chained assignment: if next token is <-
+				// then what we parsed as expression is actually an intermediate lvalue.
+				while(s.PeekNext.Type == TokenType.Statement && s.PeekNext.Value == "<-")
+				{
+					// The expression we just parsed is really an lvalue name
+					// Convert it: NumericExpression or BoxExpression -> lvalue string
+					string intermediateName = ExtractLValueName(expression);
+					if(intermediateName == null) break;
+
+					chainedLValues.Add(new LValue(intermediateName));
+
+					s.MoveNext(); // consume <-
+					s.MoveNext(); // move to next expression
+					expression = Expression.CreateExpression(s);
+				}
+
 				//Is this an array redimension expression?
 				if((destination.IsArray) && (!destination.Subscripted))
 				{
@@ -328,9 +348,29 @@ namespace INTERCAL
 				}
 
 			}
+
+			// Extract the variable name from a parsed expression so we can
+			// treat it as an lvalue in a chain.
+			private static string ExtractLValueName(Expression expr)
+			{
+				if(expr is Expression.NumericExpression ne)
+					return ne.VariableName;
+				if(expr is Expression.BoxExpression be)
+					return be.Name;
+				return null;
+			}
 			
 			public override void Emit(CompilationContext ctx)
 			{
+				// Chained assignment: DO []1 <- .1 <- #1
+				// Emit right-to-left: rightmost lvalue gets expression,
+				// then each lvalue gets the one to its right.
+				if(chainedLValues.Count > 0)
+				{
+					EmitChainedAssignment(ctx);
+					return;
+				}
+
 				string lval = destination.Name;
 				ctx.DebugVariables.Add(lval);
 
@@ -382,6 +422,59 @@ namespace INTERCAL
 					ctx.EmitRaw(");\n");
 				}
 
+			}
+
+			void EmitChainedAssignment(CompilationContext ctx)
+			{
+				// Chain: destination <- chain[0] <- chain[1] <- ... <- expression
+				// Emit right-to-left:
+				//   chain[last] = expression
+				//   chain[last-1] = chain[last]
+				//   ...
+				//   destination = chain[0]
+
+				// Build the full list: destination, then all chained lvalues
+				var allLValues = new List<LValue> { destination };
+				allLValues.AddRange(chainedLValues);
+
+				// Rightmost lvalue gets the expression
+				var rightmost = allLValues[allLValues.Count - 1];
+				if(rightmost.IsBox)
+				{
+					ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + rightmost.Name + "\", (ulong)(");
+					expression.Emit(ctx);
+					ctx.EmitRaw("));\n");
+				}
+				else
+				{
+					ctx.EmitRaw("frame.ExecutionContext[\"" + rightmost.Name + "\"] = ");
+					expression.Emit(ctx);
+					ctx.EmitRaw(";\n");
+				}
+				ctx.DebugVariables.Add(rightmost.Name);
+
+				// Chain right-to-left
+				for(int i = allLValues.Count - 2; i >= 0; i--)
+				{
+					var target = allLValues[i];
+					var source = allLValues[i + 1];
+					ctx.DebugVariables.Add(target.Name);
+
+					if(target.IsBox)
+					{
+						// Box gets scalar value from source
+						ctx.EmitRaw("frame.ExecutionContext.CreateBox(\"" + target.Name + "\", frame.ExecutionContext[\"" + source.Name + "\"]);\n");
+					}
+					else if(source.IsBox)
+					{
+						// Scalar gets collapsed box value
+						ctx.EmitRaw("frame.ExecutionContext[\"" + target.Name + "\"] = frame.ExecutionContext.CollapseBox(\"" + source.Name + "\");\n");
+					}
+					else
+					{
+						ctx.EmitRaw("frame.ExecutionContext[\"" + target.Name + "\"] = frame.ExecutionContext[\"" + source.Name + "\"];\n");
+					}
+				}
 			}
 
 			void EmitBoxAssignment(CompilationContext ctx, string lval)

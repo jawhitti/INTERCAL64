@@ -328,10 +328,11 @@ namespace INTERCAL
 		
 		//A numeric expression is an lvalue with an optional
 		//unary operation on the front.
-		class NumericExpression : Expression
+		public class NumericExpression : Expression
 		{
 			List<string> unary_ops = new List<string>();
 			string lval;
+			public string VariableName => lval;
 
 			public NumericExpression(Scanner s)
 			{
@@ -751,6 +752,12 @@ namespace INTERCAL
 		//Most lvals will not have subscripts, but
 		//arrays obviously do, so we track them in an list of expressions.
 		List<Expression> subscripts = null;
+
+		// Construct from a known variable name (for chained assignments)
+		public LValue(string varName)
+		{
+			VarName = varName;
+		}
 
 		public LValue(Scanner s)
 		{

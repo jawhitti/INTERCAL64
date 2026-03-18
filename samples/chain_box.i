@@ -1,0 +1,1 @@
+DO []1 <- .1 <- #42 PLEASE DO READ OUT .1 DO ::2 <- []1 DO READ OUT ::2 DO GIVE UP

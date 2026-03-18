@@ -139,7 +139,7 @@
       "name": "keyword.other.with.intercal"
     },
     "quantum-bra": {
-      "match": "[⟨<]\\d+\\|[ψ?][⟩>]",
+      "match": "[\u27E8<]\\d+[|][\u03C8?][\u27E9>]",
       "name": "keyword.operator.quantum.bra.intercal"
     }
   }
