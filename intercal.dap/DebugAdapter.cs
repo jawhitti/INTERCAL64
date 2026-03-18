@@ -13,6 +13,7 @@ public class DebugAdapter
 {
     private readonly DapTransport _transport;
     private int _seq = 1;
+    private readonly object _sendLock = new();
 
     // Debuggee state
     private Process? _process;
@@ -100,6 +101,9 @@ public class DebugAdapter
                 break;
             case "setVariable":
                 HandleSetVariable(request);
+                break;
+            case "evaluate":
+                HandleEvaluate(request);
                 break;
             case "disconnect":
                 HandleDisconnect(request);
@@ -190,8 +194,12 @@ public class DebugAdapter
         var exePath = Path.Combine(programDir, baseName + ".exe");
         var sourcePath = Path.GetFullPath(_programPath);
 
-        // Skip compilation if the exe exists and is newer than the source
-        if (File.Exists(exePath) &&
+        // Skip compilation if the exe exists, is newer than the source,
+        // and was built with debug hooks (contains our pipe name)
+        var tmpCs = Path.Combine(programDir, "~tmp.cs");
+        bool hasDebugHooks = File.Exists(tmpCs) &&
+            File.ReadAllText(tmpCs).Contains($"DebugHost.Initialize(\"{_pipeName}\")");
+        if (File.Exists(exePath) && hasDebugHooks &&
             File.GetLastWriteTimeUtc(exePath) > File.GetLastWriteTimeUtc(sourcePath))
         {
             SendEvent("output", new
@@ -608,32 +616,65 @@ public class DebugAdapter
             message: "E180 OUR ADJUSTMENT BUREAU CANNOT HELP YOU WITH THAT");
     }
 
+    private void HandleEvaluate(DapRequest request)
+    {
+        if (!request.Arguments.HasValue)
+        {
+            SendResponse(request);
+            return;
+        }
+
+        var args = request.Arguments.Value;
+        var expression = args.TryGetProperty("expression", out var expr)
+            ? expr.GetString() ?? "" : "";
+        var context = args.TryGetProperty("context", out var ctx)
+            ? ctx.GetString() ?? "" : "";
+
+        // In the "repl" context, forward input to the debuggee's stdin
+        if (context == "repl" && _process != null && !_process.HasExited)
+        {
+            try
+            {
+                _process.StandardInput.WriteLine(expression);
+                SendResponse(request, body: new { result = expression, variablesReference = 0 });
+            }
+            catch
+            {
+                SendResponse(request, success: false,
+                    message: "E579 INPUT FELL OFF THE END OF THE TAPE");
+            }
+            return;
+        }
+
+        SendResponse(request, body: new { result = "", variablesReference = 0 });
+    }
+
     private void HandleContinue(DapRequest request)
     {
         SendResponse(request, body: new { allThreadsContinued = true });
         SendToDebuggee(new { command = "continue" });
-        WaitForDebuggeeStop();
+        WaitForDebuggeeStopAsync();
     }
 
     private void HandleNext(DapRequest request)
     {
         SendResponse(request);
         SendToDebuggee(new { command = "next" });
-        WaitForDebuggeeStop();
+        WaitForDebuggeeStopAsync();
     }
 
     private void HandleStepIn(DapRequest request)
     {
         SendResponse(request);
         SendToDebuggee(new { command = "stepIn" });
-        WaitForDebuggeeStop();
+        WaitForDebuggeeStopAsync();
     }
 
     private void HandleStepOut(DapRequest request)
     {
         SendResponse(request);
         SendToDebuggee(new { command = "stepOut" });
-        WaitForDebuggeeStop();
+        WaitForDebuggeeStopAsync();
     }
 
     private void HandlePause(DapRequest request)
@@ -779,6 +820,17 @@ public class DebugAdapter
         }
     }
 
+    /// <summary>
+    /// Run WaitForDebuggeeStop on a background thread so the main DAP
+    /// message loop stays responsive. This allows evaluate requests
+    /// (debug console input for WRITE IN) to be processed while the
+    /// debuggee is running.
+    /// </summary>
+    private void WaitForDebuggeeStopAsync()
+    {
+        Task.Run(() => WaitForDebuggeeStop());
+    }
+
     private void WaitForDebuggeeStop()
     {
         while (true)
@@ -858,25 +910,31 @@ public class DebugAdapter
     private void SendResponse(DapRequest request, bool success = true,
         string? message = null, object? body = null)
     {
-        _transport.Send(new DapResponse
+        lock (_sendLock)
         {
-            Seq = _seq++,
-            RequestSeq = request.Seq,
-            Success = success,
-            Command = request.Command,
-            Message = message,
-            Body = body
-        });
+            _transport.Send(new DapResponse
+            {
+                Seq = _seq++,
+                RequestSeq = request.Seq,
+                Success = success,
+                Command = request.Command,
+                Message = message,
+                Body = body
+            });
+        }
     }
 
     private void SendEvent(string eventName, object? body = null)
     {
-        _transport.Send(new DapEvent
+        lock (_sendLock)
         {
-            Seq = _seq++,
-            Event = eventName,
-            Body = body
-        });
+            _transport.Send(new DapEvent
+            {
+                Seq = _seq++,
+                Event = eventName,
+                Body = body
+            });
+        }
     }
 
     #endregion
