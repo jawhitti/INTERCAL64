@@ -254,7 +254,19 @@ namespace INTERCAL
 				}
 				else if(s.Current.Type == TokenType.Label)
 				{
-					retval = new NextStatement(s);
+					// Check for quantum N-way NEXT: DO ⟨1|ψ⟩ (100) ⟨2|ψ⟩ (200) NEXT
+					// First thorn is already in boxGuard. If after the label
+					// there's another Bra token, collect all thorn+label pairs.
+					if(boxGuard != null && s.PeekNext.Type == TokenType.Bra)
+					{
+						retval = new QuantumNextStatement(s, boxGuard, boxGuardWimp);
+						boxGuard = null; // consumed by QuantumNextStatement
+						boxGuardWimp = false;
+					}
+					else
+					{
+						retval = new NextStatement(s);
+					}
 				}
 				else if(s.Current.Type == TokenType.Var)
 				{
@@ -613,7 +625,82 @@ namespace INTERCAL
             }
 		}
 
-		public class ForgetStatement : Statement
+		// Quantum N-way NEXT: DO ⟨1|ψ⟩ (100) ⟨2|ψ⟩ (200) ⟨3|ψ⟩ (300) NEXT
+	// First live thorn wins, its label is the NEXT target.
+	// All dead = skip entirely.
+	public class QuantumNextStatement : Statement
+	{
+		public List<(string boxGuard, string label, bool wimp)> Branches = new();
+		public List<int> ReturnLabelIds = new();
+
+		public QuantumNextStatement(Scanner s, string firstGuard, bool firstWimp)
+		{
+			// First branch: guard already parsed, label is current token
+			string firstLabel = ReadGroupValue(s, "label");
+			Branches.Add((firstGuard, firstLabel, firstWimp));
+
+			// Collect additional ⟨N|ψ⟩ (label) pairs
+			while (s.PeekNext.Type == TokenType.Bra)
+			{
+				s.MoveNext(); // move to Bra token
+				string braVal = s.Current.Value;
+				bool wimp = false;
+				if (braVal.StartsWith("!"))
+				{
+					Console.WriteLine("Warning: ({0}) W001 USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE (YOUR CODE WILL BE SLOWER)", s.LineNumber);
+					braVal = braVal.Substring(1);
+					wimp = true;
+				}
+				string guard = "[]" + braVal;
+
+				s.MoveNext(); // move to label
+				string label = ReadGroupValue(s, "label");
+				Branches.Add((guard, label, wimp));
+			}
+
+			// Expect NEXT
+			s.MoveNext();
+			VerifyToken(s, "NEXT");
+		}
+
+		public override void Emit(CompilationContext ctx)
+		{
+			// Emit chain of IsBoxAlive checks, first live wins
+			// Each branch gets its own return label for the goto
+			ctx.EmitRaw("#line hidden\r\n");
+
+			for (int i = 0; i < Branches.Count; i++)
+			{
+				var (guard, label, wimp) = Branches[i];
+
+				if (wimp)
+					ctx.EmitRaw("System.Threading.Thread.Sleep(50);\r\n");
+
+				// Look up target statement
+				var targets = ctx.program[label];
+				if (targets.Count() == 0)
+				{
+					ctx.Warn(Messages.E129 + label);
+					ctx.EmitRaw("Lib.Fail(Messages.E129 + \"" + label + "\");\r\n");
+					continue;
+				}
+
+				Statement target = targets.First() as Statement;
+				int retId = ++ctx.NextReturnLabelCounter;
+				ctx.NextReturnLabels.Add(retId);
+				ReturnLabelIds.Add(retId);
+
+				ctx.EmitRaw("if (frame.ExecutionContext.IsBoxAlive(\"" + guard + "\"))\r\n");
+				ctx.EmitRaw("{\r\n");
+				ctx.EmitRaw("   _nextStack.Push(" + retId + ");\r\n");
+				ctx.EmitRaw("   goto label_" + target.Label.Substring(1, target.Label.Length - 2) + ";\r\n");
+				ctx.EmitRaw("}\r\n");
+			}
+			// If all thorns are dead, fall through (skip)
+		}
+	}
+
+	public class ForgetStatement : Statement
 		{
 			Expression exp;
 

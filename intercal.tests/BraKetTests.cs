@@ -141,6 +141,29 @@ namespace intercal.tests
             Assert.Equal("[]2", p.Statements[6].BoxGuard);
         }
 
+        [Fact]
+        public void Parse_QuantumNWayNext()
+        {
+            var p = ParseSource(
+                "DO []1 <- #1\n" +
+                "DO []2 <- #2\n" +
+                "DO []3 <- #3\n" +
+                "PLEASE DO ENTANGLE []1 + []2 + []3\n" +
+                "DO \u27E81\u007C\u03C8\u27E9 (100) \u27E82\u007C\u03C8\u27E9 (200) \u27E83\u007C\u03C8\u27E9 (300) NEXT\n" +
+                "DO GIVE UP\n" +
+                "(100) DO GIVE UP\n" +
+                "(200) DO GIVE UP\n" +
+                "(300) DO GIVE UP\n");
+            Assert.Equal(9, p.StatementCount);
+            // The quantum NEXT should have 3 branches
+            var qns = p.Statements[4] as Statement.QuantumNextStatement;
+            Assert.NotNull(qns);
+            Assert.Equal(3, qns.Branches.Count);
+            Assert.Equal("[]1", qns.Branches[0].boxGuard);
+            Assert.Equal("[]2", qns.Branches[1].boxGuard);
+            Assert.Equal("[]3", qns.Branches[2].boxGuard);
+        }
+
         // === Runtime: IsBoxAlive ===
 
         [Fact]

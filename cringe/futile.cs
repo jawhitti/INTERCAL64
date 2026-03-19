@@ -889,6 +889,16 @@ namespace INTERCAL
                 c.EmitRaw("if (frame.ExecutionContext.Done) goto exit;\r\n");
             }
 
+            // Quantum N-way NEXT: emit return labels for all branches
+            if (s is Statement.QuantumNextStatement qns)
+            {
+                foreach (int retId in qns.ReturnLabelIds)
+                {
+                    c.EmitRaw("_ret_" + retId + ": ;\r\n");
+                    c.EmitRaw("if (frame.ExecutionContext.Done) goto exit;\r\n");
+                }
+            }
+
             //Now we handle COME FROM.  Note that even if the statement has
             //been ABSTAINED we still might fall through the trapdoor.  We have to
             //do this even for COME FROM statements in case someone is sick
