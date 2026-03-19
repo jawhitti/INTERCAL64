@@ -319,12 +319,12 @@ PLEASE DO READ OUT ::3
 DO GIVE UP
 ```
 
-### 7.2 Quantum Roulette (roulette4.i)
+### 7.2 Quantum Roulette (roulette5.schrodie)
 
-The following program implements a 38-pocket quantum roulette wheel. Thirty-eight cat boxes are created with values 0 through 37, entangled via a single ENTANGLE statement, and observed through thorns. Exactly one number is output per execution.
+The following program implements a 38-pocket quantum roulette wheel. Thirty-eight cat boxes are created with values 0 through 37, entangled via a single ENTANGLE statement, and dispatched through a single N-way thorn NEXT. The first live thorn's label fires. Exactly one number is output per execution.
 
 ```
-DO NOTE QUANTUM ROULETTE WITH CHAINED INIT
+DO NOTE QUANTUM ROULETTE WITH N-WAY THORN NEXT
 DO []1<-.1<-#0 DO []2<-.2<-#1 PLEASE DO []3<-.3<-#2 DO []4<-.4<-#3
 DO []5<-.5<-#4 DO []6<-.6<-#5 PLEASE DO []7<-.7<-#6 DO []8<-.8<-#7
 DO []9<-.9<-#8 DO []10<-.10<-#9 PLEASE DO []11<-.11<-#10 DO []12<-.12<-#11
@@ -342,23 +342,16 @@ DO ENTANGLE []1 + []2 + []3 + []4 + []5 + []6 + []7 + []8 +
         []30 + []31 + []32 + []33 + []34 + []35 + []36 +
         []37 + []38
 PLEASE DO NOTE SPIN THE WHEEL
-DO ⟨1|ψ⟩ READ OUT .1 DO ⟨2|ψ⟩ READ OUT .2 PLEASE DO ⟨3|ψ⟩ READ OUT .3
-DO ⟨4|ψ⟩ READ OUT .4 DO ⟨5|ψ⟩ READ OUT .5 DO ⟨6|ψ⟩ READ OUT .6
-PLEASE DO ⟨7|ψ⟩ READ OUT .7 DO ⟨8|ψ⟩ READ OUT .8 DO ⟨9|ψ⟩ READ OUT .9
-DO ⟨10|ψ⟩ READ OUT .10 PLEASE DO ⟨11|ψ⟩ READ OUT .11 DO ⟨12|ψ⟩ READ OUT .12
-DO ⟨13|ψ⟩ READ OUT .13 DO ⟨14|ψ⟩ READ OUT .14 PLEASE DO ⟨15|ψ⟩ READ OUT .15
-DO ⟨16|ψ⟩ READ OUT .16 DO ⟨17|ψ⟩ READ OUT .17 DO ⟨18|ψ⟩ READ OUT .18
-PLEASE DO ⟨19|ψ⟩ READ OUT .19 DO ⟨20|ψ⟩ READ OUT .20 DO ⟨21|ψ⟩ READ OUT .21
-DO ⟨22|ψ⟩ READ OUT .22 PLEASE DO ⟨23|ψ⟩ READ OUT .23 DO ⟨24|ψ⟩ READ OUT .24
-DO ⟨25|ψ⟩ READ OUT .25 DO ⟨26|ψ⟩ READ OUT .26 PLEASE DO ⟨27|ψ⟩ READ OUT .27
-DO ⟨28|ψ⟩ READ OUT .28 DO ⟨29|ψ⟩ READ OUT .29 DO ⟨30|ψ⟩ READ OUT .30
-PLEASE DO ⟨31|ψ⟩ READ OUT .31 DO ⟨32|ψ⟩ READ OUT .32 DO ⟨33|ψ⟩ READ OUT .33
-DO ⟨34|ψ⟩ READ OUT .34 PLEASE DO ⟨35|ψ⟩ READ OUT .35 DO ⟨36|ψ⟩ READ OUT .36
-DO ⟨37|ψ⟩ READ OUT .37 DO ⟨38|ψ⟩ READ OUT .38
-PLEASE GIVE UP
+DO ⟨1|ψ⟩ (100) ⟨2|ψ⟩ (101) ⟨3|ψ⟩ (102) ... ⟨38|ψ⟩ (137) NEXT
+DO GIVE UP
+(100) DO READ OUT .1 DO (999) NEXT
+(101) DO READ OUT .2 DO (999) NEXT
+...
+(137) DO READ OUT .38 PLEASE DO (999) NEXT
+(999) PLEASE GIVE UP
 ```
 
-The first thorn to be evaluated triggers the collapse of all 38 entangled boxes. Thirty-seven cats turn into voids and scatter. One remains. Its value is printed. The house always wins.
+The N-way thorn NEXT evaluates thorns left to right. The first live cat's label fires. Thirty-seven cats turn into voids and scatter. One remains. Its pocket pays out. The house always wins.
 
 ### 7.3 Pauly Shore's Algorithm (shores_algorithm.i)
 
