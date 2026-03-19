@@ -20,7 +20,7 @@ It has been over fifty years since the publication of the original INTERCAL refe
 
 This is a shame, because INTERCAL has elements that are already quantum-aligned. Woods and Lyon had vision that was not appreciated in 1973. INTERCAL is built around a mingle operator that puts two values into a sort of superposition and a select operator that collapses the superposition into a usable value. Superposition and measurement are fundamental properties of quantum mechanics. INTERCAL has been a quantum programming language for fifty years. No one noticed.
 
-This document describes a series of extensions to INTERCAL that build on those strengths. The resulting language brings INTERCAL into the modern era by introducing 64-bit variable types, quantum superposition primitives, and a control flow mechanism based on whether or not a cat is alive.
+This document describes a series of extensions to INTERCAL that build on those strengths. The resulting language brings INTERCAL into the modern era by introducing 64-bit variable types, quantum superposition primitives, and a control flow mechanism based on what happens to a cat when you open a box.
 
 The reader is advised that familiarity with the original INTERCAL reference manual is assumed throughout. Familiarity with quantum mechanics is not required, as it would not help.
 
@@ -54,9 +54,9 @@ The mechanism requires three primitives:
 
 1. **A source of quantum randomness.** We introduce the _cat box_ (`[]`), a variable that holds a value in quantum superposition. The value exists and does not exist simultaneously. Neither the programmer nor the runtime knows the value until it is observed.
 
-2. **A way to correlate outcomes.** We introduce the _ENTANGLE_ statement, which entangles two or more cat boxes. Once entangled, the cats share a fate: when any box in the group is observed, exactly one cat survives. All others die. The survivor is chosen by the universe uniformly at random.
+2. **A way to correlate outcomes.** We introduce the _ENTANGLE_ statement, which entangles two or more cat boxes. Once entangled, the cats share a fate: when any box in the group is observed, exactly one cat remains as it was. All others turn into voids — black cats — and immediately run away. Which cat remains is chosen by the universe uniformly at random.
 
-3. **A way to measure the result and act on it.** We introduce the _thorn_ (`⟨N|ψ⟩`), a statement guard that observes a cat box. If the cat is alive, the statement executes. If the cat is dead, the statement is skipped. The thorn is a quantum ABSTAIN.
+3. **A way to measure the result and act on it.** We introduce the _thorn_ (`⟨N|ψ⟩`), a statement guard that observes a cat box. If the cat is still there, the statement executes. If the cat has turned into a void and run away, the statement is skipped. The thorn is a quantum ABSTAIN.
 
 These three primitives compose. The following program creates two possible control paths and lets the universe choose which one executes:
 
@@ -69,9 +69,9 @@ DO ⟨2|ψ⟩ READ OUT .2
 PLEASE GIVE UP
 ```
 
-This program outputs either `1` or `2`, never both, never neither. The choice is made at the moment the first thorn is evaluated. At that instant the entangled superposition collapses, one cat lives, one cat dies, and the program's control flow is determined. The programmer has no influence over the outcome. This is by design.
+This program outputs either `1` or `2`, never both, never neither. The choice is made at the moment the first thorn is evaluated. At that instant the entangled superposition collapses: one cat remains as it was, the other turns into a void — a black cat — and immediately runs away. The program's control flow is determined. The programmer has no influence over the outcome. This is by design.
 
-The mechanism scales. The quantum roulette program (Section 6.2) creates 38 entangled cat boxes and uses 38 thorns to implement a roulette wheel. One pocket fires per spin. Thirty-seven cats die. The house always wins.
+The mechanism scales. The quantum roulette program (Section 6.2) creates 38 entangled cat boxes and uses 38 thorns to implement a roulette wheel. One pocket fires per spin. Thirty-seven cats turn into voids and scatter. One remains. The house always wins.
 
 ## 3. CHARACTER SET EXTENSIONS
 
@@ -113,11 +113,11 @@ All classic INTERCAL variable types are supported along with two new ones:
 
 The quantum dot (`.`) replaces spot (`.`) as the indicator for variable declarations. Single-dot (`.`) and double-dotted (`:`) variables replace their classic INTERCAL equivalents and the new type double cateye extends the existing quantum dot (`.`, 16-bit) and double dot (`:`, 32-bit) series to 64-bit precision. It is so named because it consists of two double dots, and two twos is four.
 
-The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes VOID, a 64-bit sentinel). Which outcome occurs is determined by the universe.
+The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat either remains (the value is preserved) or turns into a void — a black cat — and runs away (the value becomes VOID, a 64-bit sentinel). Which outcome occurs is determined by the universe.
 
 #### Reserved value
 
-The value UINT64_MAX (18446744073709551615, or `####18446744073709551615`) is reserved as the VOID sentinel. When a cat box collapses and the cat does not survive, its value becomes VOID. The mechanism by which the cat box transforms a cat into a void cat is not well understood. What is known is that a void cat is not an absent cat — it is a cat that has been fundamentally changed by the act of observation. It immediately runs away and cannot be retrieved. This value was chosen because selecting from VOID with any mask produces all 1s in the selected positions, making it straightforward to detect in expressions. The name VOID is reserved and may be used in programs to refer to this value. The value 0 remains available for general use.
+The value UINT64_MAX (18446744073709551615, or `####18446744073709551615`) is reserved as the VOID sentinel. When the quantum superposition collapses and the cat does not remain, it turns into a void — a black cat — and immediately runs away. The mechanism by which observation transforms a cat into a void is not well understood. What is known is that a void is not an absent cat. It is the same cat, transformed. It cannot be retrieved. Where the voids go is a matter of ongoing research. This value was chosen because selecting from VOID with any mask produces all 1s in the selected positions, making it straightforward to detect in expressions. The name VOID is reserved and may be used in programs to refer to this value. The value 0 remains available for general use.
 
 ### 4.2 Constants
 
@@ -210,7 +210,7 @@ All original INTERCAL statements are retained without modification. The programm
 
 ### 6.2 ENTANGLE
 
-The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become VOID.
+The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group remains. All others turn into voids and run away.
 
 Syntax:
 
@@ -229,7 +229,7 @@ The cat box is fundamental to quantum programs as the source of randomness.
 
     DO []1 <- .1
 
-Creates a cat box containing the value stored in `.1` in quantum superposition. The cat is alive and holds the passed value. It is probably angry to be in a box. The cat box can hold any scalar value.
+Creates a cat box containing the value stored in `.1` in quantum superposition. The cat holds the passed value. It is probably angry to be in a box. The cat box can hold any scalar value.
 
 **Chained initialization:**
 
@@ -253,7 +253,7 @@ DO .2 <- []1
 PLEASE DO NOTE .2 CONTAINS EITHER 19 OR VOID
 ```
 
-The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.2` receives the box's value. If the cat is dead, `.2` receives VOID. The box retains whichever state was observed.
+The superposition is destroyed in line 2 by the `<-` operator. If the cat remains, `.2` receives the box's value. If the cat has turned into a void, `.2` receives VOID. The box retains whichever state was observed.
 
 ### 6.4 The Thorn
 
@@ -261,7 +261,7 @@ The thorn is the mechanism by which quantum superposition affects control flow (
 
     DO ⟨5|ψ⟩ READ OUT .1
 
-The thorn `⟨5|ψ⟩` observes cat box 5 at the time of statement execution. If the cat box is entangled with other cats the superposition collapses. If the cat is alive, the thorn opens and the statement executes. If the cat is dead, the thorn stays closed. The statement is skipped, as if it had been abstained from by the universe itself.
+The thorn `⟨5|ψ⟩` observes cat box 5 at the time of statement execution. If the cat box is entangled with other cats the superposition collapses. If the cat remains, the thorn opens and the statement executes. If the cat has turned into a void, the thorn stays closed. The statement is skipped, as if it had been abstained from by the universe itself.
 
 The thorn is named after Erwin Schrodinger, whose famous thought experiment involving a cat in a box is the direct inspiration for the cat box variable type. That the notation also resembles Dirac's bra-ket notation (Dirac, 1939) is a happy coincidence. The full form consists of five characters:
 
@@ -349,7 +349,7 @@ DO ⟨37|ψ⟩ READ OUT .37 DO ⟨38|ψ⟩ READ OUT .38
 PLEASE GIVE UP
 ```
 
-The first thorn to be evaluated triggers the collapse of all 38 entangled boxes. Thirty-seven cats die. One survives. Its value is printed. The house always wins.
+The first thorn to be evaluated triggers the collapse of all 38 entangled boxes. Thirty-seven cats turn into voids and scatter. One remains. Its value is printed. The house always wins.
 
 ### 7.3 Pauly Shore's Algorithm (shores_algorithm.i)
 
@@ -361,7 +361,7 @@ The following error messages have been added:
 
 | Code | Message | Cause |
 |------|---------|-------|
-| E2007 | THE CAT IS DEAD | A cat box was observed and the cat did not survive |
+| E2007 | THE CAT IS VOID | A cat box was observed and the cat turned into a void |
 | E2010 | THE CAT IS BOTH DEAD AND A DIFFERENT SIZE | Type mismatch in quantum superposition |
 | E4D1 | ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER | Array involution on rank > 3 |
 | W001 | USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE | Wimpmode thorn detected |
