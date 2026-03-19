@@ -361,12 +361,11 @@ The following error messages have been added:
 
 | Code | Message | Cause |
 |------|---------|-------|
-| E2007 | THE CAT IS VOID | A cat box was observed and the cat turned into a void |
-| E2010 | THE CAT IS BOTH DEAD AND A DIFFERENT SIZE | Type mismatch in quantum superposition |
+| E2010 | CAT IS TOO FAT | A void (UINT64_MAX) was assigned to a variable too narrow to hold it |
 | E4D1 | ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER | Array involution on rank > 3 |
 | W001 | USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE | Wimpmode thorn detected |
 
-The error code E2007 was chosen because 2007 is the year of the first experimental demonstration of quantum entanglement at a distance exceeding 100 kilometers (Ursin et al., 2007). It is also a prime number, which is not relevant but is the sort of thing one mentions in academic papers.
+The error code E2010 is thrown when a void cat (UINT64_MAX) is assigned to a variable that cannot hold it, such as a 16-bit quantum dot or a 32-bit double dot. The cat is simply too fat for the box. The programmer is advised to use a wider variable or to accept that not all cats can fit everywhere.
 
 ## 9. SYSTEM LIBRARY
 

@@ -116,9 +116,9 @@ namespace INTERCAL
 
             //The following error messages are specific to quantum box (cat box) operations
             /* Hunger counter hit 0 (starvation) or 11 (obesity) — you'll never know which */
-            public const string E2007 = "E2007 THE CAT IS VOID";
+
             /* Mismatched types in double-worm (=) operator */
-            public const string E2010 = "E2010 THE CAT IS BOTH DEAD AND A DIFFERENT SIZE";
+            public const string E2010 = "E2010 CAT IS TOO FAT";
             /* Superposition exceeded 99 values */
             public const string E2012 = "E2012 THE CAT HAS POOPED IN THE BOX";
 
