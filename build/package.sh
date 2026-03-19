@@ -82,7 +82,7 @@ fi
 cd "$ROOT"
 
 # 6. Copy docs
-cp "$ROOT/doc/quantum-intercal.md" "$OUT/"
+cp "$ROOT/doc/schrodie.md" "$OUT/"
 cp "$ROOT/doc/debugger-install.md" "$OUT/"
 
 # 7. Create install script

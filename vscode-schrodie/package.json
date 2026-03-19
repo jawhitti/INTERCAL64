@@ -37,7 +37,7 @@
       {
         "language": "intercal",
         "scopeName": "source.intercal",
-        "path": "./syntaxes/intercal.tmLanguage.json"
+        "path": "./syntaxes/schrodie.tmLanguage.json"
       }
     ],
     "configurationDefaults": {
@@ -56,7 +56,7 @@
     "snippets": [
       {
         "language": "intercal",
-        "path": "./snippets/intercal.json"
+        "path": "./snippets/schrodie.json"
       }
     ],
     "configuration": {

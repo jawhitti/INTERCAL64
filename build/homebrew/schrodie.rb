@@ -24,7 +24,7 @@ class Schrodie < Formula
     # Copy runtime and syslib to samples so they compile out of the box
     cp lib/"schrodie.runtime.dll", share/"schrodie/samples/"
     cp lib/"syslib64.dll", share/"schrodie/samples/"
-    doc.install "quantum-intercal.md"
+    doc.install "schrodie.md"
     doc.install "debugger-install.md"
   end
 
