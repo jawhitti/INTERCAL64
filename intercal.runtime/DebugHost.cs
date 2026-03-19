@@ -44,7 +44,7 @@ namespace INTERCAL.Runtime
         private readonly Dictionary<string, Dictionary<int, (int comeFromLine, int abstainSlot)>> _comeFromTargets = new();
 
         // Abstain tracking: reference to the generated abstainMap array
-        private bool[] _abstainMap;
+        private bool[]? _abstainMap;
         // Maps abstain slot -> (source line, gerund name)
         private readonly Dictionary<int, (int line, string gerund)> _abstainSlots = new();
 
@@ -165,7 +165,7 @@ namespace INTERCAL.Runtime
         /// Check if a statement at the given abstain slot is currently abstained.
         /// Returns the gerund name if abstained, null otherwise.
         /// </summary>
-        public string IsAbstained(int abstainSlot)
+        public string? IsAbstained(int abstainSlot)
         {
             if (abstainSlot >= 0 && _abstainMap != null &&
                 abstainSlot < _abstainMap.Length && !_abstainMap[abstainSlot])
