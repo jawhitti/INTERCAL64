@@ -29,6 +29,7 @@ public class DebugAdapter
     private Dictionary<string, string> _currentVariables = new();
     private int[] _currentNextStack = Array.Empty<int>();
     private bool _depthWarningFired = false;
+    private Dictionary<string, string> _previousVariables = new();
     // Gerund state: gerund name -> list of {slot, line, abstained}
     private Dictionary<string, List<GerundEntry>> _currentGerundState = new();
     private Dictionary<string, List<GerundEntry>> _previousGerundState = new();
@@ -907,6 +908,29 @@ public class DebugAdapter
                 SendEvent("output", new { category = "console",
                     output = $">> {Snark.GetSkippedCommentary()}\n" });
         }
+
+        // Detect quantum collapse: any box went from ? to a value or VOID
+        int collapseCount = 0;
+        int voidCount = 0;
+        foreach (var kvp in _currentVariables)
+        {
+            if (kvp.Key.StartsWith("[]"))
+            {
+                _previousVariables.TryGetValue(kvp.Key, out var prev);
+                if (prev == "?" && kvp.Value != "?")
+                {
+                    collapseCount++;
+                    if (kvp.Value == "VOID") voidCount++;
+                }
+            }
+        }
+        if (collapseCount > 0)
+        {
+            if (voidCount > 0 && Snark.ShouldComment())
+                SendEvent("output", new { category = "console",
+                    output = $">> {Snark.GetThornVoidCommentary()}\n" });
+        }
+        _previousVariables = new Dictionary<string, string>(_currentVariables);
 
         SendEvent("stopped", new
         {
