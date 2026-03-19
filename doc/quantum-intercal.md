@@ -381,19 +381,101 @@ The following error messages have been added:
 
 The error code E2007 was chosen because 2007 is the year of the first experimental demonstration of quantum entanglement at a distance exceeding 100 kilometers (Ursin et al., 2007). It is also a prime number, which is not relevant but is the sort of thing one mentions in academic papers.
 
-## 7. SYSTEM LIBRARY EXTENSIONS
+## 7. SYSTEM LIBRARY
 
-The INTERCAL system library has been extended with 64-bit arithmetic routines. All routines are implemented in pure INTERCAL. Routine labels follow the ASCII encoding convention: the label is the 8-character routine name interpreted as a big-endian 64-bit integer.
+The system library (`syslib64.i`) provides arithmetic routines at 16-bit, 32-bit, and 64-bit widths. All routines are implemented in pure INTERCAL.
 
-| Routine | Label | Description |
-|---------|-------|-------------|
-| ADD64 | 4702958910472978432 | 64-bit addition: ::3 = ::1 + ::2 |
-| MINUS64 | 5569068542595576832 | 64-bit subtraction: ::3 = ::1 - ::2 |
-| TIMES64 | 6073470532629967872 | 64-bit multiplication: ::3 = ::1 * ::2 |
-| RANDOM32 | 5927104639891485490 | 32-bit random (mingles two RANDOM16) |
-| RANDOM64 | 5927104639891486260 | 64-bit random (mingles two RANDOM32) |
+Routines may be called by their numeric label or by their ASCII name label. ASCII name labels are computed by interpreting the routine name as an 8-character big-endian 64-bit integer. For example, the label for ADD16 is the integer whose bytes are `A`, `D`, `D`, `1`, `6`, `\0`, `\0`, `\0` = 4702958889031696384. The programmer who finds this inconvenient is reminded that convenience has never been a design goal.
 
-Division and modulo at 32-bit and 64-bit widths are under development and are expected to be completed before or after the heat death of the universe.
+### 7.1 16-Bit Arithmetic
+
+Operands in `.1` and `.2`. Result in `.3`. Overflow indicator in `.4`.
+
+| Label | Name | Description |
+|-------|------|-------------|
+| (1000) | ADD16 | .3 = .1 + .2 (no overflow check) |
+| (1009) | | .3 = .1 + .2 (with overflow check) |
+| (1010) | MINUS16 | .3 = .1 - .2 |
+| (1020) | | .3 = .1 * .2 (low 16 bits) |
+| (1030) | DIVIDE16 | .3 = .1 / .2, .4 = .1 mod .2 |
+| (1040) | TIMES16 | :3 = .1 * .2 (full 32-bit result) |
+| (1050) | MODULO16 | .3 = .1 mod .2 |
+
+### 7.2 32-Bit Arithmetic
+
+Operands in `:1` and `:2`. Result in `:3`. Overflow indicator in `:4`.
+
+| Label | Name | Description |
+|-------|------|-------------|
+| (1500) | ADD32 | :3 = :1 + :2 (no overflow check) |
+| (1509) | | :3 = :1 + :2 (with overflow check) |
+| (1510) | MINUS32 | :3 = :1 - :2 |
+| (1520) | | :1 = .1 $ .2 (mingle 16-bit to 32-bit) |
+| (1530) | | :1 = .1 / .2 (16-bit divide, 32-bit result) |
+| (1540) | TIMES32 | :3 = :1 * :2 (low 32 bits), :4 = high 32 bits |
+
+### 7.3 64-Bit Arithmetic
+
+Operands in `::1` and `::2`. Result in `::3`.
+
+| Label | Name | Description |
+|-------|------|-------------|
+| 4702958910472978432 | ADD64 | ::3 = ::1 + ::2 |
+| 5569068542595576832 | MINUS64 | ::3 = ::1 - ::2 |
+| 6073470532629967872 | TIMES64 | ::3 = ::1 * ::2 |
+
+Division and modulo at 64-bit width are under development. A complete implementation exists for 32-bit:
+
+### 7.4 Division and Modulo
+
+| Label | Name | Operands | Result |
+|-------|------|----------|--------|
+| (1030) | DIVIDE16 | .1, .2 | .3 = quotient, .4 = remainder |
+| (1050) | MODULO16 | .1, .2 | .3 = remainder |
+| 4920558940556964658 | DIVIDE32 | :1, :2 | :3 = quotient, :4 = remainder |
+| 5570746397223760690 | MODULO32 | :1, :2 | :3 = remainder |
+| 5570746397223761460 | MODULO64 | ::1, ::2 | ::3 = remainder (pending DIVIDE64) |
+
+### 7.5 Random Number Generation
+
+| Label | Name | Result |
+|-------|------|--------|
+| (1900) | RANDOM16 | .1 = random 16-bit value |
+| (1910) | | .2 = random value in range [0, .3) |
+| 5927104639891485490 | RANDOM32 | :1 = random 32-bit value (mingles two RANDOM16) |
+| 5927104639891486260 | RANDOM64 | ::1 = random 64-bit value (mingles two RANDOM32) |
+
+### 7.6 Named Entry Points
+
+The following table lists all named (ASCII label) entry points. These are wrappers around the numeric-label routines and may be used interchangeably.
+
+| Name | Label | Wraps |
+|------|-------|-------|
+| ADD16 | 4702958889031696384 | (1000) |
+| ADD32 | 4702958897554522112 | (1500) |
+| ADD64 | 4702958910472978432 | native |
+| MINUS16 | 5569068542595249664 | (1010) |
+| MINUS32 | 5569068542595379712 | (1510) |
+| MINUS64 | 5569068542595576832 | native |
+| TIMES16 | 6073470532629640704 | (1040) |
+| TIMES32 | 6073470532629770752 | (1540) |
+| TIMES64 | 6073470532629967872 | native |
+| DIVIDE16 | 4920558940556964150 | (1030) |
+| DIVIDE32 | 4920558940556964658 | native |
+| MODULO16 | 5570746397223760182 | (1050) |
+| MODULO32 | 5570746397223760690 | DIVIDE32 |
+| MODULO64 | 5570746397223761460 | DIVIDE64 (pending) |
+| RANDOM16 | 5927104639891484982 | (1900) |
+| RANDOM32 | 5927104639891485490 | native |
+| RANDOM64 | 5927104639891486260 | native |
+
+### 7.7 Overflow Handling
+
+The label (1999) is the overflow handler. It is abstained from by default when calling through (1000) or (1500), and reinstated upon return. Programs that call (1009) or (1509) directly will receive overflow errors via (1999) if the result exceeds the operand width. The error message is:
+
+    (1999) DOUBLE OR SINGLE PRECISION OVERFLOW
+
+The programmer who encounters this error is encouraged to use wider variables.
 
 
 ## REFERENCES
