@@ -10,9 +10,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-14        # ARM64 runner
+          - os: macos-14
             rid: osx-arm64
-          - os: macos-13        # x64 runner
+          - os: macos-14
             rid: osx-x64
           - os: windows-latest
             rid: win-x64
@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Build package
         run: bash build/package.sh ${{ matrix.rid }} ${{ github.ref_name }}
@@ -36,8 +36,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: intercal-${{ matrix.rid }}
-          path: dist/intercal-*
+          name: schrodie-${{ matrix.rid }}
+          path: dist/schrodie-*
 
   release:
     needs: build
