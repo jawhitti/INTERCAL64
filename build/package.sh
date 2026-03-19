@@ -41,7 +41,7 @@ dotnet publish "$ROOT/intercal.dap/intercal.dap.csproj" \
 echo "--- Building syslib64 ---"
 cd "$ROOT/samples"
 dotnet run --project "$ROOT/cringe/cringe.csproj" -- \
-    syslib64.i -b -t:library -noplease
+    syslib64.schrodie -b -t:library -noplease
 cp syslib64.dll "$OUT/lib/"
 cp intercal.runtime.dll "$OUT/lib/"
 cd "$ROOT"
@@ -52,16 +52,16 @@ SAMPLES=(
     hello.i
     fizzbuzz.i
     collatz.i
-    fourspot.i
-    mingle64.i
-    test_quantum.i
-    eve.i
-    hello_schrodie.i
-    alice_bob.i
-    quantum_next.i
-    roulette4.i
-    roulette5.i
-    shores_algorithm.i
+    fourspot.schrodie
+    mingle64.schrodie
+    test_quantum.schrodie
+    eve.schrodie
+    hello_schrodie.schrodie
+    alice_bob.schrodie
+    quantum_next.schrodie
+    roulette4.schrodie
+    roulette5.schrodie
+    shores_algorithm.schrodie
 )
 for f in "${SAMPLES[@]}"; do
     cp "$ROOT/samples/$f" "$OUT/samples/"
