@@ -38,11 +38,20 @@ Whittington (2019) produced CRINGE (Common Runtime INTERCAL Next-Generation Engi
 
 Several other implementations exist, including J-INTERCAL (targeting the JVM), POGA-INTERCAL, OrthINTERCAL, and at least one attempt at an LLVM backend. A comprehensive survey is beyond the scope of this paper and, frankly, beyond the scope of our funding, which is zero.
 
-### 1.3 Backwards Compatibility
+### 1.3 Backwards Compatibility and File Extensions
 
-The extensions described in this document are fully backwards compatible with all prior INTERCAL programs. No existing syntax has been modified or removed. Programs written for INTERCAL-72, C-INTERCAL, or any prior CRINGE release will compile and execute without modification.
+schrodie is fully backwards compatible with all prior INTERCAL programs. No existing syntax has been modified or removed. Programs written for INTERCAL-72, C-INTERCAL, or any prior CRINGE release will compile and execute without modification.
 
 We are in the unusual position of being able to verify this claim against substantially all INTERCAL code ever written. The total corpus of known INTERCAL programs is modest. We have tested against it. Everything works, except for the programs that did not work before, which continue not to work in exactly the same way.
+
+The schrodie compiler accepts two file extensions:
+
+| Extension | Usage |
+|-----------|-------|
+| `.i` | Classic INTERCAL source files. All existing programs use this extension. |
+| `.schrodie` | schrodie source files. Recommended for new programs that use quantum features. |
+
+The two extensions are functionally identical to the compiler. However, programs that use any schrodie features — cat boxes, thorns, ENTANGLE, 64-bit variables, involution operators, or chained initialization — must use the `.schrodie` extension. The `.i` extension is reserved for programs that use no schrodie features whatsoever, which at this point is unlikely.
 
 ## 2. OVERVIEW: NONDETERMINISTIC CONTROL FLOW
 
