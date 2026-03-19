@@ -509,7 +509,6 @@ public class DebugAdapter
     //   100+ = individual gerund entries (gerund name -> stable ref)
     private readonly Dictionary<string, int> _gerundNameToRef = new();
     private readonly Dictionary<int, string> _gerundRefMap = new();
-    private int _nextGerundRef = 100;
 
     private void HandleVariables(DapRequest request)
     {

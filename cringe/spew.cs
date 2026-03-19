@@ -542,7 +542,7 @@ namespace INTERCAL
         private static string TryFindFile(string path)
         {
             if (File.Exists(path)) return path;
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var baseDir = AppContext.BaseDirectory;
             var srcPath = Path.Combine(baseDir, path);
             if (File.Exists(srcPath)) return srcPath;
             return null;
@@ -556,7 +556,7 @@ namespace INTERCAL
             }
             else
             {
-                var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var baseDir = AppContext.BaseDirectory;
                 var srcPath = Path.Combine(baseDir, path);
                 if (File.Exists(srcPath))
                 {
