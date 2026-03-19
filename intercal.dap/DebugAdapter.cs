@@ -843,10 +843,6 @@ public class DebugAdapter
                 SendEvent("output", new { category = "console",
                     output = ">> ARE YOU CERTAIN WHATEVER YOU ARE DOING IS WORTH IT\n" });
             }
-            else if (_currentNextStack.Length < 10)
-            {
-                _depthWarningFired = false;
-            }
         }
         if (root.TryGetProperty("gerundState", out var gs))
         {
