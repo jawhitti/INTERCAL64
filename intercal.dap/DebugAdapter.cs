@@ -130,6 +130,7 @@ public class DebugAdapter
             supportsEvaluateForHovers = true,
             supportsStepBack = false,
             supportsSetVariable = true,
+            supportsGotoTargetsRequest = false,
             supportTerminateDebuggee = true,
         });
 
