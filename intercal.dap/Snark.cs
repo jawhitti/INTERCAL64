@@ -138,6 +138,7 @@ public static class Snark
             return Pick(_complex);
     }
 
+    public static bool ShouldComment() => _rng.Next(10) == 0;
     public static string GetErrorCommentary() => Pick(_error);
     public static string GetUninitializedCommentary() => Pick(_uninitialized);
 

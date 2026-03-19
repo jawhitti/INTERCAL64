@@ -684,9 +684,12 @@ public class DebugAdapter
             {
                 if (ex.Message.Contains("E200"))
                 {
-                    var commentary = Snark.GetUninitializedCommentary();
-                    SendEvent("output", new { category = "console",
-                        output = $">> {commentary}\n" });
+                    if (Snark.ShouldComment())
+                    {
+                        var commentary = Snark.GetUninitializedCommentary();
+                        SendEvent("output", new { category = "console",
+                            output = $">> {commentary}\n" });
+                    }
                     SendResponse(request, success: false, message: ex.Message);
                 }
                 else
@@ -699,18 +702,24 @@ public class DebugAdapter
             // Format result
             string resultStr = result == ulong.MaxValue ? "VOID" : result.ToString();
 
-            // Snark
-            var snark = Snark.GetCommentary(expression, result);
-            SendEvent("output", new { category = "console",
-                output = $">> {snark}\n" });
+            // Snark (10% chance)
+            if (Snark.ShouldComment())
+            {
+                var snark = Snark.GetCommentary(expression, result);
+                SendEvent("output", new { category = "console",
+                    output = $">> {snark}\n" });
+            }
 
             SendResponse(request, body: new { result = resultStr, variablesReference = 0 });
         }
         catch (Exception)
         {
-            var snark = Snark.GetErrorCommentary();
-            SendEvent("output", new { category = "console",
-                output = $">> {snark}\n" });
+            if (Snark.ShouldComment())
+            {
+                var snark = Snark.GetErrorCommentary();
+                SendEvent("output", new { category = "console",
+                    output = $">> {snark}\n" });
+            }
             SendResponse(request, success: false,
                 message: "E000 EXPRESSION DOES NOT COMPUTE");
         }
