@@ -57,7 +57,10 @@ SAMPLES=(
     test_quantum.i
     eve.i
     hello_schrodie.i
+    alice_bob.i
+    quantum_next.i
     roulette4.i
+    roulette5.i
     shores_algorithm.i
 )
 for f in "${SAMPLES[@]}"; do
