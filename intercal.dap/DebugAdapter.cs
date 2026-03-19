@@ -124,7 +124,7 @@ public class DebugAdapter
             supportsConfigurationDoneRequest = true,
             supportsFunctionBreakpoints = false,
             supportsConditionalBreakpoints = false,
-            supportsEvaluateForHovers = false,
+            supportsEvaluateForHovers = true,
             supportsStepBack = false,
             supportsSetVariable = true,
             supportTerminateDebuggee = true,
@@ -629,7 +629,15 @@ public class DebugAdapter
         var context = args.TryGetProperty("context", out var ctx)
             ? ctx.GetString() ?? "" : "";
 
-        // In the "repl" context, forward input to the debuggee's stdin
+        // When stopped: evaluate INTERCAL expressions
+        if (context == "watch" || context == "hover" ||
+            (context == "repl" && (_process == null || _process.HasExited || _currentLine > 0)))
+        {
+            EvaluateExpression(request, expression);
+            return;
+        }
+
+        // When running in repl context: forward input to debuggee's stdin
         if (context == "repl" && _process != null && !_process.HasExited)
         {
             try
@@ -646,6 +654,66 @@ public class DebugAdapter
         }
 
         SendResponse(request, body: new { result = "", variablesReference = 0 });
+    }
+
+    private void EvaluateExpression(DapRequest request, string expression)
+    {
+        try
+        {
+            // Parse the expression using the compiler's parser
+            var scanner = INTERCAL.Scanner.CreateScanner(expression);
+            var parsed = INTERCAL.Expression.CreateExpression(scanner);
+
+            // Build a lightweight execution context from current variables
+            var evalCtx = INTERCAL.Runtime.ExecutionContext.CreateExecutionContext();
+            foreach (var kvp in _currentVariables)
+            {
+                if (ulong.TryParse(kvp.Value, out var val))
+                {
+                    try { evalCtx[kvp.Key] = val; } catch { }
+                }
+            }
+
+            // Evaluate
+            ulong result;
+            try
+            {
+                result = parsed.Evaluate(evalCtx);
+            }
+            catch (INTERCAL.Runtime.IntercalException ex)
+            {
+                if (ex.Message.Contains("E200"))
+                {
+                    var commentary = Snark.GetUninitializedCommentary();
+                    SendEvent("output", new { category = "console",
+                        output = $">> {commentary}\n" });
+                    SendResponse(request, success: false, message: ex.Message);
+                }
+                else
+                {
+                    SendResponse(request, success: false, message: ex.Message);
+                }
+                return;
+            }
+
+            // Format result
+            string resultStr = result == ulong.MaxValue ? "VOID" : result.ToString();
+
+            // Snark
+            var snark = Snark.GetCommentary(expression, result);
+            SendEvent("output", new { category = "console",
+                output = $">> {snark}\n" });
+
+            SendResponse(request, body: new { result = resultStr, variablesReference = 0 });
+        }
+        catch (Exception)
+        {
+            var snark = Snark.GetErrorCommentary();
+            SendEvent("output", new { category = "console",
+                output = $">> {snark}\n" });
+            SendResponse(request, success: false,
+                message: "E000 EXPRESSION DOES NOT COMPUTE");
+        }
     }
 
     private void HandleContinue(DapRequest request)

@@ -13,7 +13,7 @@ namespace INTERCAL
 	//implementation treats everything as a 64-bit uint except for some types of expressions
 	//like mingle and select which are width-sensitive.
 	
-	abstract class Expression
+	public abstract class Expression
 	{
 		//What does this expression return?  In classic intercal there are
 		//only two possible types - Int16 and Int32.  For expressions this
