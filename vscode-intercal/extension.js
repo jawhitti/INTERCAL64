@@ -1,63 +1,82 @@
 const vscode = require('vscode');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-function findProjectRoot(extensionPath) {
-    // Check VS Code setting first
+// Installed layout: all binaries in one directory
+// Dev layout: intercal.dap/bin/Debug/net9.0/intercal-dap[.exe]
+//             cringe/cringe.csproj
+
+function findAdapter() {
+    const exeName = process.platform === 'win32' ? 'intercal-dap.exe' : 'intercal-dap';
+
+    // 1. Check VS Code setting
     const config = vscode.workspace.getConfiguration('intercal');
     const configured = config.get('projectRoot');
-    if (configured && fs.existsSync(configured)) {
-        return configured;
+    if (configured) {
+        const installed = path.join(configured, exeName);
+        if (fs.existsSync(installed)) return installed;
+        const dev = path.join(configured, 'intercal.dap', 'bin', 'Debug', 'net9.0', exeName);
+        if (fs.existsSync(dev)) return dev;
     }
 
-    // If extension is in the project tree (dev mode), walk up to find it
-    let dir = extensionPath;
+    // 2. Check standard install locations
+    const installPaths = process.platform === 'darwin' ? [
+        '/usr/local/lib/intercal',
+        '/opt/homebrew/lib/intercal',
+        path.join(os.homedir(), '.intercal'),
+    ] : process.platform === 'win32' ? [
+        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'INTERCAL'),
+        path.join(process.env.LOCALAPPDATA || '', 'INTERCAL'),
+    ] : [
+        '/usr/local/lib/intercal',
+        path.join(os.homedir(), '.intercal'),
+    ];
+
+    for (const dir of installPaths) {
+        const candidate = path.join(dir, exeName);
+        if (fs.existsSync(candidate)) return candidate;
+    }
+
+    // 3. Walk up from extension path (dev mode — extension in project tree)
+    let dir = vscode.extensions.getExtension('jawhitti.intercal')?.extensionPath || '';
     for (let i = 0; i < 5; i++) {
-        const candidate = path.join(dir, 'intercal.dap', 'intercal.dap.csproj');
-        if (fs.existsSync(candidate)) {
-            return dir;
-        }
+        const candidate = path.join(dir, 'intercal.dap', 'bin', 'Debug', 'net9.0', exeName);
+        if (fs.existsSync(candidate)) return candidate;
         dir = path.dirname(dir);
     }
 
-    // Last resort: check if workspace folders contain the project
+    // 4. Check workspace folders and parents
     if (vscode.workspace.workspaceFolders) {
         for (const folder of vscode.workspace.workspaceFolders) {
-            const candidate = path.join(folder.uri.fsPath, 'intercal.dap', 'intercal.dap.csproj');
-            if (fs.existsSync(candidate)) {
-                return folder.uri.fsPath;
-            }
-            // Also check parent (if workspace is opened to samples/)
-            const parent = path.dirname(folder.uri.fsPath);
-            const parentCandidate = path.join(parent, 'intercal.dap', 'intercal.dap.csproj');
-            if (fs.existsSync(parentCandidate)) {
-                return parent;
+            for (const base of [folder.uri.fsPath, path.dirname(folder.uri.fsPath)]) {
+                // Installed layout
+                const installed = path.join(base, exeName);
+                if (fs.existsSync(installed)) return installed;
+                // Dev layout
+                const dev = path.join(base, 'intercal.dap', 'bin', 'Debug', 'net9.0', exeName);
+                if (fs.existsSync(dev)) return dev;
             }
         }
     }
 
-    // Give up — return relative to extension (original behavior)
-    return path.join(extensionPath, '..');
+    return null;
 }
 
 function activate(context) {
     context.subscriptions.push(
         vscode.debug.registerDebugAdapterDescriptorFactory('intercal', {
             createDebugAdapterDescriptor(_session) {
-                const projectRoot = findProjectRoot(context.extensionPath);
+                const adapter = findAdapter();
 
-                const adapterExe = path.join(
-                    projectRoot, 'intercal.dap', 'bin', 'Debug', 'net9.0', 'intercal-dap.exe'
-                );
-
-                if (fs.existsSync(adapterExe)) {
-                    return new vscode.DebugAdapterExecutable(adapterExe);
+                if (adapter) {
+                    return new vscode.DebugAdapterExecutable(adapter);
                 }
 
-                // Fall back to dotnet run
-                const adapterProject = path.join(
-                    projectRoot, 'intercal.dap', 'intercal.dap.csproj'
-                );
+                // Last resort: try dotnet run (requires source checkout + SDK)
+                const config = vscode.workspace.getConfiguration('intercal');
+                const root = config.get('projectRoot') || '';
+                const adapterProject = path.join(root, 'intercal.dap', 'intercal.dap.csproj');
                 return new vscode.DebugAdapterExecutable('dotnet', [
                     'run', '--project', adapterProject, '--no-build'
                 ]);
