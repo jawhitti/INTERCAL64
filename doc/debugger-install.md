@@ -1,4 +1,4 @@
-# Installing the INTERCAL Debugger for VS Code
+# Installing the schrodie Debugger for VS Code
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ dotnet build intercal.dap/intercal.dap.csproj
 
 # Build the syslib (needed for programs that use standard library routines)
 cd samples
-dotnet run --project ../cringe/cringe.csproj -- syslib64.i -b -t:library -noplease
+dotnet run --project ../cringe/cringe.csproj -- syslib64.schrodie -b -t:library -noplease
 cd ..
 ```
 
@@ -62,21 +62,21 @@ This should point to the repo root — the directory containing `intercal.dap/`,
 
 ## Step 4: Set Up Your Working Directory
 
-Your `.i` source files need access to `intercal.runtime.dll` and (optionally) `syslib64.dll`. The simplest approach is to work in the `samples/` directory, which already has these. If you want to work elsewhere, copy them:
+Your `.schrodie` or `.i` source files need access to `intercal.runtime.dll` and (optionally) `syslib64.dll`. The simplest approach is to work in the `samples/` directory, which already has these. If you want to work elsewhere, copy them:
 
 ```bash
 cp samples/intercal.runtime.dll /your/project/dir/
 cp samples/syslib64.dll /your/project/dir/       # optional, for syslib routines
 ```
 
-The debugger looks for `syslib64.dll` in the same directory as your `.i` file and in its parent directory.
+The debugger looks for `syslib64.dll` in the same directory as your source file and in its parent directory.
 
 ## Step 5: Debug
 
-1. Open a `.i` file in VS Code
+1. Open a `.schrodie` or `.i` file in VS Code
 2. Set breakpoints by clicking in the gutter
 3. Press F5 (or Run > Start Debugging)
-4. If prompted, select "INTERCAL Debugger"
+4. If prompted, select "schrodie debugger"
 
 The debugger will compile your program with debug hooks and launch it. On the first run this takes a few seconds; subsequent runs skip compilation if the source hasn't changed.
 
@@ -91,7 +91,7 @@ VS Code will prompt you to create a launch configuration. The default works for 
         {
             "type": "intercal",
             "request": "launch",
-            "name": "Debug INTERCAL Program",
+            "name": "Debug schrodie program",
             "program": "${file}"
         }
     ]
@@ -102,7 +102,7 @@ VS Code will prompt you to create a launch configuration. The default works for 
 
 | Property | Description |
 |----------|-------------|
-| `compiler` | Path to `cringe.csproj` (auto-detected if not set) |
+| `compiler` | Path to the schrodie compiler project (auto-detected if not set) |
 | `syslib` | Path to `syslib64.dll` (auto-detected if not set) |
 
 ## What Works
@@ -129,15 +129,15 @@ The compiled program doesn't have debug hooks. This happens when:
 - The program was previously compiled from the command line (without `-debug-dap`)
 - The cached `.exe` is stale
 
-**Fix:** Delete the `.exe` file next to your `.i` file and try again. The debugger will recompile with debug hooks.
+**Fix:** Delete the `.exe` file next to your source file and try again. The debugger will recompile with debug hooks.
 
 ### Breakpoints not hitting
 
-Make sure the breakpoint is on a line that contains an executable INTERCAL statement. Lines that are continuations (starting with whitespace) or NOTEs are not breakpointable.
+Make sure the breakpoint is on a line that contains an executable schrodie statement. Lines that are continuations (starting with whitespace) or NOTEs are not breakpointable.
 
 ### "E998 EXCUSE ME, YOU MUST HAVE ME CONFUSED WITH SOME OTHER COMPILER"
 
-The compiler can't find your source file. Check that the `program` path in `launch.json` points to a valid `.i` file.
+The compiler can't find your source file. Check that the `program` path in `launch.json` points to a valid `.schrodie` or `.i` file.
 
 ### Variables panel shows nothing
 
@@ -146,19 +146,19 @@ The program hasn't executed any statements yet. Step forward at least once.
 ### syslib routines not found (E129)
 
 Your program uses system library labels (1000-series) but `syslib64.dll` isn't in scope. Either:
-- Copy `syslib64.dll` to the same directory as your `.i` file
+- Copy `syslib64.dll` to the same directory as your source file
 - Set the `syslib` property in `launch.json`
 
 ### Extension not activating
 
-Make sure the file has a `.i` extension. The extension only activates for files with this extension.
+Make sure the file has a `.schrodie` or `.i` extension.
 
 ## Architecture
 
 ```
 VS Code  <--DAP over stdin/stdout-->  intercal-dap.exe  <--named pipe-->  your-program.exe
-                                      (C# console app)                    (compiled INTERCAL)
+                                      (C# console app)                    (compiled schrodie)
                                                                           with DebugHost hooks
 ```
 
-The extension (`vscode-intercal/extension.js`) launches the DAP adapter (`intercal.dap/`). The adapter compiles your `.i` file using the cringe compiler with the `-debug-dap:<pipename>` flag, which injects `DebugHost.OnStatement()` calls before every statement. The compiled program connects back to the adapter over a named pipe. The adapter translates between DAP protocol (VS Code) and the simple JSON-lines protocol (DebugHost).
+The extension (`vscode-intercal/extension.js`) launches the DAP adapter (`intercal.dap/`). The adapter compiles your source file using the schrodie compiler with the `-debug-dap:<pipename>` flag, which injects `DebugHost.OnStatement()` calls before every statement. The compiled program connects back to the adapter over a named pipe. The adapter translates between DAP protocol (VS Code) and the simple JSON-lines protocol (DebugHost).
