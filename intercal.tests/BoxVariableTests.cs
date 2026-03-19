@@ -20,8 +20,8 @@ namespace intercal.tests
             var ctx = new ExecutionContext();
             ctx.CreateBox("[]1", 42);
             ulong result = ctx.CollapseBox("[]1");
-            // Single-value box: 50/50 alive (42) or dead (VACANT)
-            Assert.True(result == 42 || result == QValue.VACANT);
+            // Single-value box: 50/50 alive (42) or dead (VOID)
+            Assert.True(result == 42 || result == QValue.VOID);
         }
 
         [Fact]

@@ -749,7 +749,7 @@ public class DebugAdapter
                 {
                     var val = prop.Value.GetUInt64();
                     _currentVariables[prop.Name] = val == ulong.MaxValue
-                        ? "VACANT" : val.ToString();
+                        ? "VOID" : val.ToString();
                 }
             }
         }

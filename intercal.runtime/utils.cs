@@ -535,7 +535,7 @@ namespace INTERCAL
             }
 
             // Quantum cat box variable — holds a QValue in superposition.
-            // The cat is alive (has a value) or dead (VACANT).
+            // The cat is alive (has a value) or dead (VOID).
             [Serializable]
             class BoxVariable : Variable
             {
@@ -564,7 +564,7 @@ namespace INTERCAL
 
                 public override string ToString()
                 {
-                    return QVal.Collapsed ? QVal.Result.ToString() : $"[]{QVal.Value}|VACANT";
+                    return QVal.Collapsed ? QVal.Result.ToString() : $"[]{QVal.Value}|VOID";
                 }
             }
 
@@ -780,9 +780,9 @@ namespace INTERCAL
             public void ReadOut(object expression)
             {
                 Trace.WriteLine(string.Format("Reading out object '{0}'", expression));
-                // Check for dead cat sentinel — display VACANT instead of raw number
-                if (expression is ulong u && u == QValue.VACANT)
-                    TextOut.WriteLine("VACANT");
+                // Check for dead cat sentinel — display VOID instead of raw number
+                if (expression is ulong u && u == QValue.VOID)
+                    TextOut.WriteLine("VOID");
                 else
                     TextOut.WriteLine(expression);
                 TextOut.Flush();
@@ -850,7 +850,7 @@ namespace INTERCAL
             }
 
 
-            /// <summary>Collapse a quantum box, returning its value or VACANT.</summary>
+            /// <summary>Collapse a quantum box, returning its value or VOID.</summary>
             public ulong CollapseBox(string name)
             {
                 if (!Variables.ContainsKey(name))

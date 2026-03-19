@@ -8,14 +8,14 @@ using System.Linq;
 namespace INTERCAL.Runtime
 {
     // ─────────────────────────────────────────────────────────────────────────
-    // QValue: a value in superposition of {Value, VACANT}
-    // The cat is alive (Value) or dead (VACANT). Opening the box collapses it.
+    // QValue: a value in superposition of {Value, VOID}
+    // The cat is alive (Value) or dead (VOID). Opening the box collapses it.
     // ─────────────────────────────────────────────────────────────────────────
 
     public class QValue
     {
-        /// <summary>VACANT — the sentinel value for a dead cat. UINT64_MAX.</summary>
-        public const ulong VACANT = ulong.MaxValue;
+        /// <summary>VOID — the sentinel value for a dead cat. UINT64_MAX.</summary>
+        public const ulong VOID = ulong.MaxValue;
 
         public int Value { get; }
         public bool Collapsed { get; internal set; }
@@ -44,7 +44,7 @@ namespace INTERCAL.Runtime
             return Result;
         }
 
-        public bool IsDead => Collapsed && Result == VACANT;
+        public bool IsDead => Collapsed && Result == VOID;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ namespace INTERCAL.Runtime
             foreach (var leaf in leaves)
             {
                 leaf.Collapsed = true;
-                leaf.Result = (leaf == survivor) ? (ulong)leaf.Value : QValue.VACANT;
+                leaf.Result = (leaf == survivor) ? (ulong)leaf.Value : QValue.VOID;
             }
 
             // Remove component from registry

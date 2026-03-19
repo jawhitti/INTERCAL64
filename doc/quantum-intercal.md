@@ -113,11 +113,11 @@ All classic INTERCAL variable types are supported along with two new ones:
 
 The quantum dot (`.`) replaces spot (`.`) as the indicator for variable declarations. Single-dot (`.`) and double-dotted (`:`) variables replace their classic INTERCAL equivalents and the new type double cateye extends the existing quantum dot (`.`, 16-bit) and double dot (`:`, 32-bit) series to 64-bit precision. It is so named because it consists of two double dots, and two twos is four.
 
-The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes VACANT, a 64-bit sentinel). Which outcome occurs is determined by the universe.
+The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes VOID, a 64-bit sentinel). Which outcome occurs is determined by the universe.
 
 #### Reserved value
 
-The value UINT64_MAX (18446744073709551615, or `####18446744073709551615`) is reserved as the VACANT sentinel. When a cat box collapses and the cat does not survive, the box's value becomes VACANT. This value was chosen because selecting from VACANT with any mask produces all 1s in the selected positions, making it straightforward to detect in expressions. The name VACANT is reserved and may be used in programs to refer to this value. The value 0 remains available for general use.
+The value UINT64_MAX (18446744073709551615, or `####18446744073709551615`) is reserved as the VOID sentinel. When a cat box collapses and the cat does not survive, its value becomes VOID. The mechanism by which the cat box transforms a cat into a void cat is not well understood. What is known is that a void cat is not an absent cat — it is a cat that has been fundamentally changed by the act of observation. It immediately runs away and cannot be retrieved. This value was chosen because selecting from VOID with any mask produces all 1s in the selected positions, making it straightforward to detect in expressions. The name VOID is reserved and may be used in programs to refer to this value. The value 0 remains available for general use.
 
 ### 4.2 Constants
 
@@ -210,7 +210,7 @@ All original INTERCAL statements are retained without modification. The programm
 
 ### 6.2 ENTANGLE
 
-The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become VACANT.
+The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become VOID.
 
 Syntax:
 
@@ -250,10 +250,10 @@ Cat boxes collapse upon observation, which most commonly happens when they are a
 ```
 DO []1 <- #19
 DO .2 <- []1
-PLEASE DO NOTE .2 CONTAINS EITHER 19 OR VACANT
+PLEASE DO NOTE .2 CONTAINS EITHER 19 OR VOID
 ```
 
-The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.2` receives the box's value. If the cat is dead, `.2` receives VACANT. The box retains whichever state was observed.
+The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.2` receives the box's value. If the cat is dead, `.2` receives VOID. The box retains whichever state was observed.
 
 ### 6.4 The Thorn
 
