@@ -72,7 +72,7 @@ cp "$OUT/lib/syslib64.dll" "$OUT/samples/"
 
 # 5. Package VS Code extension
 echo "--- Packaging VS Code extension ---"
-cd "$ROOT/vscode-intercal"
+cd "$ROOT/vscode-schrodie"
 if command -v npx &>/dev/null; then
     npx @vscode/vsce package -o "$OUT/schrodie-$VERSION.vsix"
 else
@@ -88,9 +88,9 @@ cp "$ROOT/doc/debugger-install.md" "$OUT/"
 # 7. Create install script
 if [ "$RID" = "win-x64" ]; then
     cat > "$OUT/install.ps1" << 'PWSH'
-# INTERCAL Installer for Windows
+# schrodie Installer for Windows
 $installDir = "$env:LOCALAPPDATA\schrodie"
-Write-Host "Installing INTERCAL to $installDir..."
+Write-Host "Installing schrodie to $installDir..."
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 Copy-Item -Recurse -Force "bin\*" $installDir
 Copy-Item -Recurse -Force "lib\*" $installDir
@@ -118,19 +118,19 @@ else
 set -e
 
 INSTALL_DIR="${SCHRODIE_HOME:-$HOME/.schrodie}"
-echo "Installing INTERCAL to $INSTALL_DIR..."
+echo "Installing schrodie to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 cp bin/* "$INSTALL_DIR/"
 cp lib/* "$INSTALL_DIR/"
 cp -r samples "$INSTALL_DIR/samples"
-chmod +x "$INSTALL_DIR/intercal" "$INSTALL_DIR/intercal-dap"
+chmod +x "$INSTALL_DIR/schrodie" "$INSTALL_DIR/intercal-dap"
 
 # Add to PATH via shell profile
 SHELL_RC="$HOME/.zshrc"
 [ -f "$HOME/.bashrc" ] && SHELL_RC="$HOME/.bashrc"
 if ! grep -q 'INTERCAL' "$SHELL_RC" 2>/dev/null; then
     echo '' >> "$SHELL_RC"
-    echo '# INTERCAL' >> "$SHELL_RC"
+    echo '# schrodie' >> "$SHELL_RC"
     echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$SHELL_RC"
     echo "Added $INSTALL_DIR to PATH in $SHELL_RC"
 fi

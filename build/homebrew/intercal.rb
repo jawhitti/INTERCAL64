@@ -3,7 +3,7 @@
 # Usage: schrodie hello.i && ./hello
 
 class Schrodie < Formula
-  desc "Compiler for schrodie, a quantum extension to INTERCAL. Now with quantum cats."
+  desc "schrodie — a quantum programming language. Now with quantum cats."
   homepage "https://github.com/jawhitti/INTERCAL"
   version "1.5.0"
 
