@@ -29,7 +29,7 @@ dotnet publish "$ROOT/cringe/cringe.csproj" \
 
 # 2. Publish DAP adapter (self-contained single-file)
 echo "--- Publishing DAP adapter ---"
-dotnet publish "$ROOT/intercal.dap/intercal.dap.csproj" \
+dotnet publish "$ROOT/schrodie.dap/schrodie.dap.csproj" \
     -c Release \
     -r "$RID" \
     --self-contained true \

@@ -13,10 +13,10 @@ git clone https://github.com/jawhitti/INTERCAL.git
 cd INTERCAL
 
 # Build everything
-dotnet build intercal.sln
+dotnet build schrodie.sln
 
 # Build the DAP adapter
-dotnet build intercal.dap/intercal.dap.csproj
+dotnet build schrodie.dap/schrodie.dap.csproj
 
 # Build the syslib (needed for programs that use standard library routines)
 cd samples
@@ -58,7 +58,7 @@ The extension needs to find the compiler and DAP adapter. It auto-detects the pr
 }
 ```
 
-This should point to the repo root — the directory containing `intercal.dap/`, `cringe/`, and `samples/`.
+This should point to the repo root — the directory containing `schrodie.dap/`, `cringe/`, and `samples/`.
 
 ## Step 4: Set Up Your Working Directory
 
@@ -161,4 +161,4 @@ VS Code  <--DAP over stdin/stdout-->  intercal-dap.exe  <--named pipe-->  your-p
                                                                           with DebugHost hooks
 ```
 
-The extension (`vscode-intercal/extension.js`) launches the DAP adapter (`intercal.dap/`). The adapter compiles your source file using the schrodie compiler with the `-debug-dap:<pipename>` flag, which injects `DebugHost.OnStatement()` calls before every statement. The compiled program connects back to the adapter over a named pipe. The adapter translates between DAP protocol (VS Code) and the simple JSON-lines protocol (DebugHost).
+The extension (`vscode-intercal/extension.js`) launches the DAP adapter (`schrodie.dap/`). The adapter compiles your source file using the schrodie compiler with the `-debug-dap:<pipename>` flag, which injects `DebugHost.OnStatement()` calls before every statement. The compiled program connects back to the adapter over a named pipe. The adapter translates between DAP protocol (VS Code) and the simple JSON-lines protocol (DebugHost).

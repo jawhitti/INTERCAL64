@@ -5,13 +5,13 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cringe", "cringe\cringe.csproj", "{CD6CFE5F-5676-495B-B409-5486BBEB2E79}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "intercal.runtime", "intercal.runtime\intercal.runtime.csproj", "{37A22E15-5C33-4A06-81A3-DAE690A2CAFB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schrodie.runtime", "schrodie.runtime\schrodie.runtime.csproj", "{37A22E15-5C33-4A06-81A3-DAE690A2CAFB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharplib", "csharplib\csharplib.csproj", "{526D41DF-3BE1-429C-B4A7-7502082948D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "intercal.tests", "intercal.tests\intercal.tests.csproj", "{C7D6E556-6EAD-462D-AF65-2BBE2E014DB3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schrodie.tests", "schrodie.tests\schrodie.tests.csproj", "{C7D6E556-6EAD-462D-AF65-2BBE2E014DB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "intercal.dap", "intercal.dap\intercal.dap.csproj", "{59F496B3-F362-434A-B23A-DAC447AA3E1A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schrodie.dap", "schrodie.dap\schrodie.dap.csproj", "{59F496B3-F362-434A-B23A-DAC447AA3E1A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 
 // Installed layout: all binaries in one directory
-// Dev layout: intercal.dap/bin/Debug/net9.0/intercal-dap[.exe]
+// Dev layout: schrodie.dap/bin/Debug/net9.0/intercal-dap[.exe]
 //             cringe/cringe.csproj
 
 function findAdapter() {
@@ -16,7 +16,7 @@ function findAdapter() {
     if (configured) {
         const installed = path.join(configured, exeName);
         if (fs.existsSync(installed)) return installed;
-        const dev = path.join(configured, 'intercal.dap', 'bin', 'Debug', 'net9.0', exeName);
+        const dev = path.join(configured, 'schrodie.dap', 'bin', 'Debug', 'net9.0', exeName);
         if (fs.existsSync(dev)) return dev;
     }
 
@@ -44,7 +44,7 @@ function findAdapter() {
     // 3. Walk up from extension path (dev mode — extension in project tree)
     let dir = vscode.extensions.getExtension('jawhitti.intercal')?.extensionPath || '';
     for (let i = 0; i < 5; i++) {
-        const candidate = path.join(dir, 'intercal.dap', 'bin', 'Debug', 'net9.0', exeName);
+        const candidate = path.join(dir, 'schrodie.dap', 'bin', 'Debug', 'net9.0', exeName);
         if (fs.existsSync(candidate)) return candidate;
         dir = path.dirname(dir);
     }
@@ -57,7 +57,7 @@ function findAdapter() {
                 const installed = path.join(base, exeName);
                 if (fs.existsSync(installed)) return installed;
                 // Dev layout
-                const dev = path.join(base, 'intercal.dap', 'bin', 'Debug', 'net9.0', exeName);
+                const dev = path.join(base, 'schrodie.dap', 'bin', 'Debug', 'net9.0', exeName);
                 if (fs.existsSync(dev)) return dev;
             }
         }
@@ -79,7 +79,7 @@ function activate(context) {
                 // Last resort: try dotnet run (requires source checkout + SDK)
                 const config = vscode.workspace.getConfiguration('intercal');
                 const root = config.get('projectRoot') || '';
-                const adapterProject = path.join(root, 'intercal.dap', 'intercal.dap.csproj');
+                const adapterProject = path.join(root, 'schrodie.dap', 'schrodie.dap.csproj');
                 return new vscode.DebugAdapterExecutable('dotnet', [
                     'run', '--project', adapterProject, '--no-build'
                 ]);

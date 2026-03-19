@@ -10,6 +10,6 @@
     <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\intercal.runtime\intercal.runtime.csproj" />
+    <ProjectReference Include="..\schrodie.runtime\schrodie.runtime.csproj" />
   </ItemGroup>
 </Project>
