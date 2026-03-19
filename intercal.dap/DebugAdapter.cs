@@ -924,11 +924,10 @@ public class DebugAdapter
                 }
             }
         }
-        if (collapseCount > 0)
+        if (voidCount >= 3)
         {
-            if (voidCount > 0 && Snark.ShouldComment())
-                SendEvent("output", new { category = "console",
-                    output = $">> {Snark.GetThornVoidCommentary()}\n" });
+            SendEvent("output", new { category = "console",
+                output = $">> {Snark.GetCollapseCommentary(voidCount)}\n" });
         }
         _previousVariables = new Dictionary<string, string>(_currentVariables);
 

@@ -209,6 +209,35 @@ public static class Snark
         "WHAT NEXT STATEMENT? THERE WAS NO NEXT STATEMENT.",
     };
 
+    // Large collapse (10+)
+    private static readonly string[] _massCollapse = {
+        "WHAT WAS THAT. SOUNDED LIKE AN EXPLOSION.",
+        "MASS EXTINCTION EVENT DETECTED",
+        "THE CATBOX DISTRICT HAS BEEN LEVELED",
+        "SO MANY VOIDS. SO LITTLE TIME.",
+        "THAT WAS NOT A GENTLE COLLAPSE",
+        "YOU JUST CREATED A LOT OF BLACK CATS",
+        "SOMEWHERE A CAT SHELTER IS OVERWHELMED",
+        "THE QUANTUM STATE HAS LEFT THE BUILDING",
+    };
+
+    // Medium collapse (3-9)
+    private static readonly string[] _mediumCollapse = {
+        "DID YOU HEAR THAT",
+        "A FEW CATS JUST TURNED",
+        "THE BOXES RATTLED",
+        "SOMETHING SHIFTED",
+        "SEVERAL VOIDS WERE SPOTTED FLEEING THE AREA",
+        "THAT FELT LIKE MORE THAN ONE",
+        "A SMALL DISTURBANCE IN THE QUANTUM FIELD",
+    };
+
+    public static string GetCollapseCommentary(int voidCount)
+    {
+        if (voidCount >= 10) return Pick(_massCollapse);
+        return Pick(_mediumCollapse);
+    }
+
     public static bool ShouldComment() => _rng.Next(10) == 0;
     public static string GetErrorCommentary() => Pick(_error);
     public static string GetUninitializedCommentary() => Pick(_uninitialized);
