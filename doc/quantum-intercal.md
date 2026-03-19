@@ -10,7 +10,7 @@
 
 ## ABSTRACT
 
-We present a backwards-compatible extension to INTERCAL (Woods and Lyon, 1973) that introduces 64-bit arithmetic, quantum superposition primitives, and a novel nondeterministic control flow mechanism. We observe that INTERCAL's existing mingle and select operators already exhibit quantum-mechanical properties — superposition and measurement, respectively — and that this correspondence has gone unremarked for over fifty years. Building on this foundation, we introduce the _cat box_ variable type for quantum superposition, the _ENTANGLE_ statement for entanglement, and the _schrodie_ for observation-dependent control flow. Two new involution operators extend the language's bit manipulation vocabulary. A complete system library provides 64-bit arithmetic in pure INTERCAL. We demonstrate the utility of these extensions through the implementation of Pauly Shore's algorithm for integer factorization. The implementation is 100% backwards compatible with all prior INTERCAL programs, a claim we are in the rare position of being able to verify against substantially all code ever written in the language. This work received no funding from any source.
+We present a backwards-compatible extension to INTERCAL (Woods and Lyon, 1973) that introduces 64-bit arithmetic, quantum superposition primitives, and a novel nondeterministic control flow mechanism. We observe that INTERCAL's existing mingle and select operators already exhibit quantum-mechanical properties — superposition and measurement, respectively — and that this correspondence has gone unremarked for over fifty years. Building on this foundation, we introduce the _cat box_ variable type for quantum superposition, the _ENTANGLE_ statement for entanglement, and the _thorn_ for observation-dependent control flow. Two new involution operators extend the language's bit manipulation vocabulary. A complete system library provides 64-bit arithmetic in pure INTERCAL. We demonstrate the utility of these extensions through the implementation of Pauly Shore's algorithm for integer factorization. The implementation is 100% backwards compatible with all prior INTERCAL programs, a claim we are in the rare position of being able to verify against substantially all code ever written in the language. This work received no funding from any source.
 
 ## 1. INTRODUCTION
 
@@ -56,7 +56,7 @@ The mechanism requires three primitives:
 
 2. **A way to correlate outcomes.** We introduce the _ENTANGLE_ statement, which entangles two or more cat boxes. Once entangled, the cats share a fate: when any box in the group is observed, exactly one cat survives. All others die. The survivor is chosen by the universe uniformly at random.
 
-3. **A way to measure the result and act on it.** We introduce the _schrodie_ (`⟨N|ψ⟩`), a statement guard that observes a cat box. If the cat is alive, the statement executes. If the cat is dead, the statement is skipped. The schrodie is a quantum ABSTAIN.
+3. **A way to measure the result and act on it.** We introduce the _thorn_ (`⟨N|ψ⟩`), a statement guard that observes a cat box. If the cat is alive, the statement executes. If the cat is dead, the statement is skipped. The thorn is a quantum ABSTAIN.
 
 These three primitives compose. The following program creates two possible control paths and lets the universe choose which one executes:
 
@@ -69,9 +69,9 @@ DO ⟨2|ψ⟩ READ OUT .2
 PLEASE GIVE UP
 ```
 
-This program outputs either `1` or `2`, never both, never neither. The choice is made at the moment the first schrodie is evaluated. At that instant the entangled superposition collapses, one cat lives, one cat dies, and the program's control flow is determined. The programmer has no influence over the outcome. This is by design.
+This program outputs either `1` or `2`, never both, never neither. The choice is made at the moment the first thorn is evaluated. At that instant the entangled superposition collapses, one cat lives, one cat dies, and the program's control flow is determined. The programmer has no influence over the outcome. This is by design.
 
-The mechanism scales. The quantum roulette program (Section 6.2) creates 38 entangled cat boxes and uses 38 schrodies to implement a roulette wheel. One pocket fires per spin. Thirty-seven cats die. The house always wins.
+The mechanism scales. The quantum roulette program (Section 6.2) creates 38 entangled cat boxes and uses 38 thorns to implement a roulette wheel. One pocket fires per spin. Thirty-seven cats die. The house always wins.
 
 ## 3. CHARACTER SET EXTENSIONS
 
@@ -84,11 +84,11 @@ The following characters have been added to the INTERCAL character set, or have 
 | `[]` | cat box | Quantum variable prefix |
 | `\|` | maypole | Unary spin operator (mirror+invert) |
 | `-` | monkey bar | Unary spin operator (invert) |
-| `⟨` | spread | Schrodie opening (U+27E8) |
-| `⟩` | pinch | Schrodie closing (U+27E9) |
+| `⟨` | spread | Thorn opening (U+27E8) |
+| `⟩` | pinch | Thorn closing (U+27E9) |
 | `ψ` | rake | Quantum state indicator (U+03C8) |
-| `<` | left lung | Wimpmode schrodie opening |
-| `>` | right lung | Wimpmode schrodie closing |
+| `<` | left lung | Wimpmode thorn opening |
+| `>` | right lung | Wimpmode thorn closing |
 | `?` | what | Wimpmode quantum state indicator (also XOR, context-dependent) |
 
 ### 3.1 Labels
@@ -113,7 +113,7 @@ All classic INTERCAL variable types are supported along with two new ones:
 
 The quantum dot (`.`) replaces spot (`.`) as the indicator for variable declarations. Single-dot (`.`) and double-dotted (`:`) variables replace their classic INTERCAL equivalents and the new type double cateye extends the existing quantum dot (`.`, 16-bit) and double dot (`:`, 32-bit) series to 64-bit precision. It is so named because it consists of two double dots, and two twos is four.
 
-The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a schrodie. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes DEDKITTY, a 64-bit sentinel). Which outcome occurs is determined by the universe.
+The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes DEDKITTY, a 64-bit sentinel). Which outcome occurs is determined by the universe.
 
 #### Reserved value
 
@@ -255,15 +255,15 @@ PLEASE DO NOTE .2 CONTAINS EITHER 19 OR DEDKITTY
 
 The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.2` receives the box's value. If the cat is dead, `.2` receives DEDKITTY. The box retains whichever state was observed.
 
-### 6.4 The Schrodie
+### 6.4 The Thorn
 
-The schrodie is the mechanism by which quantum superposition affects control flow (see Section 2). It is placed between the statement prefix (DO, PLEASE DO, etc.) and the statement body:
+The thorn is the mechanism by which quantum superposition affects control flow (see Section 2). It is placed between the statement prefix (DO, PLEASE DO, etc.) and the statement body:
 
     DO ⟨5|ψ⟩ READ OUT .1
 
-The schrodie `⟨5|ψ⟩` observes cat box 5 at the time of statement execution. If the cat box is entangled with other cats the superposition collapses. If the cat is alive, the schrodie opens and the statement executes. If the cat is dead, the schrodie stays closed. The statement is skipped, as if it had been abstained from by the universe itself.
+The thorn `⟨5|ψ⟩` observes cat box 5 at the time of statement execution. If the cat box is entangled with other cats the superposition collapses. If the cat is alive, the thorn opens and the statement executes. If the cat is dead, the thorn stays closed. The statement is skipped, as if it had been abstained from by the universe itself.
 
-The schrodie is named after Erwin Schrodinger, whose famous thought experiment involving a cat in a box is the direct inspiration for the cat box variable type. That the notation also resembles Dirac's bra-ket notation (Dirac, 1939) is a happy coincidence. The full form consists of five characters:
+The thorn is named after Erwin Schrodinger, whose famous thought experiment involving a cat in a box is the direct inspiration for the cat box variable type. That the notation also resembles Dirac's bra-ket notation (Dirac, 1939) is a happy coincidence. The full form consists of five characters:
 
 | Position | Character | Name |
 |----------|-----------|------|
@@ -273,17 +273,17 @@ The schrodie is named after Erwin Schrodinger, whose famous thought experiment i
 | 4 | `ψ` | rake (U+03C8) |
 | 5 | `⟩` | pinch (U+27E9) |
 
-The inclusion of ψ (rake) is mandatory (as is good dental hygiene). It serves no computational purpose but provides the statement with an air of scientific legitimacy. Future work may extend the schrodie with other fancy glyphs in its place.
+The inclusion of ψ (rake) is mandatory (as is good dental hygiene). It serves no computational purpose but provides the statement with an air of scientific legitimacy. Future work may extend the thorn with other fancy glyphs in its place.
 
-The alert reader has likely already sussed out that the schrodie is a kind of quantum ABSTAIN. It is the spiritual successor to %50 but considerably more powerful. %50 will likely be removed in future versions.
+The alert reader has likely already sussed out that the thorn is a kind of quantum ABSTAIN. It is the spiritual successor to %50 but considerably more powerful. %50 will likely be removed in future versions.
 
 #### 6.4.1 Wimpmode Alternative
 
-For programmers whose keyboards lack the mathematical angle brackets and Greek letters required by the full schrodie notation, a wimpmode alternative is provided:
+For programmers whose keyboards lack the mathematical angle brackets and Greek letters required by the full thorn notation, a wimpmode alternative is provided:
 
     DO <5|?> READ OUT .1
 
-The wimpmode schrodie substitutes the left lung (`<`), right lung (`>`), and what (`?`) for their Unicode counterparts. It is functionally identical to the full schrodie except in two respects:
+The wimpmode thorn substitutes the left lung (`<`), right lung (`>`), and what (`?`) for their Unicode counterparts. It is functionally identical to the full thorn except in two respects:
 
 1. The compiler emits the warning: `W001 USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE (YOUR CODE WILL BE SLOWER)`
 
@@ -312,7 +312,7 @@ DO GIVE UP
 
 ### 7.2 Quantum Roulette (roulette4.i)
 
-The following program implements a 38-pocket quantum roulette wheel. Thirty-eight cat boxes are created with values 0 through 37, entangled via a single ENTANGLE statement, and observed through schrodies. Exactly one number is output per execution.
+The following program implements a 38-pocket quantum roulette wheel. Thirty-eight cat boxes are created with values 0 through 37, entangled via a single ENTANGLE statement, and observed through thorns. Exactly one number is output per execution.
 
 ```
 DO NOTE QUANTUM ROULETTE WITH CHAINED INIT
@@ -349,7 +349,7 @@ DO ⟨37|ψ⟩ READ OUT .37 DO ⟨38|ψ⟩ READ OUT .38
 PLEASE GIVE UP
 ```
 
-The first schrodie to be evaluated triggers the collapse of all 38 entangled boxes. Thirty-seven cats die. One survives. Its value is printed. The house always wins.
+The first thorn to be evaluated triggers the collapse of all 38 entangled boxes. Thirty-seven cats die. One survives. Its value is printed. The house always wins.
 
 ### 7.3 Pauly Shore's Algorithm (shores_algorithm.i)
 
@@ -364,7 +364,7 @@ The following error messages have been added:
 | E2007 | THE CAT IS DEAD | A cat box was observed and the cat did not survive |
 | E2010 | THE CAT IS BOTH DEAD AND A DIFFERENT SIZE | Type mismatch in quantum superposition |
 | E4D1 | ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER | Array involution on rank > 3 |
-| W001 | USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE | Wimpmode schrodie detected |
+| W001 | USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE | Wimpmode thorn detected |
 
 The error code E2007 was chosen because 2007 is the year of the first experimental demonstration of quantum entanglement at a distance exceeding 100 kilometers (Ursin et al., 2007). It is also a prime number, which is not relevant but is the sort of thing one mentions in academic papers.
 
