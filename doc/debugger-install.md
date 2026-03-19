@@ -110,7 +110,7 @@ VS Code will prompt you to create a launch configuration. The default works for 
 - **Breakpoints** — set, hit, and verified
 - **Stepping** — Step In, Step Over, Continue
 - **Variables panel** — spot (`.`), two-spot (`:`), four-spot (`::`), and cat box (`[]`) variables
-- **Quantum boxes** — shows `?` (uncollapsed), the value (alive), or `(dead)` (DEDKITTY)
+- **Quantum boxes** — shows `?` (uncollapsed), the value (alive), or `(dead)` (VACANT)
 - **Collapse via edit** — double-click a box variable in the Variables panel to collapse it (and all entangled boxes)
 - **ABSTAIN tracking** — abstained statements are auto-skipped during stepping, with messages in the debug console
 - **Gerund State** — expandable scope in the Variables panel showing which statements are abstained

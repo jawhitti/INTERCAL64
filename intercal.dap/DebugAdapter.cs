@@ -748,8 +748,8 @@ public class DebugAdapter
                 else
                 {
                     var val = prop.Value.GetUInt64();
-                    _currentVariables[prop.Name] = val == 0x4445444B49545459
-                        ? "DEDKITTY" : val.ToString();
+                    _currentVariables[prop.Name] = val == ulong.MaxValue
+                        ? "VACANT" : val.ToString();
                 }
             }
         }

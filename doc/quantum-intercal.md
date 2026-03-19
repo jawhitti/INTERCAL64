@@ -113,11 +113,11 @@ All classic INTERCAL variable types are supported along with two new ones:
 
 The quantum dot (`.`) replaces spot (`.`) as the indicator for variable declarations. Single-dot (`.`) and double-dotted (`:`) variables replace their classic INTERCAL equivalents and the new type double cateye extends the existing quantum dot (`.`, 16-bit) and double dot (`:`, 32-bit) series to 64-bit precision. It is so named because it consists of two double dots, and two twos is four.
 
-The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes DEDKITTY, a 64-bit sentinel). Which outcome occurs is determined by the universe.
+The cat box (`[]`) holds a value in quantum superposition. Once a value is put in the box it can be entangled (mashed) with other cat boxes. Values in the cat box exist in a state of superposition. Observation occurs upon assignment to a scalar variable, upon use in a READ OUT statement, or upon evaluation of a thorn. At that point the superposition collapses and the cat is either alive (the value is preserved) or dead (the value becomes VACANT, a 64-bit sentinel). Which outcome occurs is determined by the universe.
 
 #### Reserved value
 
-The integer value 4919413258115634265 is reserved for the library. This value is used as a sentinel in certain cases related to quantum collapse. It is the ASCII encoding of the string "DEDKITTY" interpreted as a big-endian 64-bit integer, and it means what it sounds like. The value 0 is available for general use, as a survey of the existing literature found it to be quite popular. No mentions of 4919413258115634265 have been found in the literature so it is assumed to be a reasonable sentinel value. Users are encouraged to avoid this value in their own programs.
+The value UINT64_MAX (18446744073709551615, or `####18446744073709551615`) is reserved as the VACANT sentinel. When a cat box collapses and the cat does not survive, the box's value becomes VACANT. This value was chosen because selecting from VACANT with any mask produces all 1s in the selected positions, making it straightforward to detect in expressions. The name VACANT is reserved and may be used in programs to refer to this value. The value 0 remains available for general use.
 
 ### 4.2 Constants
 
@@ -210,7 +210,7 @@ All original INTERCAL statements are retained without modification. The programm
 
 ### 6.2 ENTANGLE
 
-The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become DEDKITTY.
+The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become VACANT.
 
 Syntax:
 
@@ -250,10 +250,10 @@ Cat boxes collapse upon observation, which most commonly happens when they are a
 ```
 DO []1 <- #19
 DO .2 <- []1
-PLEASE DO NOTE .2 CONTAINS EITHER 19 OR DEDKITTY
+PLEASE DO NOTE .2 CONTAINS EITHER 19 OR VACANT
 ```
 
-The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.2` receives the box's value. If the cat is dead, `.2` receives DEDKITTY. The box retains whichever state was observed.
+The superposition is destroyed in line 2 by the `<-` operator. If the cat is alive, `.2` receives the box's value. If the cat is dead, `.2` receives VACANT. The box retains whichever state was observed.
 
 ### 6.4 The Thorn
 

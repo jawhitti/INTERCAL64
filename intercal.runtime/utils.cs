@@ -535,7 +535,7 @@ namespace INTERCAL
             }
 
             // Quantum cat box variable — holds a QValue in superposition.
-            // The cat is alive (has a value) or dead (DEDKITTY).
+            // The cat is alive (has a value) or dead (VACANT).
             [Serializable]
             class BoxVariable : Variable
             {
@@ -547,7 +547,7 @@ namespace INTERCAL
                     QVal = new QValue(value, ctx.Quantum);
                 }
 
-                public long Collapse()
+                public ulong Collapse()
                 {
                     return QVal.Observe();
                 }
@@ -564,7 +564,7 @@ namespace INTERCAL
 
                 public override string ToString()
                 {
-                    return QVal.Collapsed ? QVal.Result.ToString() : $"[]{QVal.Value}|DEDKITTY";
+                    return QVal.Collapsed ? QVal.Result.ToString() : $"[]{QVal.Value}|VACANT";
                 }
             }
 
@@ -780,9 +780,9 @@ namespace INTERCAL
             public void ReadOut(object expression)
             {
                 Trace.WriteLine(string.Format("Reading out object '{0}'", expression));
-                // Check for dead cat sentinel — display DEDKITTY instead of raw number
-                if (expression is ulong u && u == (ulong)QValue.DEDKITTY)
-                    TextOut.WriteLine("DEDKITTY");
+                // Check for dead cat sentinel — display VACANT instead of raw number
+                if (expression is ulong u && u == QValue.VACANT)
+                    TextOut.WriteLine("VACANT");
                 else
                     TextOut.WriteLine(expression);
                 TextOut.Flush();
@@ -850,7 +850,7 @@ namespace INTERCAL
             }
 
 
-            /// <summary>Collapse a quantum box, returning its value or DEDKITTY.</summary>
+            /// <summary>Collapse a quantum box, returning its value or VACANT.</summary>
             public ulong CollapseBox(string name)
             {
                 if (!Variables.ContainsKey(name))
@@ -860,9 +860,8 @@ namespace INTERCAL
                 if (box == null)
                     Lib.Fail(Messages.E241);
 
-                long result = box.Collapse();
-                // Return as ulong for compatibility with classical variable system
-                return result == QValue.DEDKITTY ? (ulong)QValue.DEDKITTY : (ulong)result;
+                ulong result = box.Collapse();
+                return result;
             }
 
             /// <summary>Collapse a box if needed and return true if the cat is alive.</summary>

@@ -8,18 +8,18 @@ using System.Linq;
 namespace INTERCAL.Runtime
 {
     // ─────────────────────────────────────────────────────────────────────────
-    // QValue: a value in superposition of {Value, DEDKITTY}
-    // The cat is alive (Value) or dead (DEDKITTY). Opening the box collapses it.
+    // QValue: a value in superposition of {Value, VACANT}
+    // The cat is alive (Value) or dead (VACANT). Opening the box collapses it.
     // ─────────────────────────────────────────────────────────────────────────
 
     public class QValue
     {
-        /// <summary>"DEDKITTY" in ASCII — the sentinel value for a dead cat.</summary>
-        public const long DEDKITTY = 0x4445444B49545459;
+        /// <summary>VACANT — the sentinel value for a dead cat. UINT64_MAX.</summary>
+        public const ulong VACANT = ulong.MaxValue;
 
         public int Value { get; }
         public bool Collapsed { get; internal set; }
-        public long Result { get; internal set; }
+        public ulong Result { get; internal set; }
         internal QRegistry Registry { get; }
 
         public QValue(int value, QRegistry registry)
@@ -36,7 +36,7 @@ namespace INTERCAL.Runtime
             Registry.Entangle(this, other);
         }
 
-        public long Observe()
+        public ulong Observe()
         {
             if (Collapsed)
                 return Result;
@@ -44,7 +44,7 @@ namespace INTERCAL.Runtime
             return Result;
         }
 
-        public bool IsDead => Collapsed && Result == DEDKITTY;
+        public bool IsDead => Collapsed && Result == VACANT;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ namespace INTERCAL.Runtime
             foreach (var leaf in leaves)
             {
                 leaf.Collapsed = true;
-                leaf.Result = (leaf == survivor) ? leaf.Value : QValue.DEDKITTY;
+                leaf.Result = (leaf == survivor) ? (ulong)leaf.Value : QValue.VACANT;
             }
 
             // Remove component from registry
