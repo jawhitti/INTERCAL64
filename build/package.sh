@@ -56,7 +56,7 @@ SAMPLES=(
     mingle64.i
     test_quantum.i
     eve.i
-    boxguard_psi.i
+    hello_schrodie.i
     roulette4.i
     shores_algorithm.i
 )
