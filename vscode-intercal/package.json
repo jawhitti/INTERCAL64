@@ -27,7 +27,8 @@
           "intercal"
         ],
         "extensions": [
-          ".i"
+          ".i",
+          ".schrodie"
         ],
         "configuration": "./language-configuration.json"
       }
