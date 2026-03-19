@@ -297,7 +297,7 @@ namespace INTERCAL
             FixupComeFroms();
 
             //Any stray labels will need to get liked up with external libraries somehow.  For 
-            //example, if the program says "DO 1020 NEXT" and is compiling against intercal.runtime.dll
+            //example, if the program says "DO 1020 NEXT" and is compiling against schrodie.runtime.dll
             //then we want to emit an external call to 1020.  We don't do anything about it now, but 
             //we will in NextStatement.Emit
         }

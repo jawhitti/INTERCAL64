@@ -17,12 +17,12 @@ class Schrodie < Formula
 
   def install
     bin.install "bin/schrodie"
-    bin.install "bin/intercal-dap"
-    lib.install "lib/intercal.runtime.dll"
+    bin.install "bin/schrodie-dap"
+    lib.install "lib/schrodie.runtime.dll"
     lib.install "lib/syslib64.dll"
     (share/"schrodie/samples").install Dir["samples/*.i"]
     # Copy runtime and syslib to samples so they compile out of the box
-    cp lib/"intercal.runtime.dll", share/"schrodie/samples/"
+    cp lib/"schrodie.runtime.dll", share/"schrodie/samples/"
     cp lib/"syslib64.dll", share/"schrodie/samples/"
     doc.install "quantum-intercal.md"
     doc.install "debugger-install.md"

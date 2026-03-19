@@ -5,7 +5,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>intercal-dap</AssemblyName>
+    <AssemblyName>schrodie-dap</AssemblyName>
     <RootNamespace>INTERCAL.Dap</RootNamespace>
     <Version>1.5.0</Version>
     <Product>schrodie</Product>

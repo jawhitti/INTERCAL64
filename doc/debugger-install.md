@@ -62,10 +62,10 @@ This should point to the repo root — the directory containing `schrodie.dap/`,
 
 ## Step 4: Set Up Your Working Directory
 
-Your `.schrodie` or `.i` source files need access to `intercal.runtime.dll` and (optionally) `syslib64.dll`. The simplest approach is to work in the `samples/` directory, which already has these. If you want to work elsewhere, copy them:
+Your `.schrodie` or `.i` source files need access to `schrodie.runtime.dll` and (optionally) `syslib64.dll`. The simplest approach is to work in the `samples/` directory, which already has these. If you want to work elsewhere, copy them:
 
 ```bash
-cp samples/intercal.runtime.dll /your/project/dir/
+cp samples/schrodie.runtime.dll /your/project/dir/
 cp samples/syslib64.dll /your/project/dir/       # optional, for syslib routines
 ```
 

@@ -4,11 +4,11 @@ const fs = require('fs');
 const os = require('os');
 
 // Installed layout: all binaries in one directory
-// Dev layout: schrodie.dap/bin/Debug/net9.0/intercal-dap[.exe]
+// Dev layout: schrodie.dap/bin/Debug/net9.0/schrodie-dap[.exe]
 //             cringe/cringe.csproj
 
 function findAdapter() {
-    const exeName = process.platform === 'win32' ? 'intercal-dap.exe' : 'intercal-dap';
+    const exeName = process.platform === 'win32' ? 'schrodie-dap.exe' : 'schrodie-dap';
 
     // 1. Check VS Code setting
     const config = vscode.workspace.getConfiguration('intercal');

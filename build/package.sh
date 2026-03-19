@@ -43,7 +43,7 @@ cd "$ROOT/samples"
 dotnet run --project "$ROOT/cringe/cringe.csproj" -- \
     syslib64.schrodie -b -t:library -noplease
 cp syslib64.dll "$OUT/lib/"
-cp intercal.runtime.dll "$OUT/lib/"
+cp schrodie.runtime.dll "$OUT/lib/"
 cd "$ROOT"
 
 # 4. Copy samples
@@ -67,7 +67,7 @@ for f in "${SAMPLES[@]}"; do
     cp "$ROOT/samples/$f" "$OUT/samples/"
 done
 # Also copy runtime and syslib to samples so they can compile out of the box
-cp "$OUT/lib/intercal.runtime.dll" "$OUT/samples/"
+cp "$OUT/lib/schrodie.runtime.dll" "$OUT/samples/"
 cp "$OUT/lib/syslib64.dll" "$OUT/samples/"
 
 # 5. Package VS Code extension
@@ -123,7 +123,7 @@ mkdir -p "$INSTALL_DIR"
 cp bin/* "$INSTALL_DIR/"
 cp lib/* "$INSTALL_DIR/"
 cp -r samples "$INSTALL_DIR/samples"
-chmod +x "$INSTALL_DIR/schrodie" "$INSTALL_DIR/intercal-dap"
+chmod +x "$INSTALL_DIR/schrodie" "$INSTALL_DIR/schrodie-dap"
 
 # Add to PATH via shell profile
 SHELL_RC="$HOME/.zshrc"

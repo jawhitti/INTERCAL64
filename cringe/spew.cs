@@ -398,7 +398,7 @@ namespace INTERCAL
 
                             //We put syslib in last. If other libs define labels that collide with
                             //syslibs then those will get precedence over the standard ones.
-                            c.references[refs.Length] = new ExportList(FindFile("intercal.runtime.dll"));
+                            c.references[refs.Length] = new ExportList(FindFile("schrodie.runtime.dll"));
                         }
                         else if (arg.IndexOf("DEBUG+") > 0 || arg.IndexOf("debug+") > 0)
                         {
@@ -464,7 +464,7 @@ namespace INTERCAL
                         Trace.WriteLine("Auto-referencing isyslib.dll");
                         refs.Add(new ExportList(syslibPath));
                     }
-                    refs.Add(new ExportList(FindFile("intercal.runtime.dll")));
+                    refs.Add(new ExportList(FindFile("schrodie.runtime.dll")));
                     c.references = refs.ToArray();
                 }
 
