@@ -8,7 +8,13 @@
 
 ---
 
+## ABSTRACT
+
+We present a backwards-compatible extension to INTERCAL (Woods and Lyon, 1973) that introduces 64-bit arithmetic, quantum superposition primitives, and a novel nondeterministic control flow mechanism. We observe that INTERCAL's existing mingle and select operators already exhibit quantum-mechanical properties — superposition and measurement, respectively — and that this correspondence has gone unremarked for over fifty years. Building on this foundation, we introduce the _cat box_ variable type for quantum superposition, the _MASH_ statement for entanglement, and the _schrodie_ for observation-dependent control flow. Two new involution operators extend the language's bit manipulation vocabulary. A complete system library provides 64-bit arithmetic in pure INTERCAL. We demonstrate the utility of these extensions through the implementation of Pauly Shore's algorithm for integer factorization. The implementation is 100% backwards compatible with all prior INTERCAL programs, a claim we are in the rare position of being able to verify against substantially all code ever written in the language. This work received no funding from any source.
+
 ## 1. INTRODUCTION
+
+### 1.1 Background
 
 It has been over fifty years since the publication of the original INTERCAL reference manual (Woods and Lyon, 1973). During this time, computing has advanced considerably. Processors now operate on 64-bit integers as a matter of course, and quantum computing has progressed from theoretical curiosity to the subject of intensely funded research programs that have yet to produce anything useful. INTERCAL has kept pace with neither development.
 
@@ -17,6 +23,26 @@ This is a shame, because INTERCAL has elements that are already quantum-aligned.
 This document describes a series of extensions to INTERCAL that build on those strengths. The resulting language brings INTERCAL into the modern era by introducing 64-bit variable types, quantum superposition primitives, and a control flow mechanism based on whether or not a cat is alive.
 
 The reader is advised that familiarity with the original INTERCAL reference manual is assumed throughout. Familiarity with quantum mechanics is not required, as it would not help.
+
+### 1.2 Prior Work
+
+The INTERCAL language has a small but distinguished lineage of implementations, each building upon the last in ways that the original authors would almost certainly not have approved of.
+
+The original INTERCAL-72 compiler (Woods and Lyon, 1973) was implemented at Princeton University and targeted the IBM System/370. It established the core language: mingle, select, ABSTAIN, COME FROM, and the general principle that a programming language need not be pleasant to use. The original compiler's source code was lost for decades before being recovered and published (Stross, 2015), by which time it was of primarily archaeological interest.
+
+Raymond (1990) produced C-INTERCAL, a portable reimplementation in C that revived the language for Unix systems. C-INTERCAL introduced several extensions, including TriINTERCAL (a ternary variant), Threaded INTERCAL, and Backtracking INTERCAL. Raymond's implementation also added support for the COME FROM statement, which had been described but not implemented in the original manual. C-INTERCAL remains actively maintained and accepts keywords in Latin, a feature whose utility is left as an exercise for the classicist.
+
+Calvelli (2001) produced CLC-INTERCAL, an ambitious Perl-based implementation that introduced literate programming support (allowing INTERCAL source to be embedded in documentation, or vice versa), Roman numeral literals, a networking library, and notably, a feature called Quantum INTERCAL. CLC-INTERCAL's quantum extension treats ABSTAIN and REINSTATE as operations on qubits, placing statements into superpositions of executed and not-executed states. While conceptually interesting, this approach operates at the statement level rather than the value level, and does not provide entanglement or observation-dependent control flow.
+
+Whittington (2019) produced CRINGE (Common Runtime INTERCAL Next-Generation Engine), a .NET-based implementation notable for being the first component-oriented INTERCAL compiler. CRINGE compiles INTERCAL to .NET assemblies, enabling cross-component calls via the NEXT statement and allowing INTERCAL libraries to be referenced from other INTERCAL programs — or, theoretically, from C# programs, though no evidence of anyone attempting this voluntarily has been found. CRINGE serves as the foundation for the present work.
+
+Several other implementations exist, including J-INTERCAL (targeting the JVM), POGA-INTERCAL, OrthINTERCAL, and at least one attempt at an LLVM backend. A comprehensive survey is beyond the scope of this paper and, frankly, beyond the scope of our funding, which is zero.
+
+### 1.3 Backwards Compatibility
+
+The extensions described in this document are fully backwards compatible with all prior INTERCAL programs. No existing syntax has been modified or removed. Programs written for INTERCAL-72, C-INTERCAL, or any prior CRINGE release will compile and execute without modification.
+
+We are in the unusual position of being able to verify this claim against substantially all INTERCAL code ever written. The total corpus of known INTERCAL programs is modest. We have tested against it. Everything works, except for the programs that did not work before, which continue not to work in exactly the same way.
 
 ## 2. OVERVIEW: NONDETERMINISTIC CONTROL FLOW
 
@@ -119,46 +145,48 @@ The five original INTERCAL operators are retained:
 | `V` | V | Unary | OR of adjacent bit pairs |
 | `?` | what | Unary | XOR of adjacent bit pairs |
 
-### 5.2 New Unary Operators
+### 5.2 New Unary Operators (Involutions)
 
-Two new unary operators are introduced to support quantum spin operations:
+Two new unary operators are introduced. Both are _involutions_: applying either operator twice to any value yields the original value. This property, familiar to physicists as spin-1/2 behavior, is fundamental to their design and should not be regarded as a coincidence.
 
 | Operator | Name | Type | Description |
 |----------|------|------|-------------|
-| `\|` | maypole | Unary | Horizontal spin. The value "swings around the maypole 180 degrees". Bits are mirrored and flipped front-to-back so bits that were showing their front side (1) now show their back side (0) and vice-versa. |
-| `-` | monkey bar | Unary | Bits flip 180 off the monkey bar. Each bit is inverted in place (ones' complement) but is now upside-down. |
+| `\|` | maypole | Unary | Reverses the bit positions of the operand and then inverts each bit. The value may be understood as "swinging around the maypole 180 degrees": the bit that was at position 0 is now at position _n_-1, and all bits that were showing their front side (1) now show their back side (0). |
+| `-` | monkey bar | Unary | Inverts each bit in place (ones' complement). The value may be understood as "flipping 180 degrees on the monkey bar": each bit flips over but does not change position. |
 
-Both operators are _involutions_: applying either twice yields the original value. This is the defining property of a spin-1/2 operator.
+It should be noted that the maypole performs _two_ operations (reversal and inversion) while the monkey bar performs only one (inversion). This asymmetry is deliberate. A gymnast who swings around a vertical pole executes a more complex maneuver than one who merely flips on a horizontal bar. The reader who objects to this metaphor is invited to attempt both maneuvers and report back.
 
-### 5.3 Array Involutions
+#### 5.2.1 Scalar Behavior
 
-The maypole and monkey bar operators may also be applied to entire arrays using the syntax `DO ,2 <- |,1` or `DO ,2 <- -,1`. Chained operations such as `DO ,2 <- -|,1` are supported.
+On scalar values, the operators behave as described above. The width of the operand (16-bit, 32-bit, or 64-bit) determines the number of bit positions involved in the maypole reversal. The monkey bar operates identically at all widths.
 
-For one-dimensional arrays:
-- `|` (maypole): reverses element order and bit-inverts each value
-- `-` (monkey bar): bit-inverts each value in place
+#### 5.2.2 Array Behavior
 
-For two-dimensional arrays, the operations correspond to flipping a sheet of paper:
-- `|` (maypole): reverses columns (horizontal flip) and bit-inverts
-- `-` (monkey bar): reverses rows (vertical flip) and bit-inverts
+The maypole and monkey bar operators may also be applied to entire arrays using the syntax `DO ,2 <- |,1` or `DO ,2 <- -,1`. Chained operations such as `DO ,2 <- -|,1` are supported and are evaluated left to right.
 
-For three-dimensional arrays, the operations correspond to spinning a Rubik's cube 180 degrees:
-- `|` (maypole): reverses the last axis (horizontal spin) and bit-inverts
-- `-` (monkey bar): reverses the first axis (vertical spin) and bit-inverts
+The semantics depend on the dimensionality of the array:
 
-The programmer who wishes to rotate a Rubik's cube 90 degrees, or to spin a four-dimensional array, will receive:
+**One-dimensional arrays.** The maypole (`|`) reverses the element order and bit-inverts each value. The monkey bar (`-`) bit-inverts each value in place without reordering. The reader may observe that in one dimension there is only one axis to reverse, and the maypole has claimed it. The monkey bar contents itself with inversion alone.
+
+**Two-dimensional arrays.** The operations correspond to flipping a sheet of paper. The maypole (`|`) reverses columns within each row (a horizontal flip) and bit-inverts each value. The monkey bar (`-`) reverses the order of rows (a vertical flip) and bit-inverts each value. Between them, the two operators can reach both axes of the array.
+
+**Three-dimensional arrays.** The operations correspond to rotating a solid object 180 degrees. The maypole (`|`) reverses the last axis and bit-inverts. The monkey bar (`-`) reverses the first axis and bit-inverts. The middle axis is not reachable by either operator. This is acknowledged as a limitation. A third operator would be required to address it, and the authors did not feel that the world needed another one.
+
+**Higher-dimensional arrays.** Not supported. The programmer will receive:
 
     E4D1 ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER
 
-### 5.4 The Identity Discovery
+### 5.3 The Identity Property
 
-The composition of the maypole and monkey bar operators, applied twice in sequence as `|-|-`, produces the identity function. That is, for any value `x`:
+A consequence of the involution property is that the composition `|-|-` (maypole, monkey bar, maypole, monkey bar) produces the identity function. This can be verified by observing that the maypole reverses bit positions and inverts, and the monkey bar inverts. Two inversions cancel. Two reversals cancel. Four applications therefore restore the original value:
 
     '|-|-x' = x
 
-This is significant because the mesh character `#`, when viewed as two vertical strokes and two horizontal strokes, is itself composed of `|-|-`. It is clear that the original INTERCAL designers chose `#` for the constant prefix for exactly this reason: `#` represents two identity operators applied to a value, which exactly defines a constant.
+This result holds for scalars, one-dimensional arrays, two-dimensional arrays, and three-dimensional arrays. A proof by induction over all possible array dimensionalities up to three is left to the reader.
 
-Note: We have no evidence for this claim.
+It has been further observed that the mesh character `#`, when viewed as two vertical strokes and two horizontal strokes, is itself composed of `|-|-`. The original INTERCAL designers chose `#` for the constant prefix. A constant is a value to which the identity function has been applied. The correspondence is exact.
+
+The authors wish to state clearly that they have no evidence that this was intentional. They also wish to state that they have no evidence that it was not.
 
 ### 5.5 Mingle and Select at Higher Widths
 
@@ -438,11 +466,17 @@ The programmer who encounters this error is encouraged to use wider variables.
 
 ## REFERENCES
 
+Calvelli, C. (2001). *CLC-INTERCAL*. Available at http://www.intERCAL.org.uk/
+
 Dirac, P. A. M. (1939). *A New Notation for Quantum Mechanics*. Mathematical Proceedings of the Cambridge Philosophical Society, 35(3), 416-418.
+
+Raymond, E. S. (1990). *C-INTERCAL*. Available at http://catb.org/~esr/intercal/
 
 Shore, P. (1994). *Encino Man*. Buena Vista Pictures.
 
 Shor, P. (1994). Algorithms for quantum computation: Discrete logarithms and factoring. *Proceedings 35th Annual Symposium on Foundations of Computer Science*, pp. 124-134.
+
+Stross, C. (2015). Published for the first time: the Princeton INTERCAL compiler's source code. *esoteric.codes*.
 
 Ursin, R. et al. (2007). Entanglement-based quantum communication over 144 km. *Nature Physics*, 3, 481-486.
 
