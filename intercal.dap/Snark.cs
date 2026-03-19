@@ -138,9 +138,86 @@ public static class Snark
             return Pick(_complex);
     }
 
+    // COME FROM fires (always)
+    private static readonly string[] _comeFrom = {
+        "HOW DID I GET HERE",
+        "THE FLOOR GAVE WAY",
+        "WHAT JUST HAPPENED",
+        "SURPRISE",
+        "YOU DIDN'T JUMP. YOU WERE PULLED.",
+        "THE CODE MOVED BUT YOU DIDN'T",
+        "TRAPDOOR ACTIVATED",
+        "THERE'S NO PLACE LIKE COME FROM",
+        "THE DESTINATION CHOSE YOU",
+        "I HOPE YOU WEREN'T IN THE MIDDLE OF SOMETHING",
+        "CONTROL FLOW IS A SUGGESTION",
+        "YOU HAVE BEEN SUMMONED",
+    };
+
+    // ABSTAIN FROM gerund (always)
+    private static readonly string[] _abstain = {
+        "WHAT ARE YOU DOING",
+        "ARE YOU SURE THIS IS A GOOD IDEA",
+        "WELL THAT'S ONE WAY TO HANDLE IT",
+        "PERMISSION REVOKED",
+        "THE GERUND HAS BEEN GROUNDED",
+        "THAT'S GOING TO CAUSE PROBLEMS LATER",
+        "BOLD MOVE",
+        "NOTED. THIS WILL BE REMEMBERED.",
+        "YOU JUST DISABLED SOMETHING. I HOPE IT WASN'T IMPORTANT.",
+        "THE COMPILER RAISES AN EYEBROW",
+    };
+
+    // REINSTATE gerund (always)
+    private static readonly string[] _reinstate = {
+        "OH SO NOW YOU WANT IT BACK",
+        "MAKE UP YOUR MIND",
+        "PERMISSION GRUDGINGLY RESTORED",
+        "THE GERUND RETURNS FROM EXILE",
+        "WELCOME BACK I GUESS",
+        "REINSTATED. TRY NOT TO ABSTAIN FROM IT AGAIN.",
+        "THE PRODIGAL GERUND RETURNS",
+        "THAT WAS A SHORT RETIREMENT",
+    };
+
+    // Statement skipped due to abstain (10%)
+    private static readonly string[] _skipped = {
+        "NOTHING TO SEE HERE",
+        "MOVE ALONG",
+        "SKIPPED. AS INTENDED. PRESUMABLY.",
+        "THIS STATEMENT IS ON VACATION",
+        "NOT TODAY",
+        "THE STATEMENT DECLINES TO EXECUTE",
+    };
+
+    // Thorn turns void (10%)
+    private static readonly string[] _thornVoid = {
+        "A BLACK CAT CROSSED YOUR PATH",
+        "THE CAT TURNED AND RAN",
+        "VOID. THE THORN STAYS CLOSED.",
+        "THE UNIVERSE CHOSE DIFFERENTLY",
+        "THAT BRANCH WAS NOT MEANT TO BE",
+        "THE CAT HAD OTHER PLANS",
+    };
+
+    // FORGET (10%)
+    private static readonly string[] _forget = {
+        "LET'S NEVER SPEAK OF THIS AGAIN",
+        "FORGOTTEN. WHAT WERE WE TALKING ABOUT?",
+        "THE STACK FEELS LIGHTER",
+        "PLAUSIBLE DENIABILITY ESTABLISHED",
+        "WHAT NEXT STATEMENT? THERE WAS NO NEXT STATEMENT.",
+    };
+
     public static bool ShouldComment() => _rng.Next(10) == 0;
     public static string GetErrorCommentary() => Pick(_error);
     public static string GetUninitializedCommentary() => Pick(_uninitialized);
+    public static string GetComeFromCommentary() => Pick(_comeFrom);
+    public static string GetAbstainCommentary() => Pick(_abstain);
+    public static string GetReinstateCommentary() => Pick(_reinstate);
+    public static string GetSkippedCommentary() => Pick(_skipped);
+    public static string GetThornVoidCommentary() => Pick(_thornVoid);
+    public static string GetForgetCommentary() => Pick(_forget);
 
     private static string Pick(string[] pool) => pool[_rng.Next(pool.Length)];
 }

@@ -31,6 +31,7 @@ public class DebugAdapter
     private bool _depthWarningFired = false;
     // Gerund state: gerund name -> list of {slot, line, abstained}
     private Dictionary<string, List<GerundEntry>> _currentGerundState = new();
+    private Dictionary<string, List<GerundEntry>> _previousGerundState = new();
     private record GerundEntry(int Slot, int Line, bool Abstained);
 
     // Pending breakpoints (set before launch)
@@ -865,12 +866,51 @@ public class DebugAdapter
 
         }
 
+        // Detect gerund state changes (ABSTAIN/REINSTATE)
+        foreach (var kvp in _currentGerundState)
+        {
+            foreach (var entry in kvp.Value)
+            {
+                bool wasAbstained = false;
+                if (_previousGerundState.TryGetValue(kvp.Key, out var prevEntries))
+                {
+                    var prev = prevEntries.FirstOrDefault(e => e.Line == entry.Line);
+                    if (prev != null) wasAbstained = prev.Abstained;
+                }
+
+                if (entry.Abstained && !wasAbstained)
+                {
+                    SendEvent("output", new { category = "console",
+                        output = $">> {Snark.GetAbstainCommentary()}\n" });
+                }
+                else if (!entry.Abstained && wasAbstained)
+                {
+                    SendEvent("output", new { category = "console",
+                        output = $">> {Snark.GetReinstateCommentary()}\n" });
+                }
+            }
+        }
+        _previousGerundState = _currentGerundState
+            .ToDictionary(k => k.Key, v => v.Value.ToList());
+
         var reason = root.TryGetProperty("reason", out var r)
             ? r.GetString() : "step";
 
         string? description = null;
         if (root.TryGetProperty("comeFrom", out var cf) && cf.ValueKind == JsonValueKind.String)
+        {
             description = cf.GetString();
+            SendEvent("output", new { category = "console",
+                output = $">> {Snark.GetComeFromCommentary()}\n" });
+        }
+
+        // Check for abstained statement skip
+        if (root.TryGetProperty("abstained", out var ab) && ab.ValueKind == JsonValueKind.String)
+        {
+            if (Snark.ShouldComment())
+                SendEvent("output", new { category = "console",
+                    output = $">> {Snark.GetSkippedCommentary()}\n" });
+        }
 
         SendEvent("stopped", new
         {
