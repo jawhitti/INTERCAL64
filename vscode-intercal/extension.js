@@ -22,15 +22,18 @@ function findAdapter() {
 
     // 2. Check standard install locations
     const installPaths = process.platform === 'darwin' ? [
-        '/usr/local/lib/intercal',
-        '/opt/homebrew/lib/intercal',
-        path.join(os.homedir(), '.intercal'),
+        '/usr/local/lib/schrodie',
+        '/opt/homebrew/lib/schrodie',
+        '/usr/local/bin',
+        '/opt/homebrew/bin',
+        path.join(os.homedir(), '.schrodie'),
     ] : process.platform === 'win32' ? [
-        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'INTERCAL'),
-        path.join(process.env.LOCALAPPDATA || '', 'INTERCAL'),
+        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'schrodie'),
+        path.join(process.env.LOCALAPPDATA || '', 'schrodie'),
     ] : [
-        '/usr/local/lib/intercal',
-        path.join(os.homedir(), '.intercal'),
+        '/usr/local/lib/schrodie',
+        '/usr/local/bin',
+        path.join(os.homedir(), '.schrodie'),
     ];
 
     for (const dir of installPaths) {

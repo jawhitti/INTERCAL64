@@ -309,30 +309,29 @@ namespace INTERCAL
             }
         }
 
-        const string Banner =
-            "Simple INTERCAL Compiler version {0}\r\n" +
-            "for Microsoft (R) .NET version {1}\r\n" +
-            "Authorship disclaimed by Jason Whittington 2017. All rights reserved.\r\n\r\n";
         const string Usage =
         #region usage
-            "                        SICK Compiler Options\r\n" +
+            "schrodie — a quantum extension to INTERCAL\r\n\r\n" +
 
-            "                        - OUTPUT FILES -\r\n" +
+            "Usage: schrodie <source.i> [options]\r\n\r\n" +
+
+            "                        - OUTPUT -\r\n" +
             "/t:exe                  Build a console executable (default)\r\n" +
-            "/t:library              Build a library \r\n" +
+            "/t:library              Build a library\r\n" +
 
-            "\r\n                      - INPUT FILES -\r\n" +
-            "/r:<file list>          Reference metadata from the specified assembly files\r\n" +
+            "\r\n                      - INPUT -\r\n" +
+            "/r:<file list>          Reference labels from the specified library\r\n" +
 
             "\r\n                      - CODE GENERATION -\r\n" +
             "/debug+                 Emit debugging information\r\n" +
-            "/base:<class_name>      Use specified class as base class (e.g. MarshalByRefObject)\r\n" +
-            "/public:<label_list>    Only emit stubs for the specified labels (ignored for .exe builds)\r\n" +
+            "/base:<class_name>      Use specified class as base class\r\n" +
+            "/public:<label_list>    Export only the specified labels (libraries only)\r\n" +
+            "/debug-dap:<pipename>   Emit DAP debugger hooks\r\n" +
 
-            "\r\n                      - ERRORS AND WARNINGS -\r\n" +
-            "/b                      Reduce probably of E774 to zero.\r\n" +
-            "/v or /verbose          Verbose compiler output\r\n" +
-            "/noplease              Skip politeness checking\r\n";
+            "\r\n                      - BEHAVIOR -\r\n" +
+            "/b                      Reduce probability of E774 to zero\r\n" +
+            "/noplease               Skip politeness checking\r\n" +
+            "/v or /verbose          Verbose compiler output\r\n";
         #endregion
 
         const int MinimumPoliteness = 20;
@@ -341,9 +340,6 @@ namespace INTERCAL
         static void Main(string[] args)
         {
 
-            Console.WriteLine(Banner,
-                Assembly.GetExecutingAssembly().GetName().Version,
-                Environment.Version);
 
             Trace.Listeners.Clear();
 

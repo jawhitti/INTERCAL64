@@ -1,16 +1,16 @@
 #!/bin/bash
 set -e
 
-# Build the INTERCAL distribution package
+# Build the schrodie distribution package
 # Usage: ./build/package.sh [osx-arm64|osx-x64|win-x64|linux-x64]
 
 RID="${1:-osx-arm64}"
-VERSION="${2:-0.3.0}"
+VERSION="${2:-1.5.0}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 OUT="$ROOT/dist/$RID"
 
-echo "=== Building INTERCAL $VERSION for $RID ==="
+echo "=== Building schrodie $VERSION for $RID ==="
 
 rm -rf "$OUT"
 mkdir -p "$OUT/bin" "$OUT/lib" "$OUT/samples"
@@ -25,12 +25,7 @@ dotnet publish "$ROOT/cringe/cringe.csproj" \
     -p:IncludeNativeLibrariesForSelfExtract=true \
     -o "$OUT/bin"
 
-# Rename to 'intercal' for a clean command name
-if [ "$RID" = "win-x64" ]; then
-    mv "$OUT/bin/cringe.exe" "$OUT/bin/intercal.exe" 2>/dev/null || true
-else
-    mv "$OUT/bin/cringe" "$OUT/bin/intercal" 2>/dev/null || true
-fi
+# The assembly is already named 'schrodie' via the csproj
 
 # 2. Publish DAP adapter (self-contained single-file)
 echo "--- Publishing DAP adapter ---"
@@ -76,7 +71,7 @@ cp "$OUT/lib/syslib64.dll" "$OUT/samples/"
 echo "--- Packaging VS Code extension ---"
 cd "$ROOT/vscode-intercal"
 if command -v npx &>/dev/null; then
-    npx @vscode/vsce package -o "$OUT/intercal-$VERSION.vsix"
+    npx @vscode/vsce package -o "$OUT/schrodie-$VERSION.vsix"
 else
     echo "WARNING: npx not found, skipping .vsix build"
     echo "Install Node.js and run: npm install -g @vscode/vsce"
@@ -91,7 +86,7 @@ cp "$ROOT/doc/debugger-install.md" "$OUT/"
 if [ "$RID" = "win-x64" ]; then
     cat > "$OUT/install.ps1" << 'PWSH'
 # INTERCAL Installer for Windows
-$installDir = "$env:LOCALAPPDATA\INTERCAL"
+$installDir = "$env:LOCALAPPDATA\schrodie"
 Write-Host "Installing INTERCAL to $installDir..."
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 Copy-Item -Recurse -Force "bin\*" $installDir
@@ -112,14 +107,14 @@ if ($vsix -and (Get-Command code -ErrorAction SilentlyContinue)) {
     code --install-extension $vsix.FullName
 }
 
-Write-Host "Done. Restart your terminal, then try: intercal samples\hello.i"
+Write-Host "Done. Restart your terminal, then try: schrodie samples\hello.i"
 PWSH
 else
     cat > "$OUT/install.sh" << 'BASH'
 #!/bin/bash
 set -e
 
-INSTALL_DIR="${INTERCAL_HOME:-$HOME/.intercal}"
+INSTALL_DIR="${SCHRODIE_HOME:-$HOME/.schrodie}"
 echo "Installing INTERCAL to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 cp bin/* "$INSTALL_DIR/"
@@ -144,7 +139,7 @@ if [ -n "$VSIX" ] && command -v code &>/dev/null; then
     code --install-extension "$VSIX"
 fi
 
-echo "Done. Restart your terminal, then try: intercal samples/hello.i"
+echo "Done. Restart your terminal, then try: schrodie samples/hello.i"
 BASH
     chmod +x "$OUT/install.sh"
 fi
@@ -152,7 +147,7 @@ fi
 # 8. Create archive
 echo "--- Creating archive ---"
 cd "$ROOT/dist"
-ARCHIVE="intercal-$VERSION-$RID"
+ARCHIVE="schrodie-$VERSION-$RID"
 if [ "$RID" = "win-x64" ]; then
     # zip for Windows
     if command -v zip &>/dev/null; then

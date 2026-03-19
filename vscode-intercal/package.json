@@ -1,8 +1,8 @@
 {
   "name": "intercal",
-  "displayName": "INTERCAL",
-  "description": "Syntax highlighting and debugger for INTERCAL, the Computer Language with No Pronounceable Acronym. Includes quantum cat box support.",
-  "version": "0.2.0",
+  "displayName": "schrodie",
+  "description": "Syntax highlighting and debugger for schrodie, a quantum extension to INTERCAL.",
+  "version": "1.5.0",
   "publisher": "jawhitti",
   "engines": {
     "vscode": "^1.75.0"

@@ -2,8 +2,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-    <AssemblyName>cringe</AssemblyName>
+    <AssemblyName>schrodie</AssemblyName>
     <RootNamespace>intercal</RootNamespace>
+    <Version>1.5.0</Version>
+    <Product>schrodie</Product>
+    <Description>schrodie — a quantum extension to INTERCAL</Description>
+    <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\intercal.runtime\intercal.runtime.csproj" />
