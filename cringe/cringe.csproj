@@ -6,7 +6,7 @@
     <RootNamespace>intercal</RootNamespace>
     <Version>1.5.0</Version>
     <Product>schrodie</Product>
-    <Description>schrodie — a quantum extension to INTERCAL</Description>
+    <Description>schrodie — a quantum programming language</Description>
     <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
   </PropertyGroup>
   <ItemGroup>

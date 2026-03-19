@@ -1,7 +1,7 @@
 {
-  "name": "intercal",
+  "name": "schrodie",
   "displayName": "schrodie",
-  "description": "Syntax highlighting and debugger for schrodie, a quantum extension to INTERCAL.",
+  "description": "Syntax highlighting and debugger for schrodie, a quantum programming language.",
   "version": "1.5.0",
   "publisher": "jawhitti",
   "engines": {
@@ -23,7 +23,7 @@
       {
         "id": "intercal",
         "aliases": [
-          "INTERCAL",
+          "schrodie",
           "intercal"
         ],
         "extensions": [
@@ -59,19 +59,19 @@
       }
     ],
     "configuration": {
-      "title": "INTERCAL",
+      "title": "schrodie",
       "properties": {
         "intercal.projectRoot": {
           "type": "string",
           "default": "",
-          "description": "Path to the INTERCAL project root (containing intercal.dap/, cringe/, etc.). Auto-detected from workspace if empty."
+          "description": "Path to the schrodie project root (containing intercal.dap/, cringe/, etc.). Auto-detected from workspace if empty."
         }
       }
     },
     "debuggers": [
       {
         "type": "intercal",
-        "label": "INTERCAL Debugger",
+        "label": "schrodie debugger",
         "languages": [
           "intercal"
         ],
@@ -88,7 +88,7 @@
               },
               "compiler": {
                 "type": "string",
-                "description": "Path to the cringe compiler project (cringe.csproj)",
+                "description": "Path to the schrodie compiler project",
                 "default": ""
               },
               "syslib": {
@@ -103,18 +103,18 @@
           {
             "type": "intercal",
             "request": "launch",
-            "name": "Debug INTERCAL Program",
+            "name": "Debug schrodie program",
             "program": "${file}"
           }
         ],
         "configurationSnippets": [
           {
-            "label": "INTERCAL: Launch",
-            "description": "Launch and debug an INTERCAL program",
+            "label": "schrodie: Launch",
+            "description": "Launch and debug a schrodie program",
             "body": {
               "type": "intercal",
               "request": "launch",
-              "name": "Debug INTERCAL Program",
+              "name": "Debug schrodie program",
               "program": "^\"\\${file}\""
             }
           }

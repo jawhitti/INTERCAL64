@@ -9,7 +9,7 @@
     <RootNamespace>INTERCAL.Dap</RootNamespace>
     <Version>1.5.0</Version>
     <Product>schrodie</Product>
-    <Description>DAP debug adapter for schrodie</Description>
+    <Description>schrodie debugger</Description>
     <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
   </PropertyGroup>
 

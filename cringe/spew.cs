@@ -311,7 +311,7 @@ namespace INTERCAL
 
         const string Usage =
         #region usage
-            "schrodie — a quantum extension to INTERCAL\r\n\r\n" +
+            "schrodie — a quantum programming language\r\n\r\n" +
 
             "Usage: schrodie <source.i> [options]\r\n\r\n" +
 

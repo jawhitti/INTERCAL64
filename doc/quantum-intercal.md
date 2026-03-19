@@ -1,6 +1,6 @@
-# QUANTUM INTERCAL
+# schrodie
 
-## A Conditions-Appropriate Extension to the Compiler Language With No Pronounceable Acronym
+## A Quantum Programming Language Descended from the Compiler Language With No Pronounceable Acronym
 
 ### Jason Whittington, 2026
 
