@@ -109,7 +109,7 @@ namespace INTERCAL
                 return new Token(TokenType.Digits, input.Substring(start, pos - start), start);
             }
 
-            // Quantum bra-ket: ⟨digits|ψ⟩ or <digits|?>
+            // Schrodie: ⟨digits|ψ⟩ or <digits|?>
             // Wimpmode: <digits|?> (emits warning)
             if (c == '<' || c == '\u27E8') // < or ⟨
             {
@@ -141,7 +141,7 @@ namespace INTERCAL
                         }
                     }
                 }
-                pos = saved; // not a bra-ket, restore
+                pos = saved; // not a schrodie, restore
             }
 
             // Arrow <-
