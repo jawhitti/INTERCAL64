@@ -28,6 +28,7 @@ public class DebugAdapter
     private string _currentStatement = "";
     private Dictionary<string, string> _currentVariables = new();
     private int[] _currentNextStack = Array.Empty<int>();
+    private bool _depthWarningFired = false;
     // Gerund state: gerund name -> list of {slot, line, abstained}
     private Dictionary<string, List<GerundEntry>> _currentGerundState = new();
     private record GerundEntry(int Slot, int Line, bool Abstained);
@@ -831,8 +832,21 @@ public class DebugAdapter
             }
         }
         if (root.TryGetProperty("nextStack", out var ns))
+        {
             _currentNextStack = ns.EnumerateArray()
                 .Select(x => x.GetInt32()).ToArray();
+
+            if (_currentNextStack.Length >= 10 && !_depthWarningFired)
+            {
+                _depthWarningFired = true;
+                SendEvent("output", new { category = "console",
+                    output = ">> ARE YOU CERTAIN WHATEVER YOU ARE DOING IS WORTH IT\n" });
+            }
+            else if (_currentNextStack.Length < 10)
+            {
+                _depthWarningFired = false;
+            }
+        }
         if (root.TryGetProperty("gerundState", out var gs))
         {
             _currentGerundState.Clear();
