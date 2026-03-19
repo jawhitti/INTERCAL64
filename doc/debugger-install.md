@@ -109,15 +109,17 @@ VS Code will prompt you to create a launch configuration. The default works for 
 
 - **Breakpoints** — set, hit, and verified
 - **Stepping** — Step In, Step Over, Continue
-- **Variables panel** — spot (`.`), two-spot (`:`), four-spot (`::`), and cat box (`[]`) variables
-- **Quantum boxes** — shows `?` (uncollapsed), the value (alive), or `(dead)` (VOID)
+- **Variables panel** — quantum dot (`.`), double dot (`:`), double cateye (`::`), and cat box (`[]`) variables
+- **Quantum boxes** — shows `?` (uncollapsed), the value (cat present), or `VOID` (cat ran away)
 - **Collapse via edit** — double-click a box variable in the Variables panel to collapse it (and all entangled boxes)
+- **Expression evaluator** — add schrodie expressions to the Watch panel (e.g., `'?.1$.2'~'#0$#65535'`) and see results update on every stop. Also works in the debug console and on hover.
+- **AI-powered coding hints** — the debugger uses AI to analyze your code and provide helpful suggestions for improving your schrodie programs. Hints appear in the debug console during debugging.
 - **ABSTAIN tracking** — abstained statements are auto-skipped during stepping, with messages in the debug console
 - **Gerund State** — expandable scope in the Variables panel showing which statements are abstained
 - **Program output** — READ OUT output appears in the debug console
 - **Program input** — type in the debug console when the program executes WRITE IN
 - **NEXT stack** — displayed in the Call Stack panel
-- **Bralette guards** — `⟨N|ψ⟩` notation highlighted in bold red
+- **Thorn guards** — `⟨N|ψ⟩` notation highlighted in bold red
 
 ## Troubleshooting
 
