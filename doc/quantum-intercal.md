@@ -361,6 +361,7 @@ The following error messages have been added:
 
 | Code | Message | Cause |
 |------|---------|-------|
+| E666 | DO NOT STARE INTO VOID WITH REMAINING EYE | Attempted to READ OUT a void value |
 | E2010 | CAT IS TOO FAT | A void (UINT64_MAX) was assigned to a variable too narrow to hold it |
 | E4D1 | ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER | Array involution on rank > 3 |
 | W001 | USING WIMPMODE QUANTUM NOTATION CAUSES OBSERVABLE DECOHERENCE | Wimpmode thorn detected |

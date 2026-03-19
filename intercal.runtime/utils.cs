@@ -780,9 +780,8 @@ namespace INTERCAL
             public void ReadOut(object expression)
             {
                 Trace.WriteLine(string.Format("Reading out object '{0}'", expression));
-                // Check for dead cat sentinel — display VOID instead of raw number
                 if (expression is ulong u && u == QValue.VOID)
-                    TextOut.WriteLine("VOID");
+                    Lib.Fail("E666 DO NOT STARE INTO VOID WITH REMAINING EYE");
                 else
                     TextOut.WriteLine(expression);
                 TextOut.Flush();
