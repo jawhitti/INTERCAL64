@@ -9,12 +9,12 @@ DO []25<-.25<-#24 DO []26<-.26<-#25 PLEASE DO []27<-.27<-#26 DO []28<-.28<-#27
 DO []29<-.29<-#28 DO []30<-.30<-#29 PLEASE DO []31<-.31<-#30 DO []32<-.32<-#31
 DO []33<-.33<-#32 DO []34<-.34<-#33 PLEASE DO []35<-.35<-#34 DO []36<-.36<-#35
 DO []37<-.37<-#36 DO []38<-.38<-#37
-DO MASH []1 WITH []2 WITH []3 WITH []4 WITH []5 WITH []6 WITH []7 WITH []8 WITH 
-        []9 WITH []10 WITH []11 WITH []12 WITH []13 WITH []14 WITH []15 WITH
-        []16 WITH []17 WITH []18 WITH []19 WITH []20 WITH []21 WITH []22 WITH 
-        []23 WITH []24 WITH []25 WITH []26 WITH []27 WITH []28 WITH []29 WITH 
-        []30 WITH []31 WITH []32 WITH []33 WITH []34 WITH []35 WITH []36 WITH 
-        []37 WITH []38
+DO ENTANGLE []1 + []2 + []3 + []4 + []5 + []6 + []7 + []8 WITH 
+        []9 + []10 + []11 + []12 + []13 + []14 + []15 WITH
+        []16 + []17 + []18 + []19 + []20 + []21 + []22 WITH 
+        []23 + []24 + []25 + []26 + []27 + []28 + []29 WITH 
+        []30 + []31 + []32 + []33 + []34 + []35 + []36 WITH 
+        []37 + []38
 PLEASE DO NOTE SPIN THE WHEEL
 DO ⟨1|ψ⟩ READ OUT .1 DO ⟨2|ψ⟩ READ OUT .2 PLEASE DO ⟨3|ψ⟩ READ OUT .3
 DO ⟨4|ψ⟩ READ OUT .4 DO ⟨5|ψ⟩ READ OUT .5 DO ⟨6|ψ⟩ READ OUT .6

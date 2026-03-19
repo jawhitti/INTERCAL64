@@ -249,7 +249,7 @@ namespace INTERCAL
 						case "REMEMBER":	retval = new RememberStatement(s);	break;
 						case "RETRIEVE":	retval = new RetrieveStatement(s);	break;
 						case "GIVE UP":		retval = new GiveUpStatement(s);	break;
-						case "MASH":		retval = new MashStatement(s);		break;
+						case "ENTANGLE":	retval = new MashStatement(s);		break;
 					}
 				}
 				else if(s.Current.Type == TokenType.Label)
@@ -775,7 +775,7 @@ namespace INTERCAL
 
 		}
 
-		// PLEASE MASH []1 WITH []2 WITH []3 — quantum entanglement
+		// PLEASE ENTANGLE []1 + []2 + []3 — quantum entanglement
 		public class MashStatement : Statement
 		{
 			List<string> boxes = new List<string>();
@@ -785,21 +785,21 @@ namespace INTERCAL
 				s.MoveNext();
 				var first = new LValue(s);
 				if (!first.IsBox)
-					throw new ParseException("ICL094I: MASH requires box variables");
+					throw new ParseException("ICL094I: ENTANGLE requires box variables");
 				boxes.Add(first.Name);
 
-				while (s.PeekNext.Value == "WITH")
+				while (s.PeekNext.Value == "+")
 				{
 					s.MoveNext(); // current token
-					s.MoveNext(); // skip WITH
+					s.MoveNext(); // skip +
 					var next = new LValue(s);
 					if (!next.IsBox)
-						throw new ParseException("ICL094I: MASH requires box variables");
+						throw new ParseException("ICL094I: ENTANGLE requires box variables");
 					boxes.Add(next.Name);
 				}
 
 				if (boxes.Count < 2)
-					throw new ParseException("ICL094I: MASH requires at least two box variables");
+					throw new ParseException("ICL094I: ENTANGLE requires at least two box variables");
 			}
 
 			public override void Emit(CompilationContext ctx)

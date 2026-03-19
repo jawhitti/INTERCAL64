@@ -132,7 +132,7 @@ namespace intercal.tests
                 "DO .2 <- #99\n" +
                 "PLEASE DO []1 <- .1\n" +
                 "DO []2 <- .2\n" +
-                "DO MASH []1 WITH []2\n" +
+                "DO ENTANGLE []1 + []2\n" +
                 "DO \u27E81\u007C\u03C8\u27E9 READ OUT .1\n" +
                 "PLEASE DO \u27E82\u007C\u03C8\u27E9 READ OUT .2\n" +
                 "DO GIVE UP\n");

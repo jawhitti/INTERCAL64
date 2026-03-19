@@ -5,7 +5,7 @@
 	DO []1 <- .1
 	DO []2 <- .2
 	DO []3 <- .3
-	PLEASE MASH []1 WITH []2 WITH []3
+	PLEASE ENTANGLE []1 + []2 + []3
 	DO ::1 <- []1
 	DO ::2 <- []2
 	DO ::3 <- []3

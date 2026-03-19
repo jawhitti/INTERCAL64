@@ -2,7 +2,7 @@
 	DO []1 <- .1
 	DO .2 <- #2
 	DO []2 <- .2
-	PLEASE MASH []1 WITH []2
+	PLEASE ENTANGLE []1 + []2
 	DO ::3 <- []1
 	DO ::4 <- []2
 	DO READ OUT ::3

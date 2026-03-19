@@ -27,7 +27,6 @@
     { "include": "#sparks-and-ears" },
     { "include": "#sub-keyword" },
     { "include": "#by-keyword" },
-    { "include": "#with-keyword" },
     { "include": "#quantum-bra" }
   ],
   "repository": {
@@ -48,7 +47,7 @@
       "name": "keyword.control.statement.intercal"
     },
     "single-statements": {
-      "match": "\\b(REINSTATE|NEXT|STASH|RESUME|FORGET|IGNORE|REMEMBER|RETRIEVE|MASH)\\b",
+      "match": "\\b(REINSTATE|NEXT|STASH|RESUME|FORGET|IGNORE|REMEMBER|RETRIEVE|ENTANGLE)\\b",
       "name": "keyword.control.statement.intercal"
     },
     "two-word-gerunds": {
@@ -56,7 +55,7 @@
       "name": "support.type.gerund.intercal"
     },
     "single-gerunds": {
-      "match": "\\b(ABSTAINING|REINSTATING|NEXTING|STASHING|RESUMING|FORGETTING|IGNORING|REMEMBERING|RETRIEVING|CALCULATING|MASHING)\\b",
+      "match": "\\b(ABSTAINING|REINSTATING|NEXTING|STASHING|RESUMING|FORGETTING|IGNORING|REMEMBERING|RETRIEVING|CALCULATING|ENTANGLING)\\b",
       "name": "support.type.gerund.intercal"
     },
     "assignment": {
@@ -133,10 +132,6 @@
     "by-keyword": {
       "match": "\\bBY\\b",
       "name": "keyword.other.by.intercal"
-    },
-    "with-keyword": {
-      "match": "\\bWITH\\b",
-      "name": "keyword.other.with.intercal"
     },
     "quantum-bra": {
       "match": "[\u27E8<]\\d+[|][\u03C8?][\u27E9>]",

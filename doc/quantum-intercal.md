@@ -10,7 +10,7 @@
 
 ## ABSTRACT
 
-We present a backwards-compatible extension to INTERCAL (Woods and Lyon, 1973) that introduces 64-bit arithmetic, quantum superposition primitives, and a novel nondeterministic control flow mechanism. We observe that INTERCAL's existing mingle and select operators already exhibit quantum-mechanical properties — superposition and measurement, respectively — and that this correspondence has gone unremarked for over fifty years. Building on this foundation, we introduce the _cat box_ variable type for quantum superposition, the _MASH_ statement for entanglement, and the _schrodie_ for observation-dependent control flow. Two new involution operators extend the language's bit manipulation vocabulary. A complete system library provides 64-bit arithmetic in pure INTERCAL. We demonstrate the utility of these extensions through the implementation of Pauly Shore's algorithm for integer factorization. The implementation is 100% backwards compatible with all prior INTERCAL programs, a claim we are in the rare position of being able to verify against substantially all code ever written in the language. This work received no funding from any source.
+We present a backwards-compatible extension to INTERCAL (Woods and Lyon, 1973) that introduces 64-bit arithmetic, quantum superposition primitives, and a novel nondeterministic control flow mechanism. We observe that INTERCAL's existing mingle and select operators already exhibit quantum-mechanical properties — superposition and measurement, respectively — and that this correspondence has gone unremarked for over fifty years. Building on this foundation, we introduce the _cat box_ variable type for quantum superposition, the _ENTANGLE_ statement for entanglement, and the _schrodie_ for observation-dependent control flow. Two new involution operators extend the language's bit manipulation vocabulary. A complete system library provides 64-bit arithmetic in pure INTERCAL. We demonstrate the utility of these extensions through the implementation of Pauly Shore's algorithm for integer factorization. The implementation is 100% backwards compatible with all prior INTERCAL programs, a claim we are in the rare position of being able to verify against substantially all code ever written in the language. This work received no funding from any source.
 
 ## 1. INTRODUCTION
 
@@ -54,7 +54,7 @@ The mechanism requires three primitives:
 
 1. **A source of quantum randomness.** We introduce the _cat box_ (`[]`), a variable that holds a value in quantum superposition. The value exists and does not exist simultaneously. Neither the programmer nor the runtime knows the value until it is observed.
 
-2. **A way to correlate outcomes.** We introduce the _MASH_ statement, which entangles two or more cat boxes. Once mashed, the cats share a fate: when any box in the group is observed, exactly one cat survives. All others die. The survivor is chosen by the universe uniformly at random.
+2. **A way to correlate outcomes.** We introduce the _ENTANGLE_ statement, which entangles two or more cat boxes. Once entangled, the cats share a fate: when any box in the group is observed, exactly one cat survives. All others die. The survivor is chosen by the universe uniformly at random.
 
 3. **A way to measure the result and act on it.** We introduce the _schrodie_ (`⟨N|ψ⟩`), a statement guard that observes a cat box. If the cat is alive, the statement executes. If the cat is dead, the statement is skipped. The schrodie is a quantum ABSTAIN.
 
@@ -63,7 +63,7 @@ These three primitives compose. The following program creates two possible contr
 ```
 DO []1 <- .1 <- #1
 DO []2 <- .2 <- #2
-DO MASH []1 WITH []2
+DO ENTANGLE []1 + []2
 DO ⟨1|ψ⟩ READ OUT .1
 DO ⟨2|ψ⟩ READ OUT .2
 PLEASE GIVE UP
@@ -208,18 +208,18 @@ The select operator (`~`) correspondingly operates at all widths, including sele
 
 All original INTERCAL statements are retained without modification. The programmer may continue to ABSTAIN FROM CALCULATING, COME FROM unexpected places, and GIVE UP at any time.
 
-### 6.2 MASH
+### 6.2 ENTANGLE
 
-The MASH statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become DEDKITTY.
+The ENTANGLE statement entangles two or more quantum cat boxes. Once entangled, the cats share a correlated fate: when the superposition of any box in the group is collapsed, exactly one cat in the entire entangled group survives. All others become DEDKITTY.
 
 Syntax:
 
-    DO MASH []1 WITH []2
-    PLEASE MASH []1 WITH []2 WITH []3 WITH []4
+    DO ENTANGLE []1 + []2
+    PLEASE ENTANGLE []1 + []2 + []3 + []4
 
-N-way entanglement is supported. The entanglement operation is idempotent; mashing already-acquainted cats produces no additional effect.
+N-way entanglement is supported. The entanglement operation is idempotent; entangling already-acquainted cats produces no additional effect. The `+` separator is consistent with the STASH statement, which also accepts multiple operands separated by `+`.
 
-The choice of the word MASH was guided by the following considerations: (1) it is an English word, (2) it describes what happens to the cats, and (3) it was not already taken. The gerund MASHING follows standard INTERCAL gerund formation. ABSTAIN FROM MASHING prevents the formation of new entanglements, which may be desirable in programs where the cats have had enough.
+The gerund ENTANGLING follows standard INTERCAL gerund formation. ABSTAIN FROM ENTANGLING prevents the formation of new entanglements, which may be desirable in programs where the cats have had enough.
 
 ### 6.3 Cat Box Operations
 
@@ -299,7 +299,7 @@ The following program demonstrates quantum key distribution with eavesdropper de
 DO .1 <- #42
 DO []1 <- .1
 PLEASE DO []2 <- .1
-DO MASH []1 WITH []2
+DO ENTANGLE []1 + []2
 DO ::1 <- []2
 DO READ OUT ::1
 PLEASE DO []2 <- .1
@@ -312,7 +312,7 @@ DO GIVE UP
 
 ### 7.2 Quantum Roulette (roulette4.i)
 
-The following program implements a 38-pocket quantum roulette wheel. Thirty-eight cat boxes are created with values 0 through 37, entangled via a single MASH statement, and observed through schrodies. Exactly one number is output per execution.
+The following program implements a 38-pocket quantum roulette wheel. Thirty-eight cat boxes are created with values 0 through 37, entangled via a single ENTANGLE statement, and observed through schrodies. Exactly one number is output per execution.
 
 ```
 DO NOTE QUANTUM ROULETTE WITH CHAINED INIT
@@ -326,12 +326,12 @@ DO []25<-.25<-#24 DO []26<-.26<-#25 PLEASE DO []27<-.27<-#26 DO []28<-.28<-#27
 DO []29<-.29<-#28 DO []30<-.30<-#29 PLEASE DO []31<-.31<-#30 DO []32<-.32<-#31
 DO []33<-.33<-#32 DO []34<-.34<-#33 PLEASE DO []35<-.35<-#34 DO []36<-.36<-#35
 DO []37<-.37<-#36 DO []38<-.38<-#37
-DO MASH []1 WITH []2 WITH []3 WITH []4 WITH []5 WITH []6 WITH []7 WITH []8 WITH
-        []9 WITH []10 WITH []11 WITH []12 WITH []13 WITH []14 WITH []15 WITH
-        []16 WITH []17 WITH []18 WITH []19 WITH []20 WITH []21 WITH []22 WITH
-        []23 WITH []24 WITH []25 WITH []26 WITH []27 WITH []28 WITH []29 WITH
-        []30 WITH []31 WITH []32 WITH []33 WITH []34 WITH []35 WITH []36 WITH
-        []37 WITH []38
+DO ENTANGLE []1 + []2 + []3 + []4 + []5 + []6 + []7 + []8 +
+        []9 + []10 + []11 + []12 + []13 + []14 + []15 +
+        []16 + []17 + []18 + []19 + []20 + []21 + []22 +
+        []23 + []24 + []25 + []26 + []27 + []28 + []29 +
+        []30 + []31 + []32 + []33 + []34 + []35 + []36 +
+        []37 + []38
 PLEASE DO NOTE SPIN THE WHEEL
 DO ⟨1|ψ⟩ READ OUT .1 DO ⟨2|ψ⟩ READ OUT .2 PLEASE DO ⟨3|ψ⟩ READ OUT .3
 DO ⟨4|ψ⟩ READ OUT .4 DO ⟨5|ψ⟩ READ OUT .5 DO ⟨6|ψ⟩ READ OUT .6

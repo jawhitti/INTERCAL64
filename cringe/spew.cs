@@ -80,7 +80,7 @@ namespace INTERCAL
             AbstainMap["REINSTATING"] = typeof(Statement.ReinstateStatement); ;
             AbstainMap["CALCULATING"] = typeof(Statement.CalculateStatement);
             AbstainMap["COMING FROM"] = typeof(Statement.ComeFromStatement);
-            AbstainMap["MASHING"] = typeof(Statement.MashStatement);
+            AbstainMap["ENTANGLING"] = typeof(Statement.MashStatement);
         }
 
         public CompilationContext()

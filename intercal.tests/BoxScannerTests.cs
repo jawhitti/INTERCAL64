@@ -52,22 +52,22 @@ namespace intercal.tests
             Assert.Equal("#", scanner.Current.Value);
         }
 
-        // === Tokenizer: MASH statement ===
+        // === Tokenizer: ENTANGLE statement ===
 
         [Fact]
-        public void Tokenizer_RecognizesMash()
+        public void Tokenizer_RecognizesEntangle()
         {
-            var scanner = Scanner.CreateScanner("MASH");
+            var scanner = Scanner.CreateScanner("ENTANGLE");
             Assert.Equal(TokenType.Statement, scanner.Current.Type);
-            Assert.Equal("MASH", scanner.Current.Value);
+            Assert.Equal("ENTANGLE", scanner.Current.Value);
         }
 
         [Fact]
-        public void Tokenizer_RecognizesMashingGerund()
+        public void Tokenizer_RecognizesEntanglingGerund()
         {
-            var scanner = Scanner.CreateScanner("MASHING");
+            var scanner = Scanner.CreateScanner("ENTANGLING");
             Assert.Equal(TokenType.Gerund, scanner.Current.Type);
-            Assert.Equal("MASHING", scanner.Current.Value);
+            Assert.Equal("ENTANGLING", scanner.Current.Value);
         }
     }
 }
