@@ -1196,10 +1196,11 @@ namespace INTERCAL
                     // Reverse the last axis index
                     dstIdx[lastAxis] = lastLo + lastHi - srcIdx[lastAxis];
                     var val = arr.GetValue(dstIdx);
+                    // Apply full scalar mirror (bit-reverse + invert) to each element
                     if (is64)
-                        result.SetValue(Invert64((ulong)val), srcIdx);
+                        result.SetValue(Mirror64((ulong)val), srcIdx);
                     else
-                        result.SetValue(Invert32((uint)val), srcIdx);
+                        result.SetValue(Mirror32((uint)val), srcIdx);
                 });
                 return result;
             }

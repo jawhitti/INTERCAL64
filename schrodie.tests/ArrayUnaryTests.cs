@@ -18,9 +18,9 @@ namespace intercal.tests
 
             var result = Lib.MirrorArray(arr);
 
-            Assert.Equal(~3u, (uint)result.GetValue(1));
-            Assert.Equal(~2u, (uint)result.GetValue(2));
-            Assert.Equal(~1u, (uint)result.GetValue(3));
+            Assert.Equal(Lib.Mirror32(3u), (uint)result.GetValue(1));
+            Assert.Equal(Lib.Mirror32(2u), (uint)result.GetValue(2));
+            Assert.Equal(Lib.Mirror32(1u), (uint)result.GetValue(3));
         }
 
         // === 1D Invert (-): bit-invert only, no reverse ===
@@ -73,15 +73,15 @@ namespace intercal.tests
 
             var result = Lib.MirrorArray(arr);
 
-            Assert.Equal(~3u, (uint)result.GetValue(1, 1));
-            Assert.Equal(~2u, (uint)result.GetValue(1, 2));
-            Assert.Equal(~1u, (uint)result.GetValue(1, 3));
-            Assert.Equal(~6u, (uint)result.GetValue(2, 1));
-            Assert.Equal(~5u, (uint)result.GetValue(2, 2));
-            Assert.Equal(~4u, (uint)result.GetValue(2, 3));
-            Assert.Equal(~9u, (uint)result.GetValue(3, 1));
-            Assert.Equal(~8u, (uint)result.GetValue(3, 2));
-            Assert.Equal(~7u, (uint)result.GetValue(3, 3));
+            Assert.Equal(Lib.Mirror32(3u), (uint)result.GetValue(1, 1));
+            Assert.Equal(Lib.Mirror32(2u), (uint)result.GetValue(1, 2));
+            Assert.Equal(Lib.Mirror32(1u), (uint)result.GetValue(1, 3));
+            Assert.Equal(Lib.Mirror32(6u), (uint)result.GetValue(2, 1));
+            Assert.Equal(Lib.Mirror32(5u), (uint)result.GetValue(2, 2));
+            Assert.Equal(Lib.Mirror32(4u), (uint)result.GetValue(2, 3));
+            Assert.Equal(Lib.Mirror32(9u), (uint)result.GetValue(3, 1));
+            Assert.Equal(Lib.Mirror32(8u), (uint)result.GetValue(3, 2));
+            Assert.Equal(Lib.Mirror32(7u), (uint)result.GetValue(3, 3));
         }
 
         // === 2D Invert (-): reverse rows + bit-invert ===
@@ -141,8 +141,8 @@ namespace intercal.tests
 
             var result = Lib.MirrorArray(arr);
 
-            Assert.Equal(~2UL, (ulong)result.GetValue(1));
-            Assert.Equal(~1UL, (ulong)result.GetValue(2));
+            Assert.Equal(Lib.Mirror64(2UL), (ulong)result.GetValue(1));
+            Assert.Equal(Lib.Mirror64(1UL), (ulong)result.GetValue(2));
         }
 
         // === Does not modify original ===
