@@ -252,18 +252,7 @@ namespace INTERCAL.Runtime
             var key = Path.GetFullPath(file).ToLowerInvariant();
             var hit = _breakpoints.TryGetValue(key, out var lines) && lines.Contains(line);
 
-            // Log the first breakpoint check so we can diagnose path mismatches
-            if (!_loggedBpCheck && _breakpoints.Count > 0)
-            {
-                _loggedBpCheck = true;
-                var storedKeys = string.Join(", ", _breakpoints.Keys);
-                Send(new
-                {
-                    @event = "output",
-                    category = "console",
-                    output = $"[DebugHost] BP check: file='{key}' stored keys=[{storedKeys}] match={_breakpoints.ContainsKey(key)}\n"
-                });
-            }
+            // Debug logging removed — was leaking to Debug Console
 
             return hit;
         }

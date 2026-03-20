@@ -566,7 +566,16 @@ namespace INTERCAL
 				}
 				else if(op == "~")
 				{
-						returnType = Right.ReturnType;
+					// Select from N-bit returns (N/2)-bit.
+					// 32-bit → 16-bit, 64-bit → 32-bit, 128-bit → 64-bit.
+					// 16-bit stays 16-bit (floor).
+					Type lt = left.ReturnType;
+					if(lt == typeof(UInt128))
+						returnType = typeof(UInt64);
+					else if(lt == typeof(UInt64))
+						returnType = typeof(UInt32);
+					else
+						returnType = typeof(UInt16);
 				}
 				else if(op == "BY"){returnType = typeof(UInt32);}
 				else
@@ -595,7 +604,7 @@ namespace INTERCAL
 						case "~":
 							if(Left.ReturnType == typeof(UInt128))
 								break; // Cannot fold 128-bit select at compile time
-							else if(returnType == typeof(UInt64))
+							else if(Left.ReturnType == typeof(UInt64))
 								return new ConstantExpression(Lib.Select(cleft.Value, cright.Value));
 							else
 								return new ConstantExpression(Lib.Select((uint)cleft.Value, (uint)cright.Value));
@@ -622,7 +631,7 @@ namespace INTERCAL
 
 					case "~":
 					{
-						if(returnType == typeof(UInt64))
+						if(Left.ReturnType == typeof(UInt64))
 							return Lib.Select(a, b);
 						else
 							return Lib.Select((uint)a, (uint)b);
@@ -679,7 +688,8 @@ namespace INTERCAL
 
 					case "~":
 					{
-						if(Left.ReturnType == typeof(UInt128))
+						Type lt = Left.ReturnType;
+						if(lt == typeof(UInt128))
 						{
 							ctx.EmitRaw("Lib.Select128(");
 							Left.Emit(ctx);
@@ -687,7 +697,7 @@ namespace INTERCAL
 							Right.Emit(ctx);
 							ctx.EmitRaw("))");
 						}
-						else if(returnType == typeof(UInt64))
+						else if(lt == typeof(UInt64))
 						{
 							ctx.EmitRaw("Lib.Select(");
 							Left.Emit(ctx);

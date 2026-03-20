@@ -816,6 +816,7 @@ namespace intercal.tests
             Assert.Equal((ulong)expected, result);
         }
 
+        // Trace the (1525) bit-spreading routine for input 1
         [Fact]
         public void Mingle64Select128_Roundtrip_MaxValues()
         {
