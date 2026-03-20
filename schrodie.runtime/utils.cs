@@ -1182,7 +1182,7 @@ namespace INTERCAL
             // Returns a new array.
             public static Array MirrorArray(Array arr)
             {
-                if (arr.Rank > 3)
+                if (arr.Rank > 2)
                     Fail("E4D1 ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER");
                 bool is64 = arr.GetType().GetElementType() == typeof(ulong);
                 Array result = (Array)arr.Clone();
@@ -1212,7 +1212,7 @@ namespace INTERCAL
             // Returns a new array.
             public static Array InvertArray(Array arr)
             {
-                if (arr.Rank > 3)
+                if (arr.Rank > 2)
                     Fail("E4D1 ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER");
                 bool is64 = arr.GetType().GetElementType() == typeof(ulong);
                 Array result = (Array)arr.Clone();
