@@ -37,7 +37,7 @@ namespace intercal.tests
         [Fact]
         public void Box_MismatchedTypes_ErrorMessageExists()
         {
-            Assert.Contains("DIFFERENT SIZE", Messages.E2010);
+            Assert.Contains("CAT IS TOO FAT", Messages.E2010);
         }
     }
 }

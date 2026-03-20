@@ -7,34 +7,36 @@ namespace intercal.tests
 {
     public class Bitwise64Tests
     {
-        // Helper: compile and run a schrodie program, return stdout
+        // Helper: compile and run a schrodie program using bin/schrodie.exe
         private string CompileAndRun(string source)
         {
             var dir = Path.Combine(Path.GetTempPath(), "schrodie_test_" + Guid.NewGuid().ToString("N")[..8]);
             Directory.CreateDirectory(dir);
             try
             {
-                // Copy runtime and syslib
-                var samplesDir = Path.GetFullPath(Path.Combine(
-                    AppContext.BaseDirectory, "..", "..", "..", "..", "samples"));
-                var runtimeSrc = Path.Combine(AppContext.BaseDirectory, "schrodie.runtime.dll");
-                File.Copy(runtimeSrc, Path.Combine(dir, "schrodie.runtime.dll"), true);
+                // Locate bin/ directory (contains compiler, runtime, syslib)
+                var binDir = Path.GetFullPath(Path.Combine(
+                    AppContext.BaseDirectory, "..", "..", "..", "..", "bin"));
+                var compilerExe = Path.Combine(binDir, "schrodie.exe");
+                if (!File.Exists(compilerExe))
+                    return "COMPILER_NOT_FOUND";
 
-                // Build syslib path
-                var syslibSrc = Path.Combine(samplesDir, "syslib64.dll");
+                // Copy runtime and syslib to temp dir
+                var runtimeSrc = Path.Combine(binDir, "schrodie.runtime.dll");
+                if (File.Exists(runtimeSrc))
+                    File.Copy(runtimeSrc, Path.Combine(dir, "schrodie.runtime.dll"), true);
+                var syslibSrc = Path.Combine(binDir, "syslib64.dll");
                 if (File.Exists(syslibSrc))
                     File.Copy(syslibSrc, Path.Combine(dir, "syslib64.dll"), true);
 
                 var srcFile = Path.Combine(dir, "test.schrodie");
                 File.WriteAllText(srcFile, source);
 
-                // Compile
-                var compilerProject = Path.GetFullPath(Path.Combine(
-                    AppContext.BaseDirectory, "..", "..", "..", "..", "cringe", "cringe.csproj"));
+                // Compile using bin/schrodie.exe directly
                 var compile = Process.Start(new ProcessStartInfo
                 {
-                    FileName = "dotnet",
-                    Arguments = $"run --project \"{compilerProject}\" -- test.schrodie -b -r:syslib64.dll",
+                    FileName = compilerExe,
+                    Arguments = "test.schrodie -b -r:syslib64.dll",
                     WorkingDirectory = dir,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
