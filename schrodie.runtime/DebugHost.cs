@@ -430,9 +430,9 @@ namespace INTERCAL.Runtime
 
                 Send(new
                 {
-                    @event = "output",
-                    category = "console",
-                    output = $"[DebugHost] Breakpoints stored: key='{file}' lines=[{string.Join(",", lines)}]\n"
+                    @event = "breakpointsAck",
+                    file,
+                    lines
                 });
             }
 

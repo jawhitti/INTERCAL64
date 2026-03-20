@@ -429,11 +429,7 @@ public class DebugAdapter
             });
             ReadFromDebuggeeSkippingOutput(); // ack
 
-            SendEvent("output", new
-            {
-                category = "console",
-                output = $"Breakpoints set: {Path.GetFileName(file)} lines [{string.Join(", ", lines)}]\n"
-            });
+            // Breakpoint ack received silently
         }
         else if (file != null)
         {

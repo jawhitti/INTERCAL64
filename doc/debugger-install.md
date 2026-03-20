@@ -12,16 +12,11 @@
 git clone https://github.com/jawhitti/INTERCAL.git
 cd INTERCAL
 
-# Build everything
-dotnet build schrodie.sln
+# Build compiler, runtime, and syslib into bin/
+dotnet build cringe/cringe.csproj
 
 # Build the DAP adapter
 dotnet build schrodie.dap/schrodie.dap.csproj
-
-# Build the syslib (needed for programs that use standard library routines)
-cd samples
-dotnet run --project ../cringe/cringe.csproj -- syslib64.schrodie -b -t:library -noplease
-cd ..
 ```
 
 ## Step 2: Install the VS Code Extension
@@ -62,14 +57,14 @@ This should point to the repo root — the directory containing `schrodie.dap/`,
 
 ## Step 4: Set Up Your Working Directory
 
-Your `.schrodie` or `.i` source files need access to `schrodie.runtime.dll` and (optionally) `syslib64.dll`. The simplest approach is to work in the `samples/` directory, which already has these. If you want to work elsewhere, copy them:
+Your `.schrodie` or `.i` source files need access to `schrodie.runtime.dll` and (optionally) `syslib64.dll`. Both are built into `bin/` by `dotnet build`. Copy them to your working directory:
 
 ```bash
-cp samples/schrodie.runtime.dll /your/project/dir/
-cp samples/syslib64.dll /your/project/dir/       # optional, for syslib routines
+cp bin/schrodie.runtime.dll /your/project/dir/
+cp bin/syslib64.dll /your/project/dir/       # optional, for syslib routines
 ```
 
-The debugger looks for `syslib64.dll` in the same directory as your source file and in its parent directory.
+Or work in the `samples/` directory after copying them there. The debugger looks for `syslib64.dll` in the source file's directory, its parent, and the `bin/` folder.
 
 ## Step 5: Debug
 
@@ -102,7 +97,7 @@ VS Code will prompt you to create a launch configuration. The default works for 
 
 | Property | Description |
 |----------|-------------|
-| `compiler` | Path to the schrodie compiler project (auto-detected if not set) |
+| `compiler` | Path to `schrodie.exe` compiler (auto-detected from `bin/` if not set) |
 | `syslib` | Path to `syslib64.dll` (auto-detected if not set) |
 
 ## What Works
@@ -117,7 +112,7 @@ VS Code will prompt you to create a launch configuration. The default works for 
 - **ABSTAIN tracking** — abstained statements are auto-skipped during stepping, with messages in the debug console
 - **Gerund State** — expandable scope in the Variables panel showing which statements are abstained
 - **Program output** — READ OUT output appears in the debug console
-- **Program input** — type in the debug console when the program executes WRITE IN
+- **Program input** — when the program executes WRITE IN, a "Waiting for input..." message appears in the debug console. Type your input there and press Enter.
 - **NEXT stack** — displayed in the Call Stack panel
 - **Thorn guards** — `⟨N|ψ⟩` notation highlighted in bold red
 
