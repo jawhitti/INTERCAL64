@@ -507,19 +507,26 @@ namespace INTERCAL
                 c.assemblyName = Path.GetFileNameWithoutExtension(sources[0]);
                 c.sourceFile = Path.GetFullPath(sources[0]);
 
-                // Check for label conflicts between local program and referenced assemblies
+                // Check for label conflicts between local program and referenced assemblies.
+                // Local labels shadow library labels (local wins).
                 if (c.references != null)
                 {
                     foreach (var e in c.references)
                     {
+                        var kept = new System.Collections.Generic.List<EntryPointAttribute>();
                         foreach (var a in e.entryPoints)
                         {
                             if (p[a.Label].GetEnumerator().MoveNext())
                             {
-                                Abort(string.Format("E2005 LABEL {0} IS DEFINED LOCALLY AND ALSO EXPORTED BY {1}.  AMBIGUITY IS NOT POLITE",
+                                c.Warn(string.Format("Label {0} defined locally shadows {1} -- local wins",
                                     a.Label, Path.GetFileName(e.assemblyFile)));
                             }
+                            else
+                            {
+                                kept.Add(a);
+                            }
                         }
+                        e.entryPoints = kept.ToArray();
                     }
                 }
 

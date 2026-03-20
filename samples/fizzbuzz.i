@@ -67,7 +67,6 @@
         DO .5 <- .5 ~ #1
         DO (300) NEXT
         PLEASE DO GIVE UP
-(300)   DO .5 <- #0
-        DO RESUME .5
+(300)   DO RESUME .5
         DO (100) NEXT
         PLEASE RESUME #1

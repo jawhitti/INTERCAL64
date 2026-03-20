@@ -732,6 +732,90 @@ namespace intercal.tests
             Assert.Equal(b, Lib.Select128(mingled, evenMask));
         }
 
+        // ================================================================
+        // Zero test idiom: "?'.1~.1'$#1"~#3
+        // This is the standard INTERCAL way to test if a 16-bit value is zero.
+        // When .1=0, result should be 1. When .1≠0, result should be 2.
+        // Breakdown: Select(.1,.1) → Xor → Mingle with 1 → Select with 3
+        // ================================================================
+
+        // The standard INTERCAL zero test idiom: "?'.1~.1'$#1"~#3
+        // Correct parse: "?(('.1~.1')$#1)"~#3
+        //   1. Select .1 by itself (packs set bits)
+        //   2. Mingle result with #1 (16-bit → 32-bit)
+        //   3. Unary XOR on the 32-bit mingle result
+        //   4. Select with mask #3 (extract bits 0,1)
+        // Returns #1 when .1=0, #2 when .1≠0.
+        [Theory]
+        [InlineData(0, 1)]       // zero → 1
+        [InlineData(1, 2)]       // nonzero → 2
+        [InlineData(0xFFFF, 2)]  // nonzero → 2
+        [InlineData(100, 2)]     // nonzero → 2
+        [InlineData(42, 2)]      // nonzero → 2
+        public void ZeroTest_Idiom_ReturnsExpectedValue(int input, int expected)
+        {
+            // Correct parse: "? ('.1~.1' $ #1)" ~ #3
+            // The ? (XOR) applies to the MINGLE result, not the select result!
+            ushort dot1 = (ushort)input;
+
+            // Step 1: '.1~.1' — select .1 by itself (16-bit)
+            ushort step1 = Lib.Select(dot1, dot1);
+
+            // Step 2: ...$ #1 — mingle select result with 1 (→ 32-bit)
+            uint step2 = Lib.Mingle(step1, 1);
+
+            // Step 3: ? — unary XOR on the 32-bit mingle result
+            uint step3 = Lib.UnaryXor32(step2);
+
+            // Step 4: "..."~#3 — select with mask 3
+            uint result = Lib.Select(step3, 3u);
+
+            Assert.Equal((uint)expected, result);
+        }
+
+        // Verify the .5~#1 mask that fizzbuzz.i uses AFTER the zero test:
+        // This SHOULD distinguish zero from nonzero but doesn't with #1 mask.
+        // Fizzbuzz.i follows the zero test with: DO .5 <- .5 ~ #1
+        // With correct parse (result is 1 or 2):
+        //   1 ~ #1 = 1 (bit 0 set) → RESUME 1 (return from NEXT)
+        //   2 ~ #1 = 0 (bit 0 clear) → RESUME 0 = error!
+        // The .5~#1 line is wrong in fizzbuzz.i — it should be removed
+        // or changed. The correct usage is RESUME .5 directly (1 or 2).
+        [Theory]
+        [InlineData(0, 1, 1)]    // zero test=1, 1~#1=1
+        [InlineData(1, 2, 0)]    // zero test=2, 2~#1=0 ← bug: RESUME 0 is invalid
+        [InlineData(100, 2, 0)]  // zero test=2, 2~#1=0
+        public void ZeroTest_WithSelectOne_ShowsBug(int input, int zeroTestResult, int afterMask)
+        {
+            ushort dot1 = (ushort)input;
+            ushort s1 = Lib.Select(dot1, dot1);
+            uint s2 = Lib.Mingle(s1, 1);
+            uint s3 = Lib.UnaryXor32(s2);
+            uint zeroTest = Lib.Select(s3, 3u);
+            Assert.Equal((uint)zeroTestResult, zeroTest);
+
+            // This is the line from fizzbuzz.i: .5 <- .5 ~ #1
+            uint masked = Lib.Select(zeroTest, 1u);
+            Assert.Equal((uint)afterMask, masked);
+        }
+
+        // This tests what the compiler ACTUALLY generates (with uint casts)
+        // vs what it SHOULD generate (with ushort for 16-bit vars)
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 2)]
+        [InlineData(100, 2)]
+        public void ZeroTest_AsCompilerEmits_WithUintCasts(int input, int expected)
+        {
+            // This is what ~tmp.cs actually contains (uint casts everywhere):
+            uint dot1 = (uint)(ulong)input;  // simulating frame.ExecutionContext[".1"]
+            var result = (ulong)Lib.Select((uint)(
+                (Lib.UnaryXor32((uint)(Lib.Mingle(
+                    ((ulong)Lib.Select((uint)(dot1),(uint)(dot1))), 1))))),
+                (uint)(3));
+            Assert.Equal((ulong)expected, result);
+        }
+
         [Fact]
         public void Mingle64Select128_Roundtrip_MaxValues()
         {
