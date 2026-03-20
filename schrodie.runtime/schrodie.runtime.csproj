@@ -7,5 +7,8 @@
     <Product>schrodie</Product>
     <Description>schrodie runtime</Description>
     <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
+    <OutputPath>..\bin\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 </Project>

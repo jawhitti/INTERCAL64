@@ -8,8 +8,24 @@
     <Product>schrodie</Product>
     <Description>schrodie — a quantum programming language</Description>
     <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
+    <OutputPath>..\bin\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\schrodie.runtime\schrodie.runtime.csproj" />
   </ItemGroup>
+  <Target Name="CompileSyslib" AfterTargets="Build">
+    <PropertyGroup>
+      <BinDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\bin\'))</BinDir>
+      <SyslibSource>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\syslib64\syslib64.schrodie'))</SyslibSource>
+    </PropertyGroup>
+    <Message Text="Compiling syslib64..." Importance="high" />
+    <Exec Command="dotnet &quot;$(BinDir)schrodie.dll&quot; &quot;$(SyslibSource)&quot; -t:library -b -noplease"
+          WorkingDirectory="$(BinDir)"
+          IgnoreExitCode="false"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low" />
+    <Message Text="syslib64.dll built in bin/" Importance="high" />
+  </Target>
 </Project>

@@ -457,11 +457,11 @@ namespace INTERCAL
                 if (c.references == null)
                 {
                     var refs = new List<ExportList>();
-                    var syslibPath = TryFindFile("isyslib.dll");
+                    var syslibPath = TryFindFile("syslib64.dll");
                     // Don't self-reference when compiling the syslib itself
-                    if (syslibPath != null && Path.GetFileNameWithoutExtension(sources[0]) != "isyslib")
+                    if (syslibPath != null && Path.GetFileNameWithoutExtension(sources[0]) != "syslib64")
                     {
-                        Trace.WriteLine("Auto-referencing isyslib.dll");
+                        Trace.WriteLine("Auto-referencing syslib64.dll");
                         refs.Add(new ExportList(syslibPath));
                     }
                     refs.Add(new ExportList(FindFile("schrodie.runtime.dll")));
