@@ -24,6 +24,10 @@ Write-Host "`n=== BUILD ===" -ForegroundColor Cyan
 dotnet build cringe/cringe.csproj -v q
 if ($LASTEXITCODE -ne 0) { Write-Host "BUILD FAILED" -ForegroundColor Red; exit 1 }
 
+# Build DAP adapter (needed for VS Code debugging)
+dotnet build schrodie.dap/schrodie.dap.csproj -v q
+if ($LASTEXITCODE -ne 0) { Write-Host "DAP BUILD FAILED" -ForegroundColor Red; exit 1 }
+
 # Verify bin/ contents
 $expected = @("bin/schrodie.exe", "bin/schrodie.dll", "bin/schrodie.runtime.dll", "bin/syslib64.dll")
 $missing = $expected | Where-Object { -not (Test-Path $_) }
