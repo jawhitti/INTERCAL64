@@ -230,6 +230,20 @@ namespace INTERCAL.Runtime
             _pipe.Close();
         }
 
+        /// <summary>
+        /// Notify the adapter that the program is waiting for stdin input.
+        /// Called from WriteIn before blocking on ReadLine.
+        /// </summary>
+        public void NotifyWaitingForInput()
+        {
+            Send(new
+            {
+                @event = "output",
+                category = "console",
+                output = "Waiting for input... (type in Debug Console below)\n"
+            });
+        }
+
         #region Private helpers
 
         private bool _loggedBpCheck = false;

@@ -239,8 +239,8 @@ public class DebugAdapter
 
         var psi = new ProcessStartInfo
         {
-            FileName = "dotnet",
-            Arguments = $"run --project \"{_compilerPath}\" -- {compilerArgs}",
+            FileName = _compilerPath,
+            Arguments = compilerArgs,
             WorkingDirectory = programDir,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -647,7 +647,7 @@ public class DebugAdapter
             try
             {
                 _process.StandardInput.WriteLine(expression);
-                SendResponse(request, body: new { result = expression, variablesReference = 0 });
+                SendResponse(request, body: new { result = "", variablesReference = 0 });
             }
             catch
             {
@@ -732,6 +732,7 @@ public class DebugAdapter
     private void HandleContinue(DapRequest request)
     {
         SendResponse(request, body: new { allThreadsContinued = true });
+        _currentLine = 0; // Mark as running so Debug Console forwards to stdin
         SendToDebuggee(new { command = "continue" });
         WaitForDebuggeeStopAsync();
     }
@@ -739,6 +740,7 @@ public class DebugAdapter
     private void HandleNext(DapRequest request)
     {
         SendResponse(request);
+        _currentLine = 0;
         SendToDebuggee(new { command = "next" });
         WaitForDebuggeeStopAsync();
     }
@@ -746,6 +748,7 @@ public class DebugAdapter
     private void HandleStepIn(DapRequest request)
     {
         SendResponse(request);
+        _currentLine = 0;
         SendToDebuggee(new { command = "stepIn" });
         WaitForDebuggeeStopAsync();
     }
@@ -753,6 +756,7 @@ public class DebugAdapter
     private void HandleStepOut(DapRequest request)
     {
         SendResponse(request);
+        _currentLine = 0;
         SendToDebuggee(new { command = "stepOut" });
         WaitForDebuggeeStopAsync();
     }
@@ -1011,13 +1015,14 @@ public class DebugAdapter
 
     private string FindCompiler()
     {
-        // Look for cringe project relative to the adapter
+        // Look for schrodie.exe in bin/ relative to the adapter or project root
         var adapterDir = AppDomain.CurrentDomain.BaseDirectory;
         var candidates = new[]
         {
-            Path.Combine(adapterDir, "..", "..", "..", "..", "cringe", "cringe.csproj"),
-            Path.Combine(adapterDir, "..", "cringe", "cringe.csproj"),
-            Path.Combine(adapterDir, "cringe", "cringe.csproj"),
+            Path.Combine(adapterDir, "..", "..", "..", "..", "bin", "schrodie.exe"),
+            Path.Combine(adapterDir, "..", "bin", "schrodie.exe"),
+            Path.Combine(adapterDir, "bin", "schrodie.exe"),
+            Path.Combine(adapterDir, "schrodie.exe"),
         };
 
         foreach (var c in candidates)
@@ -1026,16 +1031,19 @@ public class DebugAdapter
             if (File.Exists(full)) return full;
         }
 
-        return "cringe/cringe.csproj";
+        return "schrodie.exe";
     }
 
     private string FindSyslib()
     {
         var programDir = Path.GetDirectoryName(Path.GetFullPath(_programPath)) ?? ".";
+        var adapterDir = AppDomain.CurrentDomain.BaseDirectory;
         var candidates = new[]
         {
             Path.Combine(programDir, "syslib64.dll"),
             Path.Combine(programDir, "..", "syslib64.dll"),
+            Path.Combine(programDir, "..", "bin", "syslib64.dll"),
+            Path.Combine(adapterDir, "..", "..", "..", "..", "bin", "syslib64.dll"),
         };
 
         foreach (var s in candidates)

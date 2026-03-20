@@ -819,6 +819,7 @@ namespace INTERCAL
                 }
                 else
                 {
+                        DebugHost.Instance?.NotifyWaitingForInput();
                         string input = TextIn.ReadLine();
                         try
                         {
