@@ -434,9 +434,22 @@ Division and modulo at 64-bit width are under development. A complete implementa
 | 5927104639891485490 | RANDOM32 | :1 = random 32-bit value (mingles two RANDOM16) |
 | 5927104639891486260 | RANDOM64 | ::1 = random 64-bit value (mingles two RANDOM32) |
 
-### 9.6 Named Entry Points
+### 9.6 64-Bit Bitwise Operations
 
-The following table lists all named (ASCII label) entry points. These are wrappers around the numeric-label routines and may be used interchangeably.
+Operands in `::1` and `::2`. Result in `::3`. These operate by splitting each 64-bit value into 32-bit halves, mingling the corresponding halves, applying the unary operator, selecting the result bits, and recombining via PACK32.
+
+| Label | Name | Description |
+|-------|------|-------------|
+| 4705773660240084992 | AND64 | ::3 = ::1 AND ::2 |
+| 5715690474052780032 | OR64 | ::3 = ::1 OR ::2 |
+| 6363395191251927040 | XOR64 | ::3 = ::1 XOR ::2 |
+| 5642821449895903232 | NOT64 | ::3 = NOT ::1 (XOR with all ones) |
+
+NOT64 takes only `::1` as input. The result of `NOT64(0)` is VOID (all bits set), which cannot be printed via READ OUT.
+
+### 9.7 Named Entry Points
+
+The following table lists all named (ASCII label) entry points.
 
 | Name | Label | Wraps |
 |------|-------|-------|
@@ -457,8 +470,12 @@ The following table lists all named (ASCII label) entry points. These are wrappe
 | RANDOM16 | 5927104639891484982 | (1900) |
 | RANDOM32 | 5927104639891485490 | new |
 | RANDOM64 | 5927104639891486260 | new |
+| AND64 | 4705773660240084992 | new |
+| OR64 | 5715690474052780032 | new |
+| XOR64 | 6363395191251927040 | new |
+| NOT64 | 5642821449895903232 | new |
 
-### 9.7 Overflow Handling
+### 9.8 Overflow Handling
 
 The label (1999) is the overflow handler. It is abstained from by default when calling through (1000) or (1500), and reinstated upon return. Programs that call (1009) or (1509) directly will receive overflow errors via (1999) if the result exceeds the operand width. The error message is:
 
