@@ -83,11 +83,28 @@ Each variable has an independent STASH stack (unlimited depth in the specificati
 
 **Design:** STASH stacks live in external SRAM. Each variable has a stack pointer stored in a small on-chip table. STASH writes the current value to SRAM at the stack pointer and increments; RETRIEVE reads and decrements. Practical depth limit: 256 per variable (far beyond any real program's needs).
 
-### 3.6 ABSTAIN Bitmap
+### 3.6 ABSTAIN/REINSTATE and Statement Enable Logic
 
-ABSTAIN/REINSTATE enable or disable individual statements. The state is a single bit per statement.
+ABSTAIN/REINSTATE is more complex than a simple bitmap. There are two forms:
 
-**Design:** A bitmap in on-chip SRAM, indexed by statement number. For programs up to 4096 statements: 512 bytes. Each statement fetch checks the corresponding bit; if clear, the statement is skipped.
+**Label-targeted ABSTAIN:** `ABSTAIN FROM (label)` disables a specific statement. This is a straightforward bitmap — one enable bit per statement, indexed by statement number.
+
+**Gerund-targeted ABSTAIN:** `ABSTAIN FROM CALCULATING` disables ALL statements of a given type (assignments, NEXT calls, etc.) across the entire program. This requires either:
+- A type tag stored with each instruction, checked against a "disabled gerunds" register on every fetch, OR
+- Pre-expanding gerund ABSTAINs into individual bitmap updates at execution time (microcode loop that scans the instruction memory for matching types and clears their enable bits)
+
+The first approach adds a 4-bit type field to each instruction and an AND gate in the fetch path. The second is simpler hardware but slower for programs with many statements.
+
+**Splatted statements:** INTERCAL's `*` prefix marks unrecognized syntax as "splatted" — disabled by default but REINSTATE-able. These statements need their enable bits initialized to OFF when the program is loaded. The program image must include the initial enable bitmap alongside the instruction stream.
+
+**Fall-through skip logic:** When a statement is abstained, the software implementation skips forward to the next labeled statement (not just the next instruction). In hardware, this means the program counter must scan forward for the next instruction that carries a label. Options:
+- Store a "next label offset" with each instruction (space-expensive but O(1) skip)
+- Microcode scan loop (compact but multi-cycle skip)
+- Pre-compute a skip table loaded alongside the program (best tradeoff: O(1) skip, no per-instruction overhead, loaded from host at program load time)
+
+**Self-modifying code:** ABSTAIN/REINSTATE is fundamentally self-modifying code — the program patches itself at runtime. Splatted statements are code that ships disabled and can be patched back in. In hardware, this is implemented as a mutable enable bitmap separate from the immutable instruction stream. The instruction memory is ROM-like (written once at program load); the enable bitmap is RAM. This is cleaner than traditional self-modifying code: no instruction cache invalidation, no pipeline hazards, no coherency issues. The execute/skip decision is a single AND gate in the fetch path.
+
+**Design:** Enable bitmap in on-chip SRAM (512 bytes for 4096 statements). 4-bit gerund type field per instruction. 8-entry "disabled gerunds" register (one bit per gerund type). Skip table in SRAM (one entry per abstainable statement, giving the address of the next labeled statement). Initial enable state loaded from program image.
 
 ### 3.7 Array Storage
 
