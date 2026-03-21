@@ -1,0 +1,150 @@
+	DO NOTE =============================================
+	DO NOTE DIVIDE32: :1 / :2 -> :3 QUOTIENT, :4 REMAINDER
+	DO NOTE SHIFT-AND-SUBTRACT, MSB FIRST
+	DO NOTE =============================================
+
+	DO NOTE =============================================
+	DO NOTE PRIVATE: COMPARE .20-.21 >= .22-.23
+	DO NOTE BRANCHLESS: CARRY-OUT OF REM + NOT DIV + 1
+	DO NOTE OUTPUT: .29 = 2 IF >=, .29 = 1 IF <
+	DO NOTE =============================================
+(9600) DO STASH .1 + .2 + .3 + :1 + :2 + :3
+	DO .1 <- '?.22$#65535'~'#0$#65535'
+	DO :1 <- .20
+	PLEASE DO :2 <- .1
+	DO (1500) NEXT
+	DO :1 <- :3
+	DO :2 <- #1
+	PLEASE DO (1500) NEXT
+	DO .3 <- :3 ~ '#65280$#65280'
+	DO .1 <- '?.23$#65535'~'#0$#65535'
+	PLEASE DO :1 <- .21
+	DO :2 <- .1
+	DO (1500) NEXT
+	DO :1 <- :3
+	PLEASE DO :2 <- .3
+	DO (1500) NEXT
+	DO .29 <- :3 ~ '#65280$#65280'
+	DO .29 <- "?'.29~.29'$#1"~#3
+	PLEASE DO NOTE .29 = 1 IF < (NO CARRY), 2 IF >= (CARRY)
+	DO RETRIEVE .1 + .2 + .3 + :1 + :2 + :3
+	PLEASE RESUME #1
+
+	DO NOTE =============================================
+	DO NOTE PRIVATE: SUBTRACT .20-.21 MINUS .22-.23
+	DO NOTE =============================================
+(9620) DO STASH .1 + .2 + .3 + :1 + :2 + :3
+	DO .1 <- '?.22$#65535'~'#0$#65535'
+	DO .2 <- '?.23$#65535'~'#0$#65535'
+	PLEASE DO :1 <- .20
+	DO :2 <- .1
+	DO (1500) NEXT
+	DO :1 <- :3
+	PLEASE DO :2 <- #1
+	DO (1500) NEXT
+	DO .20 <- :3 ~ #65535
+	DO .3 <- :3 ~ '#65280$#65280'
+	PLEASE DO :1 <- .21
+	DO :2 <- .2
+	DO (1500) NEXT
+	DO :1 <- :3
+	PLEASE DO :2 <- .3
+	DO (1500) NEXT
+	DO .21 <- :3 ~ #65535
+	PLEASE DO RETRIEVE .1 + .2 + .3 + :1 + :2 + :3
+	PLEASE RESUME #1
+
+	DO NOTE =============================================
+	DO NOTE DIVIDE32 ENTRY
+	DO NOTE =============================================
+	PLEASE NOTE DIVIDE32
+(4920558940557030450)	DO STASH .1 + .2 + .3 + :1 + :2 + .20 + .21 + .22 + .23 + .24 + .25 + .26 + .27 + .28 + .29
+	DO .22 <- :2 ~ #65535
+	PLEASE DO .23 <- :2 ~ '#65280$#65280'
+	DO .20 <- #0
+	DO .21 <- #0
+	DO .24 <- #0
+	PLEASE DO .25 <- #0
+	DO .28 <- #0
+
+	DO NOTE =============================================
+	DO NOTE MAIN LOOP
+	DO NOTE =============================================
+(9630) DO FORGET #1
+	DO REINSTATE (9649)
+	DO REINSTATE (9659)
+
+	DO NOTE EXTRACT MSB OF DIVIDEND
+	DO .29 <- :1 ~ '#65280$#65280'
+	PLEASE DO .29 <- .29 ~ #32768
+
+	DO NOTE LEFT-SHIFT DIVIDEND
+	DO .26 <- :1 ~ #65535
+	DO .27 <- :1 ~ '#65280$#65280'
+	DO .2 <- .26 ~ #32768
+	PLEASE DO .27 <- '.27$#0'~'#32767$#1'
+	DO .27 <- 'V.27$.2'~'#0$#65535'
+	DO .26 <- '.26$#0'~'#32767$#1'
+	PLEASE DO .1 <- .27
+	DO .2 <- .26
+	DO (1520) NEXT
+	DO :1 <- :1
+
+	PLEASE DO NOTE LEFT-SHIFT REMAINDER AND OR IN MSB
+	DO .2 <- .20 ~ #32768
+	DO .21 <- '.21$#0'~'#32767$#1'
+	DO .21 <- 'V.21$.2'~'#0$#65535'
+	PLEASE DO .20 <- '.20$#0'~'#32767$#1'
+	DO .20 <- 'V.20$.29'~'#0$#65535'
+
+	DO NOTE COMPARE AND BRANCH
+	DO (9600) NEXT
+	PLEASE DO (9648) NEXT
+	DO NOTE RESUME #2: REM >= DIV
+	DO (9620) NEXT
+	DO NOTE LEFT-SHIFT QUOTIENT AND SET BIT
+	DO .2 <- .24 ~ #32768
+	PLEASE DO .25 <- '.25$#0'~'#32767$#1'
+	DO .25 <- 'V.25$.2'~'#0$#65535'
+	DO .24 <- '.24$#0'~'#32767$#1'
+	PLEASE DO .1 <- .24
+	DO .2 <- #1
+	DO .24 <- 'V.1$.2'~'#0$#65535'
+	DO (9655) NEXT
+
+(9648) DO (9649) NEXT
+	DO ABSTAIN FROM (9649)
+(9649) DO RESUME .29
+	DO NOTE REM < DIV: JUST SHIFT QUOTIENT
+	DO .2 <- .24 ~ #32768
+	PLEASE DO .25 <- '.25$#0'~'#32767$#1'
+	DO .25 <- 'V.25$.2'~'#0$#65535'
+	DO .24 <- '.24$#0'~'#32767$#1'
+
+(9655) DO .1 <- .28
+	DO .2 <- #1
+	PLEASE DO (1000) NEXT
+	DO .28 <- .3
+	DO .1 <- #32
+	DO .2 <- .28
+	PLEASE DO (1010) NEXT
+	DO .1 <- .3
+	DO .1 <- "?'.1~.1'$#1"~#3
+	DO (9658) NEXT
+	PLEASE DO (9630) NEXT
+
+(9658) DO (9659) NEXT
+	DO ABSTAIN FROM (9659)
+(9659) DO RESUME .1
+
+	DO .1 <- .25
+	DO .2 <- .24
+	PLEASE DO (1520) NEXT
+	DO :3 <- :1
+	DO .1 <- .21
+	DO .2 <- .20
+	DO (1520) NEXT
+	PLEASE DO :4 <- :1
+
+	DO RETRIEVE .1 + .2 + .3 + :1 + :2 + .20 + .21 + .22 + .23 + .24 + .25 + .26 + .27 + .28 + .29
+	PLEASE RESUME #1
