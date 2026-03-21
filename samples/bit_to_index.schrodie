@@ -1,0 +1,23 @@
+	DO NOTE =============================================
+	DO NOTE BIT TO INDEX
+	DO NOTE INPUT:  ::10 (must be exactly one bit set)
+	DO NOTE OUTPUT: .10 (index 0-63)
+	DO NOTE METHOD: popcount(x - 1) where x - 1 = ADD64(x, NOT64(0))
+	DO NOTE AVOIDS broken MINUS64
+	DO NOTE =============================================
+(9200) DO STASH ::1 + ::2 + ::3
+	DO NOTE COMPUTE NOT(0) = ALL ONES = -1
+	DO ::1 <- ####0
+	PLEASE DO (5642821449895903232) NEXT
+	DO NOTE ::3 = NOT(0)
+	DO NOTE COMPUTE ::10 - 1 = ADD64(::10, NOT(0))
+	DO ::1 <- ::10
+	PLEASE DO ::2 <- ::3
+	DO (4702958910472978432) NEXT
+	DO NOTE ::3 = ::10 - 1
+	DO ::10 <- ::3
+	PLEASE DO (9100) NEXT
+	DO NOTE ::10 = POPCOUNT(::10 - 1) = BIT INDEX
+	DO .10 <- ::10 ~ #65535
+	PLEASE RETRIEVE ::1 + ::2 + ::3
+	PLEASE RESUME #1
