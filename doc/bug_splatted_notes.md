@@ -85,6 +85,8 @@ The following remain true and ARE problems:
 
 2. **All NOTEs are splatted**: Every `DO NOTE` comment is marked as a `NonsenseStatement` with `Splatted = true`. This is wasteful (generates unnecessary abstain slots and guards) but harmless to execution.
 
+3. **(1000) overflow causes RESUME #0 hang**: When `(1000)` (16-bit wrapping add) receives inputs whose sum exceeds 65535, the carry propagation reaches bit 15. The overflow check computes `.5 = 0` and `RESUME .5` becomes `RESUME #0`, which falls through to `(1010)` (16-bit subtract), causing an infinite loop. This is NOT an ABSTAIN bug — ABSTAIN correctly suppresses the overflow error, but the code path after suppression produces an invalid RESUME value. See `doc/abstain_internals.md` for details and workarounds.
+
 ## Key Files
 
 - `cringe/confuse.cs` lines 285-293: NonsenseStatement creation

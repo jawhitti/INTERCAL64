@@ -29,11 +29,25 @@ The `_nextStack` is a **field** (not local to `Eval`), so it persists across cal
 
 No syslib routines use gerund-based ABSTAIN (`ABSTAIN FROM CALCULATING`). All ABSTAINs target specific labels. Gerund ABSTAIN would disable ALL statements of that type across the entire program, which would be destructive. It's syntactically valid but not practically useful.
 
-## Previously Suspected Bug: (1500) Overflow
+## (1000) Overflow and RESUME #0
 
-It was previously suspected that `(1500)` (32-bit add) failed to suppress overflow errors across compiled assembly boundaries. Investigation shows the `abstainMap` mechanism works correctly within the syslib — each call creates a fresh map and the ABSTAIN FROM (1999) at (1500)'s entry correctly prevents overflow errors.
+The 16-bit add at `(1000)` suppresses overflow by ABSTAINing FROM `(1005)` and `(1999)`. This works for values whose sum fits in 16 bits. However, when the carry propagation reaches bit 15 (i.e., the sum overflows 16 bits), the overflow check computes `.5 = 0` and the syslib executes `RESUME .5` which becomes `RESUME #0`.
 
-The actual cause of overflow errors when calling `(1500)` with values that exceed 32 bits needs further investigation. It may be related to the internal carry propagation logic rather than the ABSTAIN mechanism itself.
+`RESUME #0` is either a no-op or falls through to the next sequential statement in the syslib — which is `(1010)`, the 16-bit subtract entry point. This causes execution to enter completely unrelated code, typically resulting in an infinite loop or hang.
+
+**This means `(1000)` cannot safely add values whose sum exceeds 65535.** Despite the ABSTAIN mechanism, the overflow path produces `RESUME #0` which has undefined behavior in the syslib's control flow.
+
+### Affected patterns
+
+Any code that calls `(1000)` with inputs that sum to >= 65536 will hang. Common cases:
+
+- `NOT(0) + 1 = 65535 + 1` — computing two's complement of 0
+- `65535 + N` for any N > 0
+- Any 16-bit add where both operands are large
+
+### Workaround
+
+Use `(1500)` (32-bit add) with 16-bit values widened to 32-bit. The sum of two 16-bit values never exceeds 131070, which fits in 32 bits without overflow. Extract the 16-bit result from the low half and the carry from bit 16.
 
 ## Key Files
 
