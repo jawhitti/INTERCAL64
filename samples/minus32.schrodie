@@ -1,0 +1,46 @@
+	DO NOTE =============================================
+	DO NOTE MINUS32: :3 = :1 - :2
+	DO NOTE 16-BIT HALVES IN 32-BIT ADDS, NO OVERFLOW
+	DO NOTE USES: 1500 32-BIT ADD, 1520 MINGLE
+	DO NOTE =============================================
+	PLEASE NOTE MINUS32
+(4920558940557030194)	DO STASH .1 + .2 + .3 + :1 + :2 + .10 + .11 + .12 + .13
+	DO NOTE SAVE INPUT HALVES
+	DO .10 <- :1 ~ #65535
+	DO .11 <- :1 ~ '#65280$#65280'
+	PLEASE DO .12 <- :2 ~ #65535
+	DO .13 <- :2 ~ '#65280$#65280'
+	DO NOTE COMPLEMENT :2 HALVES
+	DO .12 <- '?.12$#65535'~'#0$#65535'
+	PLEASE DO .13 <- '?.13$#65535'~'#0$#65535'
+
+	DO NOTE LOW: .10 + .12 + 1 VIA 32-BIT
+	DO :1 <- .10
+	DO :2 <- .12
+	PLEASE DO (1500) NEXT
+	DO :1 <- :3
+	DO :2 <- #1
+	DO (1500) NEXT
+	PLEASE DO NOTE :3 = LOW SUM (17-BIT MAX)
+	DO .10 <- :3 ~ #65535
+	DO .3 <- :3 ~ '#65280$#65280'
+	DO NOTE .10 = LOW RESULT, .3 = CARRY
+
+	PLEASE DO NOTE HIGH: .11 + .13 + CARRY VIA 32-BIT
+	DO :1 <- .11
+	DO :2 <- .13
+	DO (1500) NEXT
+	DO :1 <- :3
+	PLEASE DO :2 <- .3
+	DO (1500) NEXT
+	DO NOTE :3 = HIGH SUM
+	DO .11 <- :3 ~ #65535
+
+	DO NOTE REASSEMBLE VIA MINGLE
+	PLEASE DO .1 <- .11
+	DO .2 <- .10
+	DO (1520) NEXT
+	DO :3 <- :1
+
+	PLEASE RETRIEVE .1 + .2 + .3 + :1 + :2 + .10 + .11 + .12 + .13
+	PLEASE RESUME #1
