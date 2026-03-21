@@ -196,6 +196,28 @@ namespace intercal.tests
         }
 
         // ================================================================
+        // LOWBIT64
+        // ================================================================
+
+        [Theory]
+        [InlineData(1, "1")]                        // single bit
+        [InlineData(6, "2")]                        // 0b110 -> 0b010
+        [InlineData(255, "1")]                      // 0xFF -> bit 0
+        [InlineData(256, "256")]                    // bit 8 only
+        [InlineData(4294967296, "4294967296")]      // bit 32 only
+        [InlineData(18446744073709551614, "2")]     // all bits except 0 -> bit 1
+        public void Lowbit64_ReturnsLowestBit(ulong input, string expected)
+        {
+            var result = CompileAndRun(
+                $"DO ::10 <- ####{input}\n" +
+                "DO (9300) NEXT\n" +
+                "PLEASE READ OUT ::10\n" +
+                "DO GIVE UP\n",
+                "my_add64.schrodie", "lowbit.schrodie");
+            Assert.Equal(expected, result);
+        }
+
+        // ================================================================
         // Lookup Tables
         // ================================================================
 
