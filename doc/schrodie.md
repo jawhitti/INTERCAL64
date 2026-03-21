@@ -483,6 +483,36 @@ The label (1999) is the overflow handler. It is abstained from by default when c
 
 The programmer who encounters this error is encouraged to use wider variables.
 
+## 10. KNOWN LIMITATIONS
+
+### 10.1 Overflow Suppression Across Assembly Boundaries
+
+The standard library routine `(1500)` (32-bit addition) is documented as suppressing overflow errors via `ABSTAIN FROM (1999)` at entry and `REINSTATE (1999)` at exit. This mechanism works correctly when syslib routines are compiled as part of the same source file. However, when the system library is compiled as a separate .NET assembly (`syslib64.dll`) and linked via `-r:syslib64.dll`, the ABSTAIN/REINSTATE state may not be preserved correctly across the assembly boundary. In practice, `(1500)` will error with `E1999 DOUBLE OR SINGLE PRECISION OVERFLOW` on inputs whose sum exceeds 32 bits, even though the source code indicates it should wrap.
+
+**Workaround:** When wrapping addition is required (e.g., for two's complement subtraction), split operands into 16-bit halves and add using `(1500)` with values that cannot exceed 32 bits. Two 16-bit values sum to at most 131,070, which fits in 32 bits. The carry is extracted from bit 16 of the 32-bit result via `':3 ~ '#65280$#65280''`. This approach is used by the standalone `ADD64` and `MINUS32` implementations.
+
+### 10.2 Label Parsing in Comments
+
+The compiler's tokenizer does not distinguish between labels in executable statements and parenthesized numbers in `DO NOTE` comments. A comment such as:
+
+    DO NOTE USES: (1520) MINGLE
+
+will cause the compiler to treat `(1520)` as a label definition. If the program is compiled with `-r:syslib64.dll`, this creates a local label that shadows the syslib routine of the same number. The local "label" points to a comment (which is a no-op statement), so calls to the shadowed routine will silently fail.
+
+**Workaround:** Avoid parenthesized numbers in `DO NOTE` comments. Write `DO NOTE USES: 1520 MINGLE` instead.
+
+### 10.3 Broken Standard Library Routines
+
+The following syslib64 routines contain known defects as of this release:
+
+| Routine | Label | Defect |
+|---------|-------|--------|
+| ADD64 | 4702958910472978432 | Never writes the output variable `::3`. The 16-bit partial sums are computed correctly but never reassembled into a 64-bit result. |
+| MINUS64 | 5569068542595576832 | The overflow handler at `(1999)` triggers incorrectly during the complement-and-add operation, even on valid inputs that should not overflow. |
+| DIVIDE32 | 4920558940556964658 | Produces incorrect results for some inputs (e.g., `65535 / 256` returns `16777215 r 65791` instead of `255 r 255`). |
+
+Working standalone replacements for ADD64 and MINUS32 are provided in the `samples/` directory (`my_add64.schrodie`, `minus32.schrodie`). When compiled as part of the same program, local label definitions shadow the broken syslib versions. A corrected DIVIDE32 is in progress.
+
 ## REFERENCES
 
 Calvelli, C. (2001). *CLC-INTERCAL*. Available at http://www.intERCAL.org.uk/
