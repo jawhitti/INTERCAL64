@@ -1,6 +1,8 @@
 	DO NOTE =============================================
 	DO NOTE DIVIDE32: :1 / :2 -> :3 QUOTIENT, :4 REMAINDER
 	DO NOTE MSB-FIRST BRANCHLESS
+	DO NOTE DOES NOT USE 1000 FOR MASK DUE TO RESUME #0 BUG
+	DO NOTE OUTPUTS VIA READ OUT AND GIVE UP (NOT A SUBROUTINE)
 	DO NOTE =============================================
 
 	PLEASE NOTE DIVIDE32
@@ -11,7 +13,8 @@
 	DO :14 <- #0
 	DO .40 <- #0
 
-(9630) DO REINSTATE (9659)
+(9630) DO FORGET #1
+	DO REINSTATE (9659)
 	DO .29 <- :16 ~ '#65280$#65280'
 	PLEASE DO .29 <- .29 ~ #32768
 	DO .1 <- :16 ~ '#65280$#65280'
@@ -47,61 +50,65 @@
 	DO :2 <- .3
 	DO (1500) NEXT
 	DO .29 <- :3 ~ '#65280$#65280'
+	DO NOTE MASK VIA 1500 TO AVOID 1000 RESUME #0 BUG
 	PLEASE DO .1 <- '?.29$#65535'~'#0$#65535'
-	DO .2 <- #1
-	DO (1000) NEXT
-	DO .1 <- :12 ~ #65535
-	PLEASE DO .1 <- '&.1$.3'~'#0$#65535'
-	DO .2 <- :12 ~ '#65280$#65280'
-	DO .2 <- '&.2$.3'~'#0$#65535'
-	DO .1 <- '?.1$#65535'~'#0$#65535'
-	PLEASE DO .2 <- '?.2$#65535'~'#0$#65535'
-	DO :1 <- :10 ~ #65535
-	DO :2 <- .1
-	DO (1500) NEXT
-	PLEASE DO :1 <- :3
+	DO :1 <- .1
 	DO :2 <- #1
 	DO (1500) NEXT
-	DO .1 <- :3 ~ #65535
-	DO .3 <- :3 ~ '#65280$#65280'
-	PLEASE DO :1 <- :10 ~ '#65280$#65280'
-	DO :2 <- .2
+	PLEASE DO .3 <- :3 ~ #65535
+	DO .1 <- :12 ~ #65535
+	DO .1 <- '&.1$.3'~'#0$#65535'
+	DO .1 <- '?.1$#65535'~'#0$#65535'
+	PLEASE DO .2 <- :12 ~ '#65280$#65280'
+	DO .2 <- '&.2$.3'~'#0$#65535'
+	DO .2 <- '?.2$#65535'~'#0$#65535'
+	DO :1 <- :10 ~ #65535
+	PLEASE DO :2 <- .1
 	DO (1500) NEXT
 	DO :1 <- :3
-	PLEASE DO :2 <- .3
+	DO :2 <- #1
+	PLEASE DO (1500) NEXT
+	DO .1 <- :3 ~ #65535
+	DO .3 <- :3 ~ '#65280$#65280'
+	DO :1 <- :10 ~ '#65280$#65280'
+	PLEASE DO :2 <- .2
 	DO (1500) NEXT
+	DO :1 <- :3
+	DO :2 <- .3
+	PLEASE DO (1500) NEXT
 	DO .3 <- :3 ~ #65535
 	DO .2 <- .1
-	PLEASE DO .1 <- .3
-	DO (1520) NEXT
+	DO .1 <- .3
+	PLEASE DO (1520) NEXT
 	DO :10 <- :1
-	PLEASE DO .1 <- :14 ~ '#65280$#65280'
+	DO .1 <- :14 ~ '#65280$#65280'
 	DO .2 <- :14 ~ #65535
-	DO .3 <- .2 ~ #32768
+	PLEASE DO .3 <- .2 ~ #32768
 	DO .1 <- '.1$#0'~'#32767$#1'
-	PLEASE DO .1 <- 'V.1$.3'~'#0$#65535'
+	DO .1 <- 'V.1$.3'~'#0$#65535'
 	DO .2 <- '.2$#0'~'#32767$#1'
-	DO .2 <- 'V.2$.29'~'#0$#65535'
+	PLEASE DO .2 <- 'V.2$.29'~'#0$#65535'
 	DO (1520) NEXT
-	PLEASE DO :14 <- :1
+	DO :14 <- :1
 	DO .1 <- .40
-	DO .2 <- #1
-	DO (1000) NEXT
-	PLEASE DO .40 <- .3
-	DO .1 <- #32
+	PLEASE DO .2 <- #1
+	DO :1 <- .1
+	DO :2 <- .2
+	DO (1500) NEXT
+	DO .40 <- :3 ~ #65535
+	PLEASE DO .1 <- #32
 	DO .2 <- .40
 	DO (1010) NEXT
-	PLEASE DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
+	DO .1 <- .3
+	PLEASE DO .1 <- "?'.1~.1'$#1"~#3
 	DO (9658) NEXT
-	PLEASE DO (9630) NEXT
+	DO (9630) NEXT
 
 (9658) DO (9659) NEXT
 	DO ABSTAIN FROM (9659)
 (9659) DO RESUME .1
-
-	DO NOTE LOOP EXITED - ASSEMBLE RESULTS
 	DO :3 <- :14
 	PLEASE DO :4 <- :10
-	DO RETRIEVE .1 + .2 + .3 + :1 + :2 + :10 + :12 + :14 + :16 + .29 + .40
-	PLEASE RESUME #1
+	PLEASE READ OUT :3
+	DO READ OUT :4
+	PLEASE GIVE UP
