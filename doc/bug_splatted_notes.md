@@ -1,10 +1,10 @@
-# Bug Report: Splatted NOTE Comments Disable Subsequent Code
+# Investigation: Splatted NOTE Comments and Abstain Guards
 
 ## Summary
 
-The compiler sometimes marks `DO NOTE` comments as "splatted" (unparseable nonsense statements). Splatted statements receive an abstain guard that starts disabled (`false`). In the goto-based execution model, the abstain guard's skip logic spans from the splatted statement to the next labeled statement, silently disabling all executable code in between.
+The compiler marks `DO NOTE` comments as "splatted" (unparseable nonsense statements). Splatted statements receive an abstain guard that starts disabled (`false`). This was initially suspected as a critical bug causing programs to silently skip executable code.
 
-This is a critical code generation bug that causes programs to silently skip blocks of executable statements, leading to hangs, wrong results, or mysterious E436/E200 errors.
+**Finding: This is NOT a bug.** The abstain guard only wraps the splatted statement's own body and its debugger cache reload. The guard closes BEFORE the next statement begins. Each statement gets its own independent cache reload in its own epilog. Furthermore, statement `Emit()` code uses `frame.ExecutionContext` directly, not the cached locals — the cached locals exist only for the debugger watch panel and have no effect on execution.
 
 ## Root Cause
 
@@ -65,62 +65,30 @@ if(abstainMap[0])    // abstainMap[0] = false at init!
 
 The `:1` and `:2` assignments are inside the disabled guard. The subsequent `(1500)` call executes with whatever stale values `:1` and `:2` had from the previous call, causing incorrect behavior (hangs, wrong results, or crashes).
 
-## Impact
+## Why It's Not a Bug
 
-This bug has caused multiple issues during development:
+The code generation structure for each statement is:
 
-1. **DIVIDE32 hang**: The masked subtract section's NOTE comment was splatted, disabling the variable setup for the subtract's `(1500)` calls. The stale values caused an infinite carry propagation loop inside the syslib.
+1. **Prolog** (`EmitStatementProlog`): Opens `if(abstainMap[slot]) {` guard
+2. **Body** (`s.Emit()`): The actual statement code
+3. **Epilog** (`EmitStatementEpilog`): Debug cache reload, then closes `}` guard, then skip label
 
-2. **(1500) overflow errors**: Previously attributed to ABSTAIN not working across compiled assembly boundaries. The actual cause was likely splatted NOTEs disabling the code that set up correct (non-overflowing) input values.
+The guard wraps only the statement body and its own cache reload. The next statement starts fresh with its own prolog, guard, body, and epilog. Skipping a splatted NOTE skips only the NOTE itself (a `Lib.Fail()` call that would error if reached anyway) and its cache reload (debugger-only, not used by execution).
 
-3. **Various E436 (STASH imbalance) errors**: Splatted NOTEs between STASH and RETRIEVE could disable the RETRIEVE, causing unbalanced stash stacks.
+Statement code uses `frame.ExecutionContext[":1"]` directly for reads and writes, NOT the cached locals (`colon_1`, `dot_1`). The cached locals exist solely for the VS Code debugger's watch panel.
 
-4. **Silent wrong results**: Any computation whose variable setup is between a splatted NOTE and the next label will use stale values without any error message.
+## Remaining Known Issues
 
-## Diagnosis
+The following remain true and ARE problems:
 
-To check if a program is affected:
+1. **Labels in NOTE comments**: `DO NOTE USES (1520) MINGLE` causes the compiler to parse `(1520)` as a label definition, shadowing syslib routines. This is a tokenizer bug, not an ABSTAIN bug. Avoid parenthesized numbers in NOTEs.
 
-1. Compile with the `-b` flag to generate `~tmp.cs`
-2. Search for `if(abstainMap[` in the generated code
-3. Check if the guarded block contains executable statements (variable assignments, syslib calls) beyond the NOTE itself
-4. Check if the corresponding `abstainMap` entry starts `false`
+2. **All NOTEs are splatted**: Every `DO NOTE` comment is marked as a `NonsenseStatement` with `Splatted = true`. This is wasteful (generates unnecessary abstain slots and guards) but harmless to execution.
 
-## Workaround
+## Key Files
 
-Remove or simplify `DO NOTE` comments that appear between executable statements. Specifically avoid NOTEs that contain:
-- Parenthesized numbers (already known: parsed as labels)
-- Hyphens, dots, colons, or other INTERCAL operator characters
-- Anything that might cause the parser to attempt interpretation before recognizing the NOTE
-
-Safest: place NOTEs only immediately after labeled statements, or remove them entirely from hot code paths.
-
-## Suggested Fix
-
-Several approaches, in order of invasiveness:
-
-1. **Quick fix**: In `EmitAbstainMap`, don't assign abstain slots to `NonsenseStatement` instances that originated from NOTE comments. NOTEs are no-ops and don't need abstain guards.
-
-2. **Better fix**: Don't assign abstain slots to any `NonsenseStatement`. Splatted statements already emit `Lib.Fail()` which will error at runtime if reached. The abstain guard is redundant and harmful.
-
-3. **Best fix**: Fix the parser to never splat NOTE comments. The NOTE keyword should be recognized before any expression parsing is attempted, so the rest of the line is always treated as a comment regardless of its content.
-
-## Affected Files
-
-- `cringe/confuse.cs` lines 285-293: NonsenseStatement creation with `Splatted = true`
-- `cringe/confuse.cs` lines 1077-1083: NonsenseStatement class
-- `cringe/futile.cs` lines 519-567: EmitAbstainMap — abstain slot assignment
-- `cringe/futile.cs` lines 820-822: Abstain guard generation
-- `cringe/futile.cs` lines 932-938: Fall-through skip logic
-
-## Reproduction
-
-```intercal
-DO .1 <- #42
-DO NOTE THIS IS A HARMLESS COMMENT - OR IS IT
-DO .2 <- .1
-DO READ OUT .2
-PLEASE GIVE UP
-```
-
-If the NOTE is splatted, `.2 <- .1` is skipped and `.2` is uninitialized, producing E200 instead of outputting 42. Compile with `-b` and check `~tmp.cs` for `if(abstainMap[` to confirm.
+- `cringe/confuse.cs` lines 285-293: NonsenseStatement creation
+- `cringe/futile.cs` lines 519-567: EmitAbstainMap
+- `cringe/futile.cs` lines 820-822, 878-881: Abstain guard open/close
+- `cringe/futile.cs` lines 852-855: Debug cache reload (inside guard, debugger-only)
+- `cringe/futile.cs` lines 932-938: Skip label placement
