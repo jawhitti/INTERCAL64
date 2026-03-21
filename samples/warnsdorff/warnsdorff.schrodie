@@ -1,117 +1,92 @@
 	DO NOTE =============================================
 	DO NOTE WARNSDORFF'S KNIGHT'S TOUR IN SCHRODIE
-	DO NOTE Quantum tiebreaking via cat box collapse
+	DO NOTE Deterministic: always picks first minimum
 	DO NOTE =============================================
 
-	DO NOTE INITIALIZE ARRAYS
+	DO NOTE INITIALIZE
 	DO ;;30 <- #8
 	DO ;;31 <- #8
-	PLEASE DO ,40 <- #8
-
-	DO NOTE ALL SQUARES AVAILABLE VIA PACK32
-	DO :1 <- ##4294967295
-	PLEASE DO :2 <- ##4294967295
+	PLEASE DO :1 <- ##4294967295
+	DO :2 <- ##4294967295
 	DO (4920558940556964667) NEXT
-	DO ::20 <- ::1
-
-	DO NOTE STARTING SQUARE E4 = BIT 28, 1-BASED INDEX 29
+	PLEASE DO ::20 <- ::1
 	DO .20 <- #29
-	PLEASE DO ::21 <- ####268435456
-	DO .21 <- #0
-
-	DO NOTE JUMP INTO MAIN LOOP VIA NEXT SO FORGET WORKS
-	DO (5000) NEXT
+	DO ::21 <- ####268435456
+	PLEASE DO .21 <- #0
 
 	DO NOTE =============================================
 	DO NOTE MAIN LOOP
 	DO NOTE =============================================
 (5000) DO FORGET #1
+	DO REINSTATE (5191)
+	DO REINSTATE (5318)
+	PLEASE DO REINSTATE (5338)
+	DO REINSTATE (5651)
 	PLEASE READ OUT .20
-
-	DO NOTE CLEAR CURRENT SQUARE FROM AVAILABLE
 	DO ::1 <- ::20
 	DO ::2 <- ;;2 SUB .20
 	PLEASE DO (4705773660240084992) NEXT
 	DO ::20 <- ::3
-
-	DO NOTE CANDIDATES = ATTACKS AND AVAILABLE
 	DO ::1 <- ;;1 SUB .20
 	DO ::2 <- ::20
 	PLEASE DO (4705773660240084992) NEXT
 	DO ::22 <- ::3
-
-	DO NOTE =============================================
-	DO NOTE CANDIDATE COLLECTION
-	DO NOTE CHECK FIRST, THEN EXTRACT
-	DO NOTE =============================================
 	DO .22 <- #0
 
+	DO NOTE =============================================
+	DO NOTE CANDIDATE COLLECTION LOOP
+	DO NOTE =============================================
 (5110) DO FORGET #1
-	DO NOTE CHECK IF CANDIDATES REMAIN
+	DO REINSTATE (5191)
 	DO ::10 <- ::22
 	PLEASE DO (9100) NEXT
 	DO .1 <- ::10 ~ #65535
 	DO .1 <- "?'.1~.1'$#1"~#3
-	PLEASE DO NOTE .1=1 DONE, .1=2 MORE
-	DO (5190) NEXT
-	DO NOTE RESUME #2: MORE - EXTRACT
+	PLEASE DO (5190) NEXT
+	DO NOTE RESUME #2: HAVE CANDIDATES
 	DO ::10 <- ::22
 	PLEASE DO (9300) NEXT
-
-	DO NOTE INCREMENT AND STORE
 	DO .1 <- .22
 	DO .2 <- #1
 	DO (1000) NEXT
 	PLEASE DO .22 <- .3
 	DO ;;30 SUB .22 <- ::10
-
-	DO NOTE GET 1-BASED INDEX
 	DO (9200) NEXT
 	PLEASE DO .1 <- .10
 	DO .2 <- #1
 	DO (1000) NEXT
 	DO .10 <- .3
-
-	PLEASE DO NOTE SCORE = POPCOUNT OF ONWARD MOVES
-	DO ::1 <- ;;1 SUB .10
+	PLEASE DO ::1 <- ;;1 SUB .10
 	DO ::2 <- ::20
 	DO (4705773660240084992) NEXT
 	PLEASE DO ::10 <- ::3
 	DO (9100) NEXT
 	DO ;;31 SUB .22 <- ::10
-
-	DO NOTE CLEAR BIT VIA XOR
 	PLEASE DO ::1 <- ::22
 	DO ::2 <- ;;30 SUB .22
 	DO (6363395191251927040) NEXT
 	DO ::22 <- ::3
-
 	PLEASE DO (5110) NEXT
-
 (5190) DO (5191) NEXT
-	DO NOTE RESUME #1: DONE
-	DO FORGET #1
-	DO NOTE FALL THROUGH TO MIN FINDER
+	DO ABSTAIN FROM (5191)
 (5191) DO RESUME .1
 
 	DO NOTE =============================================
-	DO NOTE PASS 1: FIND MINIMUM SCORE
+	DO NOTE FIND MINIMUM AND PICK FIRST
+	DO NOTE SINGLE PASS: TRACK MIN AND ITS INDEX
 	DO NOTE =============================================
 	DO .24 <- #9
 	DO .26 <- #0
-
+	DO .28 <- #1
 (5310) DO FORGET #1
-	DO NOTE INCREMENT .26
+	DO REINSTATE (5318)
+	DO REINSTATE (5338)
 	DO .1 <- .26
 	DO .2 <- #1
 	PLEASE DO (1000) NEXT
 	DO .26 <- .3
-
-	DO NOTE READ SCORE
 	DO ::10 <- ;;31 SUB .26
 	PLEASE DO .27 <- ::10 ~ #65535
-
-	DO NOTE IS .27 < .24? SAFE: .24+128-.27 THEN SUBTRACT 128
 	DO .1 <- .24
 	DO .2 <- #128
 	DO (1000) NEXT
@@ -123,16 +98,14 @@
 	PLEASE DO (1010) NEXT
 	DO .1 <- .3
 	DO .1 <- "?'.1~.1'$#1"~#3
-	DO NOTE .1=1 IF .24<=.27, .1=2 IF .24>.27
 	PLEASE DO (5319) NEXT
-	DO NOTE RESUME #2: .24 > .27, UPDATE MIN
+	DO NOTE RESUME #2: .24 > .27, UPDATE
 	DO .24 <- .27
-
+	DO .28 <- .26
 (5319) DO (5318) NEXT
-	DO NOTE RESUME #1: NO UPDATE
+	DO ABSTAIN FROM (5318)
 (5318) DO RESUME .1
-
-	DO NOTE CHECK IF .26 = .22
+	DO NOTE CHECK BOUNDS
 	DO .1 <- .22
 	DO .2 <- .26
 	PLEASE DO (1010) NEXT
@@ -141,213 +114,20 @@
 	PLEASE DO (5339) NEXT
 	DO NOTE RESUME #2: MORE
 	DO (5310) NEXT
-
 (5339) DO (5338) NEXT
-	DO NOTE RESUME #1: DONE
+	DO ABSTAIN FROM (5338)
 (5338) DO RESUME .1
 
 	DO NOTE =============================================
-	DO NOTE PASS 2: COLLECT TIES
+	DO NOTE UPDATE AND TERMINATION
 	DO NOTE =============================================
-	DO .25 <- #0
-	DO .26 <- #0
-
-(5360) DO FORGET #1
-	DO .1 <- .26
-	DO .2 <- #1
-	PLEASE DO (1000) NEXT
-	DO .26 <- .3
-
-	DO NOTE SCORE == MIN?
-	DO ::10 <- ;;31 SUB .26
-	DO .27 <- ::10 ~ #65535
-	PLEASE DO .1 <- '?.27$.24'~'#0$#65535'
-	DO .1 <- "?'.1~.1'$#1"~#3
-	DO NOTE .1=1 TIE, .1=2 NOT
-	PLEASE DO (5379) NEXT
-	DO NOTE RESUME #2: NOT A TIE
-	DO (5375) NEXT
-
-(5379) DO (5378) NEXT
-	DO NOTE RESUME #1: TIE
-	DO .1 <- .25
-	DO .2 <- #1
-	PLEASE DO (1000) NEXT
-	DO .25 <- .3
-	DO ,40 SUB .25 <- .26
-(5378) DO RESUME .1
-
-(5375) DO .1 <- .22
-	DO .2 <- .26
-	PLEASE DO (1010) NEXT
-	DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
-	PLEASE DO (5389) NEXT
-	DO NOTE RESUME #2: MORE
-	DO (5360) NEXT
-
-(5389) DO (5388) NEXT
-	DO NOTE RESUME #1: DONE
-(5388) DO RESUME .1
-
-	DO NOTE =============================================
-	DO NOTE TIEBREAKER
-	DO NOTE =============================================
-	DO []1 <- ,40 SUB #1
-	DO []2 <- ,40 SUB #2
-	PLEASE DO []3 <- ,40 SUB #3
-	DO []4 <- ,40 SUB #4
-	DO []5 <- ,40 SUB #5
-	DO []6 <- ,40 SUB #6
-	PLEASE DO []7 <- ,40 SUB #7
-	DO []8 <- ,40 SUB #8
-
-	DO .1 <- .25
-	DO .2 <- #1
-	PLEASE DO (1010) NEXT
-	DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
-	PLEASE DO (5409) NEXT
-	DO NOTE .25 > 1
-	DO .1 <- .25
-	DO .2 <- #2
-	PLEASE DO (1010) NEXT
-	DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
-	PLEASE DO (5419) NEXT
-	DO NOTE .25 > 2
-	DO .1 <- .25
-	DO .2 <- #3
-	DO (1010) NEXT
-	PLEASE DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
-	DO (5429) NEXT
-	DO NOTE .25 > 3
-	PLEASE DO .1 <- .25
-	DO .2 <- #4
-	DO (1010) NEXT
-	DO .1 <- .3
-	PLEASE DO .1 <- "?'.1~.1'$#1"~#3
-	DO (5439) NEXT
-	DO NOTE .25 > 4
-	DO .1 <- .25
-	PLEASE DO .2 <- #5
-	DO (1010) NEXT
-	DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
-	PLEASE DO (5449) NEXT
-	DO NOTE .25 > 5
-	DO .1 <- .25
-	DO .2 <- #6
-	DO (1010) NEXT
-	PLEASE DO .1 <- .3
-	DO .1 <- "?'.1~.1'$#1"~#3
-	DO (5459) NEXT
-	PLEASE DO NOTE .25 > 6
-	DO .1 <- .25
-	DO .2 <- #7
-	DO (1010) NEXT
-	DO .1 <- .3
-	PLEASE DO .1 <- "?'.1~.1'$#1"~#3
-	DO (5469) NEXT
-	DO NOTE .25 = 8
-	DO ENTANGLE []1 + []2 + []3 + []4 + []5 + []6 + []7 + []8
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) ⟨3|ψ⟩ (5522) ⟨4|ψ⟩ (5523) ⟨5|ψ⟩ (5524) ⟨6|ψ⟩ (5525) ⟨7|ψ⟩ (5526) ⟨8|ψ⟩ (5527) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-
-(5409) DO (5408) NEXT
-	DO .28 <- ,40 SUB #1
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5408) DO RESUME .1
-
-(5419) DO (5418) NEXT
-	DO ENTANGLE []1 + []2
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-(5418) DO RESUME .1
-
-(5429) DO (5428) NEXT
-	DO ENTANGLE []1 + []2 + []3
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) ⟨3|ψ⟩ (5522) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-(5428) DO RESUME .1
-
-(5439) DO (5438) NEXT
-	DO ENTANGLE []1 + []2 + []3 + []4
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) ⟨3|ψ⟩ (5522) ⟨4|ψ⟩ (5523) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-(5438) DO RESUME .1
-
-(5449) DO (5448) NEXT
-	DO ENTANGLE []1 + []2 + []3 + []4 + []5
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) ⟨3|ψ⟩ (5522) ⟨4|ψ⟩ (5523) ⟨5|ψ⟩ (5524) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-(5448) DO RESUME .1
-
-(5459) DO (5458) NEXT
-	DO ENTANGLE []1 + []2 + []3 + []4 + []5 + []6
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) ⟨3|ψ⟩ (5522) ⟨4|ψ⟩ (5523) ⟨5|ψ⟩ (5524) ⟨6|ψ⟩ (5525) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-(5458) DO RESUME .1
-
-(5469) DO (5468) NEXT
-	DO ENTANGLE []1 + []2 + []3 + []4 + []5 + []6 + []7
-	PLEASE DO ⟨1|ψ⟩ (5520) ⟨2|ψ⟩ (5521) ⟨3|ψ⟩ (5522) ⟨4|ψ⟩ (5523) ⟨5|ψ⟩ (5524) ⟨6|ψ⟩ (5525) ⟨7|ψ⟩ (5526) NEXT
-	DO (5590) NEXT
-	PLEASE RESUME #1
-(5468) DO RESUME .1
-
-(5520) DO FORGET #1
-	DO .28 <- ,40 SUB #1
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5521) DO FORGET #1
-	DO .28 <- ,40 SUB #2
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5522) DO FORGET #1
-	DO .28 <- ,40 SUB #3
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5523) DO FORGET #1
-	DO .28 <- ,40 SUB #4
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5524) DO FORGET #1
-	DO .28 <- ,40 SUB #5
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5525) DO FORGET #1
-	DO .28 <- ,40 SUB #6
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5526) DO FORGET #1
-	DO .28 <- ,40 SUB #7
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-(5527) DO FORGET #1
-	DO .28 <- ,40 SUB #8
-	PLEASE DO (5590) NEXT
-	PLEASE RESUME #1
-
-	DO NOTE =============================================
-	DO NOTE UPDATE POSITION AND CHECK COMPLETION
-	DO NOTE =============================================
-(5590) DO ::10 <- ;;30 SUB .28
+	DO ::10 <- ;;30 SUB .28
 	DO ::21 <- ::10
 	PLEASE DO (9200) NEXT
 	DO .1 <- .10
 	DO .2 <- #1
 	DO (1000) NEXT
 	PLEASE DO .20 <- .3
-
 	DO .1 <- .21
 	DO .2 <- #1
 	DO (1000) NEXT
@@ -357,12 +137,12 @@
 	DO (1010) NEXT
 	PLEASE DO .1 <- .3
 	DO .1 <- "?'.1~.1'$#1"~#3
+	DO REINSTATE (5651)
 	DO (5650) NEXT
 	DO NOTE RESUME #2: NOT DONE
 	PLEASE DO (5000) NEXT
-
 (5650) DO (5651) NEXT
-	DO NOTE RESUME #1: DONE
+	DO ABSTAIN FROM (5651)
+(5651) DO RESUME .1
 	PLEASE READ OUT .20
 	PLEASE GIVE UP
-(5651) DO RESUME .1
