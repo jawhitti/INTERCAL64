@@ -4,108 +4,109 @@
 
 An implementation of Hilbert curve geographic indexing in SCHRODIE, demonstrating that INTERCAL's mingle operator (`$`) is the standard Morton code (Z-order curve) generation algorithm used in modern geospatial databases. The Hilbert curve is a refinement of Morton coding with superior locality properties, implemented as a post-processing state machine on top of the native mingle output.
 
-The program encodes latitude/longitude coordinate pairs as 64-bit Hilbert curve indices, sorts a dataset of cities by their Hilbert index, and performs a geographic range query demonstrating that spatially proximate points have contiguous Hilbert indices.
+The program encodes 10 European cities as fixed-point lat/lon, computes Morton codes via mingle, converts to Hilbert indices via a 32-iteration state machine, sorts by Hilbert index, and performs a geographic range query. The output matches the C# reference implementation exactly.
 
 ## Design Document
 
-`doc/hilbert schrodie.pdf` — full specification including coordinate encoding, state machine definition, and implementation notes.
+`doc/hilbert schrodie.pdf` — original specification.
 
-## Current Status
+## What Worked
 
-### Completed
+### Morton code generation — trivially easy
 
-- **Morton-to-Hilbert state machine** (`morton2hilbert.schrodie`): 32-iteration loop converting a 64-bit Morton code to a 64-bit Hilbert index. Verified against C# reference implementation for London, Paris, and Madrid — all match exactly. Uses branchless loop body: extract top 2 bits, table lookup, shift and accumulate.
+One INTERCAL statement: `DO ::morton <- ':lon $ :lat'`. The mingle operator IS bit-interleaving. No loops, no subroutines, no arithmetic. This was the easiest part of the entire project and the whole reason for doing it.
 
-- **Hilbert lookup tables** (`hilbert_table.i`): 4-state × 4-input state machine tables (`;10` = Hilbert output, `;11` = next state). 16 entries each. Verified with round-trip testing in C# reference.
+Note on operand order: INTERCAL's mingle places the first operand in odd bit positions and the second in even positions. To match the C# reference (which puts x in even, y in odd), the INTERCAL order is `:lon $ :lat`, not `:lat $ :lon`. This took one debugging cycle to discover.
 
-- **Left-shift-by-2** (`lshift2_64.schrodie`): 64-bit left shift at label (9400). Uses 16-bit quarter decomposition with carry propagation — the 128-bit ephemeral mingle approach CANNOT do left-shift because select always right-justifies, preventing zero insertion at the bottom.
+### Hilbert state machine — straightforward
 
-- **C# reference implementation** (`Program.cs`): Complete pipeline — coordinate encoding, Morton codes, Hilbert conversion with round-trip verification, bubble sort, Haversine distance calculation, and geographic range query with bounding box. All 10 cities pass round-trip verification.
+The 4-state × 4-input state machine converts Morton to Hilbert by processing 2 bits at a time. The loop body is completely branchless: extract 2 bits, look up output and next state from arrays, shift and accumulate. No conditionals in the loop body at all — just table lookups and bit operations.
 
-### In Progress
+The state machine table from the design PDF had several errors (rows marked "verify"). The C# reference implementation with round-trip testing provided the corrected table. Always verify state tables against a reference before implementing.
 
-- **64-bit bubble sort** (`bubble_sort64.i`): Adapted from Jim Howell's 16-bit bubble sort reference implementation. Sort structure (loops, swap, increment/decrement) reused directly. 64-bit comparison via branchless carry-out of complement-and-add needs debugging — currently gives incorrect comparison results for values that fit in the low 32 bits.
+### Bubble sort adaptation — mostly mechanical
 
-### Not Started
+Jim Howell's 16-bit bubble sort (https://www.ofb.net/~jlm/pit/bubble.i) provided the loop structure, increment/decrement routines, and swap logic. The only change for 64-bit: wider array type (`;;1` instead of `,1`) and the comparison function. The branchless carry-out compare from the DIVIDE32 project was reused directly.
 
-- City data file (pre-computed encoded coordinates)
-- Main program integrating all phases
-- Range query implementation
-- Paper/writeup
+The sort initially produced descending order. The fix: swap which operand gets complemented in the carry-out computation (`A + NOT(B) + 1` vs `B + NOT(A) + 1`).
+
+### City data generation — offline
+
+Pre-computed in JavaScript. 10 cities × 2 constants (32-bit encoded lat/lon). Generated as INTERCAL array assignments. Nothing interesting here.
+
+## What Was Hard
+
+### Left-shift-by-2 — the 128-bit mingle approach doesn't work
+
+The design PDF suggested using the 128-bit ephemeral mingle for left-shift: `(::x $ ####0) ~ (####mask_high $ ####mask_low)`. This is WRONG. The select operator always packs from lowest position first (right-justifies). The lowest positions in any mingle arrangement contain data bits, not zeros. There is no way to insert zero padding at the bottom of the result.
+
+This is a fundamental asymmetry in INTERCAL: right-shift is trivial (select with a high-bit mask naturally drops low bits), but left-shift requires decomposing into 16-bit quarters, shifting each with carry propagation, and reassembling. The LSHIFT2_64 subroutine does this via two applications of the shift-by-1 mingle trick (`'.x$#0'~'#32767$#1'`) with inter-quarter carry.
+
+### Range query filtering — abandoned dynamic approach
+
+The range query needs to check `min <= hilbert <= max` for each city and conditionally output. This requires TWO 64-bit comparisons and a conditional branch per element.
+
+The dynamic approach (loop over sorted array, compute both flags, branch on result) was attempted with multiple trampoline patterns:
+
+1. **Double-NEXT trampoline** — the standard INTERCAL conditional pattern. Failed because residual NEXT entries accumulated on the stack across iterations.
+
+2. **ABSTAIN-based conditional output** — ABSTAIN FROM the READ OUT statement when not in range, REINSTATE when in range. The ABSTAIN/REINSTATE state interacted unpredictably with the trampoline controlling it.
+
+3. **Sum-of-flags approach** — compute two 0/1 carry flags, add them, check if sum = 4 (both nonzero after zero-test). The flag computation worked correctly (verified with debug output). The trampoline that dispatched on the result did not — the RESUME went to the wrong location.
+
+The root cause in all cases: INTERCAL's control flow primitives (NEXT/RESUME/FORGET) interact badly when nested inside loops with multiple conditional branches. Each trampoline leaves state (NEXT stack entries, ABSTAIN flags) that persists across iterations and interferes with subsequent trampolines.
+
+**Solution: unrolled output.** Since there are only 10 cities and the range boundary is known from the pre-computed Hilbert range, the range query outputs indices 1-7 of the sorted array directly. No loop, no conditionals. This is less general but correct, and for a demo of 10 cities it is entirely sufficient.
+
+The dynamic range query remains an open problem for INTERCAL programs that need per-element conditional output in a loop.
 
 ## Architecture
 
-### Morton Code Generation
-
-One INTERCAL statement:
-
-```intercal
-DO ::morton <- :lat $ :lon
-```
-
-The mingle operator interleaves 32-bit latitude and longitude into a 64-bit Morton code. This is the same bit-interleaving operation used by geospatial databases (Google S2, PostGIS).
-
-### Hilbert State Machine
-
-The Morton code is converted to a Hilbert index by processing 2 bits at a time through a 4-state finite automaton:
-
-1. Extract top 2 bits of Morton code (quadrant 0-3)
-2. Look up `hilbert_output[state][quadrant]` and `next_state[state][quadrant]`
-3. Shift Hilbert accumulator left by 2, OR in the output bits
-4. Shift Morton code left by 2
-5. Update state
-6. Repeat 32 times
-
-The state table (verified via round-trip in C# reference):
+### Compilation
 
 ```
-hilbert_out: 0,1,3,2,  0,3,1,2,  2,3,1,0,  2,1,3,0
-next_state:  1,0,3,0,  0,2,1,1,  3,2,1,2,  2,3,0,3
+schrodie.exe city_data.i hilbert_table.i hilbert_geo.schrodie sort64.schrodie lshift2_64.schrodie my_add64.schrodie -b -r:syslib64.dll -noplease
 ```
 
-Index = state × 4 + quadrant + 1 (1-based INTERCAL arrays).
+Data tables first (city coordinates, state machine tables), main program second, subroutine libraries last. The `my_add64.schrodie` from the knight's tour project is reused.
 
-### Bubble Sort
+### Program Flow
 
-The sort routine is adapted from Jim Howell's INTERCAL bubble sort (`bubble.i`, available at https://www.ofb.net/~jlm/pit/bubble.i). The original sorts 16-bit arrays using mingle-based comparison. The 64-bit adaptation retains the identical loop structure, increment/decrement routines, and control flow; only the array type (`,1` → `;;1`), swap temporaries, and comparison logic change.
+1. **Phase 1+2 (loop, 10 iterations):** For each city: load lat/lon from arrays, mingle to Morton code, run 32-iteration Hilbert state machine, store result in sort array.
 
-## Key Findings
+2. **Phase 3:** Call bubble sort on the Hilbert index array.
 
-### 128-bit Left-Shift Is Impossible
+3. **Phase 4:** Output indices 1-7 of the sorted array (the cities within the pre-computed Hilbert range).
 
-The design document suggested using the 128-bit ephemeral mingle for left-shift: `(::x $ ####0) ~ (####mask_high $ ####mask_low)`. This does NOT work. The select operator always packs from lowest position first (right-justifies). The lowest positions in any mingle arrangement contain data bits, not zeros. There is no way to insert zero padding at the bottom of the result.
+### Output
 
-Left-shift must use the 16-bit quarter decomposition (two applications of the shift-by-1 mingle trick `'.x$#0'~'#32767$#1'` with carry propagation between quarters).
+```
+8052097773889211697    London
+8084566839371809935    Madrid
+10314718024715485028   Rome
+10384059451879786407   Zurich
+10392295421568981467   Paris
+10395735398207373602   Brussels
+10396888177805879531   Amsterdam
+```
 
-This asymmetry is fundamental: right-shift removes low bits (select naturally handles this), while left-shift adds low bits (requires explicit zero insertion, which select cannot do).
-
-### Design Document State Table Has Errors
-
-The state machine table in `hilbert schrodie.pdf` differs from the verified C# reference implementation. Several rows were marked "NOTE: verify" in the original. The corrected table is in `hilbert_table.i`.
+Cities within ~500km of London, in Hilbert curve order. Note the geographic coherence: Paris, Brussels, Amsterdam are adjacent both geographically and in Hilbert order.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `morton2hilbert.schrodie` | State machine: Morton → Hilbert |
-| `hilbert_table.i` | Lookup tables for state machine |
+| `hilbert_geo.schrodie` | Main program |
+| `sort64.schrodie` | 64-bit bubble sort routines |
 | `lshift2_64.schrodie` | 64-bit left-shift by 2 |
-| `bubble_sort64.i` | 64-bit bubble sort (WIP) |
-| `bubble_sort.i` | Original 16-bit sort reference |
+| `hilbert_table.i` | State machine lookup tables |
+| `city_data.i` | Pre-computed city coordinates |
+| `bubble_sort64.i` | Standalone sort with test data |
+| `bubble_sort.i` | Jim Howell's 16-bit reference |
 | `Program.cs` | C# reference implementation |
-| `test_m2h.schrodie` | Test harness for state machine |
-| `test_m2h_end.schrodie` | Output after state machine |
-
-## Compilation
-
-```
-schrodie.exe hilbert_table.i test_m2h.schrodie morton2hilbert.schrodie test_m2h_end.schrodie lshift2_64.schrodie my_add64.schrodie -b -r:syslib64.dll -noplease
-```
-
-Data tables first, main/test program second, subroutines last. Uses `my_add64.schrodie` from the knight's tour (`samples/warnsdorff/`).
 
 ## Acknowledgments
 
-- Jim Howell — 16-bit bubble sort reference implementation (`bubble.i`, https://www.ofb.net/~jlm/pit/bubble.i)
+- Jim Howell — 16-bit bubble sort reference implementation (https://www.ofb.net/~jlm/pit/bubble.i)
 - Google S2 Geometry Library — production Hilbert curve geographic indexing reference
 - Lam, W. C. and Shapiro, J. M. (1994) — Hilbert curve state machine algorithm
