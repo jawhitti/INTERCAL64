@@ -38,17 +38,35 @@ This approach works because each city has its own independent trampoline — no 
 
 The design PDF suggested using 128-bit ephemeral mingle for left-shift. This is impossible: select always right-justifies, so you cannot insert zero padding at the bottom. Left-shift requires 16-bit quarter decomposition with carry propagation.
 
-### Dynamic range query in a loop — abandoned
+### Dynamic range query — solved via COME FROM
 
-The range query was originally a loop: for each city, check range, conditionally output. This failed because INTERCAL's NEXT/RESUME trampolines leave residual state on the stack across loop iterations. Every approach was tried:
+The range query checks `min <= hilbert <= max` for each city and conditionally outputs. This requires two 64-bit comparisons and a conditional branch per element inside a loop.
 
-1. Double-NEXT trampoline — residual NEXT entries accumulated
-2. ABSTAIN-based conditional output — state leaked across iterations
+**What failed: NEXT/RESUME loops.** Three trampoline patterns were tried, all corrupted the NEXT stack across iterations:
+
+1. Double-NEXT trampoline — residual entries accumulated
+2. ABSTAIN-based conditional output — state leaked between iterations
 3. Sum-of-flags with trampoline dispatch — correct flags, wrong RESUME destination
 
-The root cause: INTERCAL cannot do conditional output inside a loop because the trampoline mechanism (the only way to branch) corrupts the NEXT stack when used repeatedly.
+An unrolled version (10 copies × 55 lines = 578 lines) worked but was inelegant.
 
-**Solution: unroll the loop.** 10 copies of the 55-line compare+branch block. 578 lines of generated code for what would be `if (x >= min && x <= max) print(x)` in any other language. This is what conditional logic looks like without if/else.
+**What worked: COME FROM loop.** The breakthrough came from `beer.i` (99 Bottles of Beer), which uses `DO COME FROM (label)` for its main loop. COME FROM does not touch the NEXT stack — it's a trapdoor that fires after the target label executes.
+
+```intercal
+DO COME FROM (8999)           ← loop top: control returns here after (8999)
+... loop body ...
+(8999) DO FORGET #1           ← loop bottom: COME FROM fires, back to top
+```
+
+The FORGET cleans up trampoline residuals. COME FROM loops back without pushing anything. Each iteration starts with a clean NEXT stack.
+
+**Conditional output pattern:** ABSTAIN FROM the `READ OUT` at the top of each iteration. A trampoline checks the range flags — the "in range" path REINSTATEs the READ OUT; the "not in range" path leaves it abstained. The trampoline body is placed after GIVE UP to prevent fall-through interference. Both paths converge at the READ OUT (which either fires or is skipped) then fall through to the counter.
+
+**Exit:** Counter trampoline: "not done" falls through to (8999), COME FROM fires. "Done" falls through to GIVE UP.
+
+**Result: 178 lines** — down from 661 unrolled. A dynamic loop with conditional output per element. The earlier conclusion that "conditional output in loops is impossible in INTERCAL" was wrong — it's impossible in NEXT/RESUME loops but works perfectly in COME FROM loops.
+
+This is arguably the most significant INTERCAL programming technique discovered during this project.
 
 ### Turing tape text output — encoding chain
 
@@ -85,15 +103,15 @@ schrodie.exe city_data.i hilbert_table.i hilbert_geo.schrodie sort64.schrodie ls
 
 ### Size
 
-- Main program: 661 lines (578 generated for range query)
+- Main program: 178 lines (COME FROM loop with dynamic range query)
 - Supporting files: ~300 lines (sort, left-shift, state machine, tables, city data)
-- Total: ~960 lines of INTERCAL
+- Total: ~480 lines of INTERCAL
 
 ## Files
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `hilbert_geo.schrodie` | 661 | Main program (all phases) |
+| `hilbert_geo.schrodie` | 178 | Main program (all phases, COME FROM loop) |
 | `sort64.schrodie` | 120 | 64-bit bubble sort routines |
 | `lshift2_64.schrodie` | 57 | 64-bit left-shift by 2 |
 | `hilbert_table.i` | 36 | State machine lookup tables |
@@ -109,11 +127,15 @@ schrodie.exe city_data.i hilbert_table.i hilbert_geo.schrodie sort64.schrodie ls
 
 2. **State machines are a natural fit for INTERCAL.** Table lookup + bit extraction + shift = branchless loop body. No conditionals needed in the inner loop.
 
-3. **Conditional output in loops is impossible in INTERCAL.** The NEXT/RESUME trampoline is the only branching mechanism. It uses a shared stack that corrupts across loop iterations. The only reliable pattern is unrolled code with ABSTAIN-based output control.
+3. **Conditional output in NEXT/RESUME loops is impossible.** The NEXT/RESUME trampoline uses a shared stack that corrupts across loop iterations.
 
-4. **128-bit left-shift is impossible via mingle+select.** Select always right-justifies. This is a fundamental asymmetry: right-shift works (select drops low bits), left-shift cannot (select cannot insert zeros at the bottom).
+4. **COME FROM loops solve the NEXT stack problem.** COME FROM does not touch the NEXT stack. Trampolines can fire inside COME FROM loops without accumulating residual state. ABSTAIN-based conditional output (ABSTAIN the READ OUT, REINSTATE if condition met) works cleanly inside COME FROM loops. This is the most important INTERCAL programming technique discovered during this project.
 
-5. **Unrolled code generation is a valid INTERCAL pattern.** When loops can't do conditional work, generate N copies of the loop body at compile time. The compiler handles hundreds of labels without issue. The resulting program is large but correct.
+5. **Trampoline placement matters.** Trampoline bodies must be placed where sequential fall-through cannot reach them. Placing them after GIVE UP works — the compiler includes the code (reachable via NEXT) but sequential execution never reaches it.
+
+6. **128-bit left-shift is impossible via mingle+select.** Select always right-justifies — cannot insert zeros at the bottom.
+
+7. **COME FROM + ABSTAIN is the general-purpose INTERCAL conditional loop pattern.** COME FROM for the loop, trampolines for branching, ABSTAIN/REINSTATE for conditional execution, FORGET for cleanup. This combination handles what would be `for(...) { if(...) print(...); }` in a conventional language.
 
 ## Acknowledgments
 
