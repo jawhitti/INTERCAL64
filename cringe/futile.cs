@@ -817,7 +817,10 @@ namespace INTERCAL
 
             //We only emit abstain guards for statements that are the target of
             //an abstain, either by name or by gerund.
-            if (s.AbstainSlot >= 0)
+            //COME FROM statements are excluded: their abstain check happens at
+            //the trapdoor site (line 916), not here. Wrapping a COME FROM in
+            //an abstain guard would incorrectly disable subsequent code.
+            if (s.AbstainSlot >= 0 && s as Statement.ComeFromStatement == null)
             {
                 c.EmitRaw("if(abstainMap[" + s.AbstainSlot.ToString() + "])\n{\n");
             }
@@ -874,8 +877,8 @@ namespace INTERCAL
                     c.EmitRaw("}\n\n");
                 }
 
-                //Close off the abstain block
-                if (s.AbstainSlot >= 0)
+                //Close off the abstain block (not for COME FROM — see above)
+                if (s.AbstainSlot >= 0 && s as Statement.ComeFromStatement == null)
                 {
                     c.EmitRaw("}\n\n");
                 }
