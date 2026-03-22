@@ -66,7 +66,7 @@ The FORGET cleans up trampoline residuals. COME FROM loops back without pushing 
 
 **Result: 178 lines** — down from 661 unrolled. A dynamic loop with conditional output per element. The earlier conclusion that "conditional output in loops is impossible in INTERCAL" was wrong — it's impossible in NEXT/RESUME loops but works perfectly in COME FROM loops.
 
-This is arguably the most significant INTERCAL programming technique discovered during this project.
+This technique also enabled DIVIDE32 as a callable subroutine — something that failed three times over two days using NEXT/RESUME loops. With COME FROM: one compiler fix (labeled COME FROM abstain guard) and one insight (no FORGET at the COME FROM target) solved it immediately. Four consecutive divisions, all returning correctly to the caller.
 
 ### Turing tape text output — encoding chain
 
@@ -135,7 +135,11 @@ schrodie.exe city_data.i hilbert_table.i hilbert_geo.schrodie sort64.schrodie ls
 
 6. **128-bit left-shift is impossible via mingle+select.** Select always right-justifies — cannot insert zeros at the bottom.
 
-7. **COME FROM + ABSTAIN is the general-purpose INTERCAL conditional loop pattern.** COME FROM for the loop, trampolines for branching, ABSTAIN/REINSTATE for conditional execution, FORGET for cleanup. This combination handles what would be `for(...) { if(...) print(...); }` in a conventional language.
+7. **COME FROM + ABSTAIN is the general-purpose INTERCAL conditional loop pattern.** COME FROM for the loop, trampolines for branching, ABSTAIN/REINSTATE for conditional execution. This combination handles what would be `for(...) { if(...) print(...); }` in a conventional language.
+
+8. **COME FROM loops enable subroutines with loops.** DIVIDE32 failed three times over two days as a callable subroutine using NEXT/RESUME loops. With COME FROM it works on the first try. The key: do NOT FORGET at the COME FROM target — the trampoline's RESUME #2 already cleans up its own entries. The "done" path's FORGET #1 pops only the remaining trampoline entry, preserving the caller's return address.
+
+9. **Labeled COME FROM required a compiler fix.** `(label) DO COME FROM (target)` generated bad C# because the abstain guard wrapped subsequent code. Fixed by excluding COME FROM from the guard at `futile.cs` lines 820 and 881. The abstain check for COME FROM already happens at the trapdoor site (line 916).
 
 ## Acknowledgments
 

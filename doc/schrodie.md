@@ -511,7 +511,17 @@ The following syslib64 routines contain known defects as of this release:
 | MINUS64 | 5569068542595576832 | The overflow handler at `(1999)` triggers incorrectly during the complement-and-add operation, even on valid inputs that should not overflow. |
 | DIVIDE32 | 4920558940556964658 | Produces incorrect results for some inputs (e.g., `65535 / 256` returns `16777215 r 65791` instead of `255 r 255`). |
 
-Working standalone replacements for ADD64 and MINUS32 are provided in the `samples/` directory (`my_add64.schrodie`, `minus32.schrodie`). When compiled as part of the same program, local label definitions shadow the broken syslib versions. A corrected DIVIDE32 is in progress.
+Working standalone replacements are provided in the `samples/` directory:
+
+| Replacement | File | Notes |
+|------------|------|-------|
+| ADD64 | `samples/warnsdorff/my_add64.schrodie` | 4-word 16-bit add with carry via 32-bit intermediates |
+| MINUS32 | `samples/minus32.schrodie` | Complement-and-add via 16-bit halves |
+| DIVIDE32 | `samples/divide32.schrodie` | MSB-first shift-and-subtract, COME FROM loop, callable as subroutine |
+
+When compiled as part of the same program, local label definitions shadow the broken syslib versions.
+
+Note: The syslib's `(1000)` 16-bit wrapping add has a latent bug: when the sum overflows 16 bits, the carry propagation produces `.5 = 0` and `RESUME #0` falls through to `(1010)` (the subtract entry), causing a hang. This only triggers when inputs sum to ≥ 65536. Workaround: use `(1500)` with 16-bit values widened to 32-bit.
 
 ## REFERENCES
 
