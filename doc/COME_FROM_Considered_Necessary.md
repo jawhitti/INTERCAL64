@@ -531,7 +531,19 @@ TLC, given all possible loop constructs and stack operations as allowable transf
 
 This is the beer.i double-NEXT pattern. TLC did not know about beer.i. It was given the INTERCAL stack semantics and asked to find states where correct return is achievable. It independently derived the same pattern Dimeo invented to make a beer program work.
 
-The model checker and the beer programmer agree. This is the pattern.
+### 7.1 Uniqueness
+
+The inverted-invariant model demonstrates that the pattern *can* work, but does not exclude alternatives. To establish uniqueness, we constructed a second model (`TrampolineSearch.tla`) that allows arbitrary sequences of NEXT pushes, RESUME pops, and FORGETs within the trampoline phase, subject to two constraints that reflect the physical reality of INTERCAL source code:
+
+1. **Fixed structure across iterations.** The number of pushes before RESUME must be identical on every iteration. INTERCAL source code is static — the trampoline structure is compiled once and executes the same way each time. The only variable is the RESUME depth (`.5 = 1` or `.5 = 2`), which is computed at runtime.
+
+2. **Path selection via RESUME depth.** The continue path (loop again) is selected by RESUME 2. The exit path (leave the loop) is selected by RESUME 1. This is the only conditional mechanism available: the zero-test expression produces a value in `{1, 2}`, and RESUME pops that many entries.
+
+TLC exhaustively explored 9,050 distinct states — all possible combinations of 1 to 6 pushes, forgets, and resumes with up to 6 trampoline steps per iteration, across 3 iterations — and found exactly one working pattern: **push two entries, then RESUME `.5`**.
+
+No other push count works. Push 1 does not provide enough entries for RESUME 2 to pop. Push 3 or more leaves residual entries that accumulate across iterations. Push 2 is the unique fixed point: RESUME 2 consumes both entries (net zero, loop continues), and RESUME 1 consumes one entry, leaving one for FORGET to discard (net zero, loop exits).
+
+The beer.i double-NEXT trampoline is not merely a working pattern. It is the *only* pattern.
 
 -----
 
