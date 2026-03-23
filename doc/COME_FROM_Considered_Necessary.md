@@ -372,6 +372,16 @@ The limitation proved in Section 3 was present in INTERCAL from its publication 
 
 This went unnoticed for eighteen years. The explanation is straightforward: the corpus of INTERCAL programs written before 1990 was extremely small — the original manual notes that only two programs had ever been written in the language at the time of publication — and none of them required callable loops of arbitrary length or loops that called non-trivial subroutines.
 
+### 5.1 Related Work: Forth and the Return Stack Discipline
+
+The interaction between loop control and a shared return stack is not unique to INTERCAL. The Forth programming language uses a return stack for both subroutine returns and temporary storage, and the Forth community has long recognized that mismanagement of this stack produces crashes. The Gforth manual warns that items pushed onto the return stack inside a definition or loop must be popped before the definition or loop ends, noting that miscounting "usually ends in a crash" (Ertl et al.). The ANS/ISO Forth Standard prohibits crossing DO-LOOP boundaries with unbalanced return stack items (ANS X3.215-1994).
+
+The canonical reference on stack machine architecture (Koopman, 1989) describes the return stack's dual role in subroutine linkage and loop control but does not formally characterize the limitations this duality imposes. Moore's original Forth paper (Moore, 1974) introduces the return stack without discussing its interaction with nested loops.
+
+These warnings state the discipline as a rule to follow, not a proven impossibility. The Forth literature does not formally characterize what breaks when the discipline is violated, what the precise class of inexpressible programs is, or why the discipline is necessary rather than merely advisable.
+
+The present paper provides the first formal treatment. INTERCAL's explicit stack manipulation — where every push, pop, and discard is a visible statement rather than an implicit compiler convention — makes the argument tractable where Forth's implicit return stack conventions obscure it. Lemmas 1 and 2 prove what the Forth community has known empirically: the shared stack makes certain compositions impossible, not merely dangerous.
+
 -----
 
 ## 6. COME FROM
@@ -759,7 +769,15 @@ Dimeo, M. (n.d.). 99 Bottles of Beer in INTERCAL. Available via the INTERCAL Pit
 
 Lamport, L. (2002). *Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers*. Addison-Wesley.
 
+ANS X3.215-1994. *American National Standard for Information Systems — Programming Languages — Forth*. American National Standards Institute.
+
 Dijkstra, E. W. (1968). Go to statement considered harmful. *Communications of the ACM*, 11(3), 147–148.
+
+Ertl, A., et al. Gforth Manual. Available at complang.tuwien.ac.at/forth/gforth/Docs-html/.
+
+Koopman, P. (1989). *Stack Computers: The New Wave*. Ellis Horwood. Available at users.ece.cmu.edu/~koopman/stack_computers/.
+
+Moore, C. H. (1974). FORTH: A new way to program a mini-computer. *Astronomy and Astrophysics Supplement Series*, 15, 497–511.
 
 Gale, D. and Shapley, L. S. (1962). College admissions and the stability of marriage. *The American Mathematical Monthly*, 69(1), 9–15.
 
