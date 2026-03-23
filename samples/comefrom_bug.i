@@ -1,0 +1,15 @@
+	DO (500) NEXT
+	DO READ OUT .1
+	DO GIVE UP
+
+(500)	DO .5 <- #2
+	DO COME FROM (599)
+	DO .2 <- #1
+	DO (1000) NEXT
+	DO .1 <- .3
+	DO (80) NEXT
+(599)	DO .5 <- #1
+(80)	DO (81) NEXT
+	DO FORGET #1
+	DO RESUME #1
+(81)	DO RESUME .5

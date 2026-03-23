@@ -558,16 +558,15 @@ namespace INTERCAL
                                         ctx.EmitRaw("#line hidden\r\n");
                                         ctx.EmitRaw("{\r\n");
                                         ctx.EmitRaw("   var _call = new ComponentCall(frame.ExecutionContext);\r\n");
+                                        // Don't push return label — the dispatch sentinel (0) handles
+                                        // component boundary detection. Syslib's RESUME #2 pops its
+                                        // internal entry + the sentinel, then exits via frame.Call.
                                         ctx.EmitRaw("   " + ctx.GeneratePropertyName(a.ClassName) + "." + a.MethodName + "(_call);\r\n");
                                         ctx.EmitRaw("   if (frame.ExecutionContext.Done) goto exit;\r\n");
-                                        ctx.EmitRaw("   int _rd = _call.NextStackDepth;\r\n");
-                                        ctx.EmitRaw("   if (_rd > 0) {\r\n");
-                                        ctx.EmitRaw("      int _retLabel = 0;\r\n");
-                                        ctx.EmitRaw("      int _popped = 0;\r\n");
-                                        ctx.EmitRaw("      while (_popped < _rd && _nextStack.Count > 0) { _retLabel = _nextStack.Pop(); _popped++; }\r\n");
-                                        ctx.EmitRaw("      if (_retLabel > 0) { switch(_retLabel) { /*RESUME_DISPATCH_PLACEHOLDER*/ } }\r\n");
-                                        ctx.EmitRaw("      goto exit;\r\n");
-                                        ctx.EmitRaw("   }\r\n");
+                                        ctx.EmitRaw("   int _retLabel = _call.ReturnLabel;\r\n");
+                                        ctx.EmitRaw("   if (_retLabel > 0) { switch(_retLabel) { /*RESUME_DISPATCH_PLACEHOLDER*/\r\n");
+                                        ctx.EmitRaw("      default: if (frame.Call != null) { frame.Call.ReturnLabel = _retLabel; goto exit; } break;\r\n");
+                                        ctx.EmitRaw("   } }\r\n");
                                         ctx.EmitRaw("}\r\n");
 
                                     }
@@ -600,6 +599,11 @@ namespace INTERCAL
 
 			public override void Emit(CompilationContext ctx)
 			{
+                // Assign return label for both local and external calls
+                int retId = ++ctx.NextReturnLabelCounter;
+                ctx.NextReturnLabels.Add(retId);
+                this.ReturnLabelId = retId;
+
 				if(ctx.program[this.Target].Count() == 0)
 				{
                     //the passed label isn't a local label
@@ -611,14 +615,9 @@ namespace INTERCAL
 				{
 					Statement target = ctx.program[this.Target].First() as Statement;
 
-                    // Goto-based NEXT: push return label, jump to target
-                    // The _ret_N label is emitted in EmitStatementEpilog (outside abstain scope)
-                    int retId = ++ctx.NextReturnLabelCounter;
-                    ctx.NextReturnLabels.Add(retId);
-                    this.ReturnLabelId = retId;
-
+                    // Goto-based NEXT: push return label to shared stack, jump to target
                     ctx.EmitRaw("#line hidden\r\n");
-                    ctx.EmitRaw("_nextStack.Push(" + retId + ");\r\n");
+                    ctx.EmitRaw("frame.ExecutionContext.NextPush(" + retId + ");\r\n");
                     ctx.EmitRaw("goto label_" + target.Label.Substring(1, target.Label.Length - 2) + ";\r\n");
 
                 }
@@ -692,7 +691,7 @@ namespace INTERCAL
 
 				ctx.EmitRaw("if (frame.ExecutionContext.IsBoxAlive(\"" + guard + "\"))\r\n");
 				ctx.EmitRaw("{\r\n");
-				ctx.EmitRaw("   _nextStack.Push(" + retId + ");\r\n");
+				ctx.EmitRaw("   frame.ExecutionContext.NextPush(" + retId + ");\r\n");
 				ctx.EmitRaw("   goto label_" + target.Label.Substring(1, target.Label.Length - 2) + ";\r\n");
 				ctx.EmitRaw("}\r\n");
 			}
@@ -737,9 +736,9 @@ namespace INTERCAL
                 }
 
                 ctx.EmitRaw("#line hidden\r\n");
-                ctx.EmitRaw("{ int _n = (int)(");
+                ctx.EmitRaw("frame.ExecutionContext.ForgetPop((int)(");
                 this.exp.Emit(ctx);
-                ctx.EmitRaw("); for (int _i = 0; _i < _n && _nextStack.Count > 0; _i++) _nextStack.Pop(); }\r\n");
+                ctx.EmitRaw("));\r\n");
 			}
 		}
 		
@@ -764,14 +763,12 @@ namespace INTERCAL
                 Depth.Emit(ctx);
                 ctx.EmitRaw(");\r\n");
                 ctx.EmitRaw("      if (depth > 0) {\r\n");
-                ctx.EmitRaw("         int _retLabel = 0;\r\n");
-                ctx.EmitRaw("         int _popped = 0;\r\n");
-                ctx.EmitRaw("         while (_popped < depth && _nextStack.Count > 0) { _retLabel = _nextStack.Pop(); _popped++; }\r\n");
-                ctx.EmitRaw("         int _remaining = depth - _popped;\r\n");
-                ctx.EmitRaw("         if (_retLabel == 0 && frame.Call != null) { frame.Call.NextStackDepth = _remaining; goto exit; }\r\n");
+                ctx.EmitRaw("         int _retLabel = frame.ExecutionContext.ResumePop(depth);\r\n");
+                ctx.EmitRaw("         if (_retLabel == 0 && frame.Call != null) { goto exit; }\r\n");
                 ctx.EmitRaw("         if (_retLabel == 0) { goto exit; }\r\n");
-                ctx.EmitRaw("         if (_retLabel > 0) { switch(_retLabel) { /*RESUME_DISPATCH_PLACEHOLDER*/ } }\r\n");
-
+                ctx.EmitRaw("         if (_retLabel > 0) { switch(_retLabel) { /*RESUME_DISPATCH_PLACEHOLDER*/\r\n");
+                ctx.EmitRaw("            default: if (frame.Call != null) { frame.Call.ReturnLabel = _retLabel; goto exit; } break;\r\n");
+                ctx.EmitRaw("         } }\r\n");
                 ctx.EmitRaw("      }\r\n");
                 ctx.EmitRaw("   }\r\n");
             }

@@ -106,22 +106,30 @@ namespace INTERCAL.Runtime
     [System.Diagnostics.DebuggerNonUserCode]
     /// <summary>
     /// Transient object representing a single cross-component call.
-    /// Created per call, provides access to shared execution state,
-    /// and carries the NEXT stack adjustment back to the caller.
+    /// Created per call, provides access to shared execution state.
+    /// ReturnLabel carries back a return label when the callee's RESUME
+    /// pops past its own entries into the caller's stack.
     /// </summary>
     public class ComponentCall
     {
         public ExecutionContext Context { get; }
 
         /// <summary>
+        /// Return label from a RESUME that popped past the callee's own entries.
+        /// 0 = normal return. >0 = caller should dispatch to this label.
+        /// </summary>
+        public int ReturnLabel { get; set; }
+
+        /// <summary>
         /// Remaining RESUME depth that the caller should apply to its own NEXT stack.
-        /// You probably don't ever want to set this, but you can.
+        /// Deprecated — retained for backward compatibility during migration.
         /// </summary>
         public int NextStackDepth { get; set; }
 
         public ComponentCall(ExecutionContext context)
         {
             Context = context;
+            ReturnLabel = 0;
             NextStackDepth = 0;
         }
     }

@@ -240,6 +240,40 @@ namespace INTERCAL
             // Quantum registry — shared across all components
             public QRegistry Quantum { get; } = new QRegistry();
 
+            #region Shared NEXT stack
+            // Single NEXT stack shared across all components.
+            // Replaces per-component _nextStack fields in generated code.
+            private Stack<int> _sharedNextStack = new Stack<int>();
+
+            /// <summary>Push a return label onto the shared NEXT stack.</summary>
+            public void NextPush(int returnLabel) { _sharedNextStack.Push(returnLabel); }
+
+            /// <summary>
+            /// Pop 'depth' entries from the shared NEXT stack, returning the last
+            /// label popped. Returns 0 if the stack is empty before all pops complete.
+            /// </summary>
+            public int ResumePop(int depth)
+            {
+                int retLabel = 0;
+                for (int i = 0; i < depth && _sharedNextStack.Count > 0; i++)
+                    retLabel = _sharedNextStack.Pop();
+                return retLabel;
+            }
+
+            /// <summary>Discard 'depth' entries from the shared NEXT stack.</summary>
+            public void ForgetPop(int depth)
+            {
+                for (int i = 0; i < depth && _sharedNextStack.Count > 0; i++)
+                    _sharedNextStack.Pop();
+            }
+
+            /// <summary>Current depth of the shared NEXT stack.</summary>
+            public int NextStackCount => _sharedNextStack.Count;
+
+            /// <summary>Snapshot of the shared NEXT stack (for debugger).</summary>
+            public int[] NextStackSnapshot => _sharedNextStack.ToArray();
+            #endregion
+
             public static ExecutionContext CreateExecutionContext()
             {
                 return new ExecutionContext();

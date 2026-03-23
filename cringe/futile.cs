@@ -561,9 +561,9 @@ namespace INTERCAL
                 ctx.EmitRaw("};\n\n");
             }
 
-            // NEXT stack for goto-based state machine (field, not local, to survive gotos)
-            ctx.EmitRaw("   System.Collections.Generic.Stack<int> _nextStack = new System.Collections.Generic.Stack<int>();\r\n");
-            ctx.EmitRaw("   int _forgetAdj = 0;\r\n\r\n");
+            // NEXT stack is now on ExecutionContext (shared across components).
+            // _forgetAdj is no longer needed.
+            ctx.EmitRaw("   // NEXT stack: frame.ExecutionContext.NextPush/ResumePop/ForgetPop\r\n\r\n");
         }
 
         public void EmitDispatchMap(CompilationContext ctx)
@@ -586,8 +586,8 @@ namespace INTERCAL
                     {
                         long labelNum = long.Parse(s.Label.Substring(1, s.Label.Length - 2));
                         ctx.EmitRaw("      case " + labelNum + "L: ");
-                        // Push sentinel so RESUME can pop the "caller" level
-                        ctx.EmitRaw("_nextStack.Push(0); ");
+                        // Push sentinel so RESUME can detect component boundary
+                        ctx.EmitRaw("frame.ExecutionContext.NextPush(0); ");
                         ctx.EmitRaw("goto label_" + labelNum + ";\r\n");
                     }
                 }
@@ -646,7 +646,7 @@ namespace INTERCAL
 
             this.EmitDispatchMap(ctx);
 
-            // _nextStack is a field on the class, declared in EmitAbstainMap
+            // NEXT stack lives on frame.ExecutionContext (shared across components)
 
             // Register abstain slots with DebugHost for abstain tracking
             if (ctx.debugDap)
@@ -810,7 +810,7 @@ namespace INTERCAL
                 var escapedFile = (c.sourceFile ?? "").Replace("\\", "\\\\");
                 var escapedText = (s.StatementText ?? "").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
                 c.EmitRaw(string.Format(
-                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, _nextStack, {3});\r\n",
+                    "INTERCAL.Runtime.DebugHost.Instance?.OnStatement(\"{0}\", {1}, \"{2}\", frame.ExecutionContext, new System.Collections.Generic.Stack<int>(frame.ExecutionContext.NextStackSnapshot), {3});\r\n",
                     escapedFile, s.LineNumber, escapedText, s.AbstainSlot));
                 c.EmitRaw("#line hidden\r\n");
             }
