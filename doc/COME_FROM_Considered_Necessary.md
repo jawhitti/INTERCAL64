@@ -1,4 +1,4 @@
-# COME FROM Considered Necessary
+# COME FROM Considered Helpful
 
 **Jason Whittington and Claude (Anthropic)**
 
@@ -6,10 +6,8 @@ Submitted to SIGBOVIK 2026
 
 -----
 
-## Abstract
-
-Dijkstra (1968) proposed that the GO TO statement be abolished from higher-level programming languages. We are here to strengthen his work. We present a formal analysis of the control flow model of INTERCAL-72, the original INTERCAL specification as published by Woods and Lyon in 1972, and prove that INTERCAL-72 is incapable of expressing callable subroutines containing loops of arbitrary length. This limitation follows directly from the semantics of the FORGET statement and the bounded depth of the NEXT stack. We characterize the precise boundary: a callable subroutine in INTERCAL-72 may iterate at most 79 times before exhausting available stack depth. We then examine the COME FROM statement, introduced by Raymond in 1990, and demonstrate that it resolves this limitation completely. COME FROM loops do not interact with the NEXT stack and compose freely with subroutine calls. Raymond, recognizing the incompleteness of the original language, addressed it with characteristic wit. We conclude that COME FROM is not a joke. It is necessary. The language was provably incomplete from 1972 to 1990.
-
+## Abstract 
+INTERCAL (Compiler Language With No Pronounceable Acronym) was created in 1972 by Donald R. Woods and James M. Lyon at Princeton University as a deliberate parody of contemporary programming languages (Woods and Lyon, 1972) This language purposefully uses novel constructs that willfully defy convention and amuse programmers. The unique control flow model is particularly unusual and difficult to work with.  The authors are currently building a 64-bit modernized version of intercal to enhance the language, but in doing so have encountered frustrating difficulties trying to express nested loops that are required to solve almost any nontrivial problem. We present a formal analysis of the control flow model of INTERCAL-72, the original INTERCAL specification as published by Woods and Lyon in 1972, and prove that INTERCAL-72 is incapable of expressing callable subroutines containing loops of arbitrary length. This limitation follows directly from the semantics of the FORGET statement and the bounded depth of the NEXT stack. We characterize the precise boundary: a callable subroutine in INTERCAL-72 may iterate at most 79 times before exhausting available stack depth. We then examine the COME FROM statement, introduced by Raymond in 1990, and demonstrate that COME FROM improves the situation in a narrow way. We offer rigorous proof backed by a verification checker that precisely one unique structure exists today for creating callable subroutines that use loops that further call other subroutines.  We dub this  the "Double NEXT" structure and show how it was used to resolve a particularly thorny looping problem when solving the Gale-Shapley algorithm. 
 -----
 
 ## 1. Introduction
@@ -112,7 +110,7 @@ This evaluates to 1 when `.1` is zero and 2 when `.1` is nonzero. The result is 
 
 ## 3. The Fundamental Limitation of INTERCAL-72
 
-We now state and prove the central results of this paper.
+We now start working toward the central aim of this paper - to rigorously establish that only one pattern exists that can reliably be used for subroutine flow.
 
 ### 3.1 Definitions
 
@@ -302,7 +300,7 @@ For comparison, no mainstream programming language specifies a fixed language-le
 
 ## 4. Illustration of the Failure
 
-We illustrate Lemmas 1 and 2 with two minimal programs. Each attempts a simple task — counting from I to V using syslib arithmetic — and each fails on C-INTERCAL, the authoritative reference implementation, with a stack error.
+We now illustrate Lemmas 1 and 2 with two minimal programs. Each attempts a simple task — counting from I to V using syslib arithmetic — and each fails on C-INTERCAL, the authoritative reference implementation, with a stack error.
 
 ### 4.1 Lemma 1 Reproducer: Callable Subroutine with FORGET Loop
 
@@ -364,34 +362,20 @@ The following program uses a top-level FORGET loop to count from I to V, printin
 
 **C-INTERCAL result:** ICL421I ERROR TYPE 421 — NEXT stack overflow
 
-## The FORGET at (100) interacts with the RESUME #2 calls made internally by syslib routines (1000) and (1010), corrupting the stack accounting. By the second iteration the stack state is undefined.
+The FORGET at (100) interacts with the RESUME #2 calls made internally by syslib routines (1000) and (1010), corrupting the stack accounting. By the second iteration the stack state is undefined.
 
-## 5. The Component Problem and Eighteen Years of Incompleteness
+-----
+
+## 5. Eighteen Years of Incompleteness
 
 The limitation proved in Section 3 was present in INTERCAL from its publication in 1972. The language as specified by Woods and Lyon provides no mechanism for a callable subroutine to contain a loop that calls other subroutines, nor any loop exceeding 79 iterations.
 
 This went unnoticed for eighteen years. The explanation is straightforward: the corpus of INTERCAL programs written before 1990 was extremely small — the original manual notes that only two programs had ever been written in the language at the time of publication — and none of them required callable loops of arbitrary length or loops that called non-trivial subroutines.
 
-### 5.1 Component INTERCAL
-
-Whittington (2019) introduced CRINGE (Common Runtime INTERCAL Next-Generation Engine), a .NET-based INTERCAL implementation that compiles INTERCAL source to .NET assemblies. A significant feature of CRINGE is its support for component-oriented programming: INTERCAL programs compiled as separate assemblies can call between them via the NEXT statement, enabling the construction of reusable INTERCAL library components.
-
-The motivation for a component model is straightforward. Non-trivial INTERCAL programs require arithmetic routines, sorting, and other utilities. Without components, every program must include its own copies of these routines. With components, a shared library can be compiled once and referenced by many programs. The architecture is sound. The standard INTERCAL system library already follows this pattern implicitly.
-
-### 5.2 Components Require Callable Loops
-
-The limitations proved in Section 3 imply that useful components are impossible in INTERCAL-72. Consider what a useful component must do: it must accept inputs, perform some computation, and return results to the caller. For any non-trivial computation, that computation requires iteration. Iteration in INTERCAL-72 requires either FORGET-based loops or stack-accumulating loops. As proved in Section 3, neither is compatible with a component that calls other subroutines or iterates more than 79 times.
-
-The consequences are concrete. DIVIDE32, a 32-bit integer division routine implemented as an MSB-first shift-and-subtract algorithm, requires a loop. Each iteration of the loop calls syslib routines for comparison and subtraction. By Lemma 2, those syslib calls corrupt the FORGET-based loop’s stack accounting. By the corollary to Lemma 1, a stack-accumulating loop cannot exceed 79 iterations — and division of a 32-bit value may require up to 32 iterations, which is within bounds, but each iteration’s syslib calls still trigger the Lemma 2 failure.
-
-Three separate implementations of DIVIDE32 were attempted using FORGET-based and stack-accumulating loop constructs. All three failed to return correctly to their callers. The component model, while architecturarily sound, was undermined by the language’s own control flow semantics. The proof in Section 3 explains why.
-
-The situation is general. Any component implementing a standard algorithm — sort, search, arithmetic, string processing — requires loops that call subroutines. In INTERCAL-72, no such component can exist. The component model is provably impossible in the original language.
-
 -----
 
 ## 6. COME FROM
-
+We have now exhaustively measured the operations available in INTERCAL-72 and turn our attention to more modern features.
 In 1990, Eric S. Raymond produced C-INTERCAL, a complete reimplementation of INTERCAL in C for Unix systems. Among the extensions Raymond introduced was the COME FROM statement, attributed to a proposal by R. L. Clark in Datamation magazine in 1973 (Clark, 1973).
 
 The statement is described in the C-INTERCAL manual as the logical inverse of GO TO. When execution reaches the label referenced by a COME FROM statement, control transfers immediately to the COME FROM statement itself, regardless of the sequential flow of the program:
@@ -400,7 +384,13 @@ The statement is described in the C-INTERCAL manual as the logical inverse of GO
 DO COME FROM (300)
 ```
 
-When execution reaches label (300) anywhere in the program, control transfers to the statement following this COME FROM. COME FROM does not interact with the NEXT stack in any way.
+When execution reaches label (300) anywhere in the program, control transfers to the statement following this COME FROM. COME FROM does not interact with the NEXT stack in any way. 
+
+COME FROM is a legitimate (if unorthodox) but it is not obvious how or if it provides enough power to push the language through the lemmas demonstrated above. We now introduce Lemma 3
+
+### 6.4 Lemma 3: COME FROM enables true subroutine mechanics
+
+We will now analyze this question and show that the answer is "Yes, but just barely." We further show there is precisely one code pattern that works.
 
 ### 6.1 Stack Independence
 
@@ -468,27 +458,19 @@ Exiting a COME FROM loop uses ABSTAIN to disable the loop’s back-edge, followe
 
 Note that ABSTAIN must target the COME FROM statement itself (label LOOP), not the COME FROM’s target (label LOOP_END). ABSTAINing the target prevents the statement at LOOP_END from executing but does not prevent COME FROM from firing. This distinction cost the present authors several hours of debugging.
 
+### 6.3 Not out of the woods yet
 This pattern is elegant but incomplete. It handles the loop mechanism — the back-edge is stack-free and R is preserved. But it does not address conditional branching *within* the loop body. When must the loop exit? Should this iteration take path A or path B? INTERCAL provides no conditional mechanism that does not involve the NEXT stack.
 
 The only conditional branching construct available is the trampoline described in Section 2.3: a pair of NEXT calls whose RESUME depth is controlled by the zero-test expression. This construct pushes entries onto the NEXT stack. If these entries are not correctly consumed within each iteration, they accumulate across iterations and eventually corrupt the stack or exhaust the 80-entry limit.
 
 COME FROM solves the iteration problem. It does not solve the branching problem. A complete solution requires both COME FROM for the loop back-edge and a stack-correct trampoline pattern for conditionals within the loop body. This is the subject of Section 7.
 
-### 6.3 The Corrected Implementation
 
-The corrected implementation of the programs from Section 4 uses the COME FROM loop pattern described above, combined with the double-NEXT trampoline pattern described in Section 7. The complete working programs are given in Section 8, where their empirical results are reported.
+## 7. The answer lurking in a beer bottle
 
-The critical structural difference is that the loop back-edge has zero stack interaction. COME FROM fires and returns control to the top of the loop without touching the NEXT stack. R sits undisturbed throughout all iterations. The component model is rescued.
+The proofs in Sections 3 and 4 claim that FORGET-based loops cannot function as callable subroutines. A reader familiar with the INTERCAL community might at this point recall Matt Dimeo’s `beer.i` — a complete implementation of 99 Bottles of Beer in INTERCAL, written years before this investigation. Beer.i works. It uses loops. It calls syslib. But how?
 
------
-
-## 7. Beer Reveals the Answer
-
-The proofs in Sections 3 and 4 establish that FORGET-based loops cannot function as callable subroutines. A reader familiar with the INTERCAL community might at this point recall Matt Dimeo’s `beer.i` — a complete implementation of 99 Bottles of Beer in INTERCAL, written years before this investigation. Beer.i works. It uses loops. The apparent contradiction deserves explanation.
-
-Beer.i uses COME FROM loops, not FORGET loops. The Lemmas apply only to FORGET-based iteration. Beer.i’s loops are therefore outside the scope of the impossibility results entirely — they are not counterexamples but illustrations of the alternative.
-
-More interesting is what Dimeo did next. Having chosen COME FROM for his loop back-edge, he faced a practical problem: he needed conditional exit. A COME FROM loop runs until something stops it. The exit mechanism must be implemented explicitly by the programmer. Dimeo’s solution was the double-NEXT wrapper:
+Beer.i uses COME FROM loops, not FORGET loops. When writing this Dimeo face the exact problem described above: he needed conditional exit. Dimeo’s solution used a _pair_ of NEXT statements:
 
 ```intercal
           DO (outer) NEXT         \* push R_outer
@@ -505,11 +487,10 @@ With the zero-test value `.5` taking values in `{1,2}` directly:
 
 This pattern requires no FORGET for loop management. R_outer and R_inner are temporary entries pushed and consumed within a single iteration. R, the caller’s return address, is never touched.
 
-Dimeo did not derive this pattern from formal analysis. He needed conditional branching inside a loop and invented a mechanism that happened to be correct. Beer.i is an accidental constructive proof that callable COME FROM loops are possible.
+The presence of this working solution necessitated exploration. Tbe double NEXT was one possible way to solve the problem but its presence did not preclude the discovery of other similar patterns.
 
-To determine whether the beer.i double-NEXT pattern is the unique minimal working pattern or merely one of several, we applied model checking with an inverted property. Rather than asking TLC to verify that the working pattern is correct, we asked TLC to prove that correct return is impossible — and examined the counterexamples.
-
-The inverted invariant:
+### Formal Verification
+Having proven the lemmas 1 and 2, the authors used a simple model to search for other patterns similar to the double NEXT, re-enlisting the TLC analyzer for help.  Modeling the problem. We applied model checking with an inverted property. Rather than asking TLC to verify that the working pattern is correct, we asked TLC to prove that correct return is impossible — and examined the counterexamples.
 
 ```tla
 StackAlwaysCorrupted ==
@@ -518,7 +499,7 @@ StackAlwaysCorrupted ==
 
 This asserts that the stack is always corrupted at return — that is, R is never correctly consumed. Any state that violates this invariant represents a working pattern.
 
-TLC, given all possible loop constructs and stack operations as allowable transforms, found the following counterexample as the shortest violation:
+TLC, given all possible loop constructs and stack operations as allowable transforms, found a number of candidates but reported the shortest one as having these properties:
 
 1. EnterLoop — COME FROM fires, stack = <<“R”>> (untouched)
 1. BodyDone — no syslib calls this iteration
@@ -529,11 +510,12 @@ TLC, given all possible loop constructs and stack operations as allowable transf
 1. ForgetROuter — FORGET discards R_out, stack = <<“R”>>
 1. ResumeToCall — RESUME 1 pops R, rConsumed = TRUE ✓
 
-This is the beer.i double-NEXT pattern. TLC did not know about beer.i. It was given the INTERCAL stack semantics and asked to find states where correct return is achievable. It independently derived the same pattern Dimeo invented to make a beer program work.
+This is the beer.i double-NEXT pattern found in beer.i, independenty validated by TLC.  
+
 
 ### 7.1 Uniqueness
 
-The inverted-invariant model demonstrates that the pattern *can* work, but does not exclude alternatives. To establish uniqueness, we constructed a second model (`TrampolineSearch.tla`) that allows arbitrary sequences of NEXT pushes, RESUME pops, and FORGETs within the trampoline phase, subject to two constraints that reflect the physical reality of INTERCAL source code:
+The inverted-invariant model demonstrates that the pattern *can* work, but did not exclude alternatives. To establish uniqueness, we constructed a second more accurately constrained model (`TrampolineSearch.tla`) that allows arbitrary sequences of NEXT pushes, RESUME pops, and FORGETs within the trampoline phase, subject to two constraints that reflect the physical reality of INTERCAL source code:
 
 1. **Fixed structure across iterations.** The number of pushes before RESUME must be identical on every iteration. INTERCAL source code is static — the trampoline structure is compiled once and executes the same way each time. The only variable is the RESUME depth (`.5 = 1` or `.5 = 2`), which is computed at runtime.
 
@@ -543,13 +525,46 @@ TLC exhaustively explored 9,050 distinct states — all possible combinations of
 
 No other push count works. Push 1 does not provide enough entries for RESUME 2 to pop. Push 3 or more leaves residual entries that accumulate across iterations. Push 2 is the unique fixed point: RESUME 2 consumes both entries (net zero, loop continues), and RESUME 1 consumes one entry, leaving one for FORGET to discard (net zero, loop exits).
 
-The beer.i double-NEXT trampoline is not merely a working pattern. It is the *only* pattern.
+The beer.i double-NEXT trampoline is not merely a working pattern. It is the *only* pattern. It generalizes to the following construct:
 
+```mermaid
+  sequenceDiagram
+      participant P as Program
+      participant S as Subroutine
+      participant N as NEXT Stack
+
+      Note over N: Stack: [R]
+
+      P->>N: push R_outer (DO (outer) NEXT)
+      Note over N: Stack: [R, R_outer]
+
+      P->>N: push R_inner (DO (inner) NEXT)
+      Note over N: Stack: [R, R_outer, R_inner]
+
+      P->>P: RESUME .5
+
+      alt .5 = 2 (not done — continue loop)
+          P->>N: pop R_inner + R_outer
+          Note over N: Stack: [R]
+          P->>S: ← CALL SUBROUTINES HERE
+          S-->>P: (stack-neutral)
+          Note over N: Stack: [R]
+          P->>P: COME FROM fires
+      else .5 = 1 (done — exit loop)
+          P->>N: pop R_inner
+          Note over N: Stack: [R, R_outer]
+          P->>N: FORGET #1 — discard R_outer
+          Note over N: Stack: [R]
+          P->>P: ← EXIT ACTIONS HERE
+      end
+
+```
 -----
 
 ## 8. Empirical Confirmation
 
-Section 7 established the beer.i double-NEXT pattern as the minimal correct loop structure, confirmed independently by TLC. The following programs implement exactly that pattern for each lemma and were compiled and run on C-INTERCAL version 0.31.
+Section 7 established the double NEXT pattern as the minimal correct loop structure, a result that was confirmed independently by TLC. The "Broken" programs provided earlier were compiled and run on C-INTERCAL version 0.31. 
+
 
 ### 8.1 Lemma 1 Fix: Callable Subroutine with COME FROM Loop
 
@@ -606,10 +621,9 @@ Both programs implement the beer.i double-NEXT wrapper identified in Section 7, 
 |--------------------------------------|-------------------|-------------------|
 |Lemma 1 broken (callable FORGET loop) |Hangs              |ICL421I E421       |
 |Lemma 2 broken (top-level FORGET loop)|Hangs              |ICL421I E421       |
-|Lemma 1 COME FROM fix                 |Hangs (Bug 3)      |**V** ✓            |
+|Lemma 1 COME FROM fix                 |**V** ✓           |**V** ✓            |
 |Lemma 2 COME FROM fix                 |**I II III IV V** ✓|**I II III IV V** ✓|
 
-SCHRODIE’s failure on the Lemma 1 COME FROM fix is a known compiler bug (Appendix A, Bug 3). This bug does not affect the validity of the C-INTERCAL results.
 
 -----
 
@@ -621,7 +635,7 @@ Gale-Shapley requires nested loops (outer: while unmatched men exist; inner: for
 
 ### 9.1 The Implementation
 
-The implementation uses nested COME FROM loops for the outer and inner iteration, three beer.i double-NEXT trampolines per inner iteration for conditional branching, linearized arrays for O(1) preference lookup, and a subroutine for index computation. Figure 8 illustrates the control flow for a single inner loop iteration.
+The implementation uses nested COME FROM loops for the outer and inner iteration, three  double-NEXT trampolines per inner iteration for conditional branching, linearized arrays for O(1) preference lookup, and a subroutine for index computation. Figure 8 illustrates the control flow for a single inner loop iteration.
 
 **Figure 8: Gale-Shapley inner loop — three trampolines per iteration, nested COME FROM.**
 
@@ -687,7 +701,7 @@ Before continuing to debug, we constructed a TLA+ model of the COME FROM loop wi
 
 For N = 3 trampolines and 4 iterations, TLC explored all reachable states and found no invariant violations.
 
-The pattern is correct. The bug was in our code.
+The pattern is correct (and still unique). The bug was in our code.
 
 ### 9.4 The Fix
 
@@ -713,15 +727,13 @@ The corrected program produces the stable matching M1-W1, M2-W2, M3-W4, M4-W5, M
 
 ## 10. Conclusions
 
-We began with an engineering problem: division could not be implemented as a callable component. Three implementations failed. Investigation revealed that the failures were not incidental but inevitable — a consequence of FORGET’s indiscriminate stack management in the presence of subroutine calls.
-
 We have proved that INTERCAL-72 cannot express callable subroutines containing loops that call other subroutines, nor loops exceeding 79 iterations. The practical consequence is that a component model for INTERCAL is provably impossible in the original language. Any non-trivial component requires loops that call subroutines. No such component can return to its caller.
 
-The COME FROM statement, introduced by Raymond in 1990, resolves the iteration limitation completely. Combined with the double-NEXT trampoline pattern — independently derived by Matt Dimeo and by TLC model checking — it also resolves the branching limitation. TLA+ formal verification confirms that multiple trampolines compose correctly within a single COME FROM loop iteration, and the Gale-Shapley stable matching implementation demonstrates that these patterns scale to non-trivial algorithms with nested loops, multiple conditionals, and subroutine calls.
+The COME FROM statement, introduced by Raymond in 1990 improves the situation, but just barely. COME FROM is a key ingredient in the double-NEXT trampoline pattern — independently derived by Matt Dimeo and by TLC model checking  TLC formal verification confirms that multiple trampolines compose correctly within a single COME FROM loop iteration, and the Gale-Shapley stable matching implementation demonstrates that these patterns scale to non-trivial algorithms with nested loops, multiple conditionals, and subroutine calls.
 
 In every other language, structured control flow replaced the unconditional jump. In INTERCAL, the anti-goto turns out to be the only thing that makes loops actually work — not because of software engineering principles, but because of a provably broken stack.
 
-GO TO may be considered harmful. COME FROM is considered necessary.[^2]
+GO TO may be considered harmful. COME FROM is considered helpful.[^2]
 
 -----
 
@@ -745,7 +757,7 @@ Clark, R. L. (1973). A linguistic contribution to GOTO-less programming. *Datama
 
 Dimeo, M. (n.d.). 99 Bottles of Beer in INTERCAL. Available via the INTERCAL Pit, ofb.net/~jlm.
 
-Lamport, L. (2002). *Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers*. Addison-Wesley. toolbox.tlaplug.org. Available via the INTERCAL Pit, ofb.net/~jlm.
+Lamport, L. (2002). *Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers*. Addison-Wesley.
 
 Dijkstra, E. W. (1968). Go to statement considered harmful. *Communications of the ACM*, 11(3), 147–148.
 
@@ -767,33 +779,6 @@ Woods, D. R. and Lyon, J. M. (1972). *The INTERCAL Programming Language Referenc
 
 -----
 
-Ertl, A., et al. Gforth Manual. Available at complang.tuwien.ac.at/forth/gforth/Docs-html/. Section: Return Stack Tutorial.
-
-Koopman, P. (1989). *Stack Computers: The New Wave*. Ellis Horwood. Available at users.ece.cmu.edu/~koopman/stack_computers/.
-
-Moore, C. H. (1974). FORTH: A new way to program a mini-computer. *Astronomy and Astrophysics Supplement Series*, 15, 497–511.
-
-Whittington, J. and Claude (Anthropic). (2026a). Optimal graph traversal under adversarial constraints: A bitwise approach to memory-constrained environments. *SIGBOVIK 2026*.
-
-Whittington, J. and Claude (Anthropic). (2026b). Hilbert curve geographic indexing in INTERCAL-64. Manuscript in preparation.
-
-Woods, D. R. and Lyon, J. M. (1972). *The INTERCAL Programming Language Reference Manual*. Stanford University.
-
------
-
-## Appendix A: SCHRODIE Compiler Bugs
-
-Testing against C-INTERCAL revealed three bugs in SCHRODIE that cause incorrect programs to appear to work.
-
-**Bug 1: RESUME #0 treated as no-op.** The RESUME implementation uses `while (_popped < depth && _nextStack.Count > 0)`, which silently does nothing when depth=0. C-INTERCAL correctly throws E621. Impact: all programs using `.5 ~ #1` + `RESUME .5` appear correct on SCHRODIE but are broken.
-
-**Bug 2: FORGET on empty stack silently ignored.** The FORGET implementation guards with `_nextStack.Count > 0`, silently succeeding when the stack is empty. C-INTERCAL throws E621. Impact: stack underflow goes undetected.
-
-**Bug 3: COME FROM + syslib inside callable subroutine hangs.** The Lemma 1 COME FROM fix works correctly on C-INTERCAL but hung on SCHRODIE. Root cause: each compiled component had its own isolated `_nextStack`. Cross-assembly calls communicated RESUME depth via a `NextStackDepth` field, but the translation corrupted return labels when the caller’s stack had entries from enclosing subroutine calls. **Fixed** by moving the NEXT stack to a shared instance on `ExecutionContext`, matching C-INTERCAL’s single-stack semantics. All lemma programs and the Gale-Shapley implementation now produce correct output on both compilers.
-
-These bugs do not affect the paper’s formal results, which are derived from language semantics rather than compiler behavior. All empirical claims cite C-INTERCAL results.
-
------
 
 [^1]: The 79-iteration bound has immediate practical consequences. Bubble sort on an array of M elements requires at most M(M-1)/2 comparisons in the worst case. As a callable subroutine in INTERCAL-72, bubble sort is limited to arrays of at most 13 elements: 13 × 12 / 2 = 78 ≤ 79, while 14 × 13 / 2 = 91 > 79. The authors note that bubble sort on 13 elements requires exactly 78 iterations in the worst case, leaving one stack entry to spare. This margin provides no comfort.
 
