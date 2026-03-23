@@ -18,11 +18,23 @@ Despite its origins as a parody, INTERCAL has attracted sustained attention from
 
 We present the limitations we discovered, prove them formally, characterize their practical consequences, and demonstrate that they were resolved — apparently with full awareness of their significance — by Raymond’s introduction of the COME FROM statement in 1990.
 
-The analysis in Sections 2 through 5 concerns strictly INTERCAL-72 as specified by Woods and Lyon. No extensions are assumed. Section 6 introduces the relevant extension and analyzes its effect.
+The analysis in Sections 3 through 5 concerns strictly INTERCAL-72 as specified by Woods and Lyon. No extensions are assumed. Section 6 introduces the relevant extension and analyzes its effect.
 
 -----
 
-## 2. Background: INTERCAL-72 Control Flow
+## 2. Related Work: Forth and the Return Stack Discipline
+
+The interaction between loop control and a shared return stack is not unique to INTERCAL. The Forth programming language uses a return stack for both subroutine returns and temporary storage, and the Forth community has long recognized that mismanagement of this stack produces crashes. The Gforth manual warns that items pushed onto the return stack inside a definition or loop must be popped before the definition or loop ends, noting that miscounting "usually ends in a crash" (Ertl et al.). The ANS/ISO Forth Standard prohibits crossing DO-LOOP boundaries with unbalanced return stack items (ANS X3.215-1994).
+
+The canonical reference on stack machine architecture (Koopman, 1989) describes the return stack's dual role in subroutine linkage and loop control but does not formally characterize the limitations this duality imposes. Moore's original Forth paper (Moore, 1974) introduces the return stack without discussing its interaction with nested loops.
+
+These warnings state the discipline as a rule to follow, not a proven impossibility. The Forth literature does not formally characterize what breaks when the discipline is violated, what the precise class of inexpressible programs is, or why the discipline is necessary rather than merely advisable.
+
+The present paper provides the first formal treatment. INTERCAL's explicit stack manipulation — where every push, pop, and discard is a visible statement rather than an implicit compiler convention — makes the argument tractable where Forth's implicit return stack conventions obscure it.
+
+-----
+
+## 3. Background: INTERCAL-72 Control Flow
 
 INTERCAL-72 provides three mechanisms for control flow. We describe each in turn.
 
@@ -108,7 +120,7 @@ This evaluates to 1 when `.1` is zero and 2 when `.1` is nonzero. The result is 
 
 -----
 
-## 3. The Fundamental Limitation of INTERCAL-72
+## 4. The Fundamental Limitation of INTERCAL-72
 
 We now start working toward the central aim of this paper - to rigorously establish that only one pattern exists that can reliably be used for subroutine flow.
 
@@ -298,7 +310,7 @@ For comparison, no mainstream programming language specifies a fixed language-le
 
 -----
 
-## 4. Illustration of the Failure
+## 5. Illustration of the Failure
 
 We now illustrate Lemmas 1 and 2 with two minimal programs. Each attempts a simple task — counting from I to V using syslib arithmetic — and each fails on C-INTERCAL, the authoritative reference implementation, with a stack error.
 
@@ -363,24 +375,6 @@ The following program uses a top-level FORGET loop to count from I to V, printin
 **C-INTERCAL result:** ICL421I ERROR TYPE 421 — NEXT stack overflow
 
 The FORGET at (100) interacts with the RESUME #2 calls made internally by syslib routines (1000) and (1010), corrupting the stack accounting. By the second iteration the stack state is undefined.
-
------
-
-## 5. Eighteen Years of Incompleteness
-
-The limitation proved in Section 3 was present in INTERCAL from its publication in 1972. The language as specified by Woods and Lyon provides no mechanism for a callable subroutine to contain a loop that calls other subroutines, nor any loop exceeding 79 iterations.
-
-This went unnoticed for eighteen years. The explanation is straightforward: the corpus of INTERCAL programs written before 1990 was extremely small — the original manual notes that only two programs had ever been written in the language at the time of publication — and none of them required callable loops of arbitrary length or loops that called non-trivial subroutines.
-
-### 5.1 Related Work: Forth and the Return Stack Discipline
-
-The interaction between loop control and a shared return stack is not unique to INTERCAL. The Forth programming language uses a return stack for both subroutine returns and temporary storage, and the Forth community has long recognized that mismanagement of this stack produces crashes. The Gforth manual warns that items pushed onto the return stack inside a definition or loop must be popped before the definition or loop ends, noting that miscounting "usually ends in a crash" (Ertl et al.). The ANS/ISO Forth Standard prohibits crossing DO-LOOP boundaries with unbalanced return stack items (ANS X3.215-1994).
-
-The canonical reference on stack machine architecture (Koopman, 1989) describes the return stack's dual role in subroutine linkage and loop control but does not formally characterize the limitations this duality imposes. Moore's original Forth paper (Moore, 1974) introduces the return stack without discussing its interaction with nested loops.
-
-These warnings state the discipline as a rule to follow, not a proven impossibility. The Forth literature does not formally characterize what breaks when the discipline is violated, what the precise class of inexpressible programs is, or why the discipline is necessary rather than merely advisable.
-
-The present paper provides the first formal treatment. INTERCAL's explicit stack manipulation — where every push, pop, and discard is a visible statement rather than an implicit compiler convention — makes the argument tractable where Forth's implicit return stack conventions obscure it. Lemmas 1 and 2 prove what the Forth community has known empirically: the shared stack makes certain compositions impossible, not merely dangerous.
 
 -----
 
