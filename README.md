@@ -59,50 +59,7 @@ The five original INTERCAL operators are retained:
 | `V` | V | Unary | OR of adjacent bit pairs |
 | `?` | what | Unary | XOR of adjacent bit pairs |
 
-### 4.2 New Unary Operators (Involutions)
-
-Two new unary operators are introduced. Both are _involutions_: applying either operator twice to any value yields the original value. This property, familiar to physicists as spin-1/2 behavior, is fundamental to their design and should not be regarded as a coincidence.
-
-| Operator | Name | Type | Description |
-|----------|------|------|-------------|
-| `\|` | maypole | Unary | Reverses the bit positions of the operand and then inverts each bit. The value may be understood as "swinging around the maypole 180 degrees": the bit that was at position 0 is now at position _n_-1, and all bits that were showing their front side (1) now show their back side (0). |
-| `-` | monkey bar | Unary | Inverts each bit in place (ones' complement). The value may be understood as "flipping 180 degrees on the monkey bar": each bit flips over but does not change position. |
-
-It should be noted that the maypole performs _two_ operations (reversal and inversion) while the monkey bar performs only one (inversion). This asymmetry is deliberate. A gymnast who swings around a vertical pole executes a more complex maneuver than one who merely flips on a horizontal bar. The reader who objects to this metaphor is invited to attempt both maneuvers and report back.
-
-#### 4.2.1 Scalar Behavior
-
-On scalar values, the operators behave as described above. The width of the operand (16-bit, 32-bit, or 64-bit) determines the number of bit positions involved in the maypole reversal. The monkey bar operates identically at all widths.
-
-#### 4.2.2 Array Behavior
-
-The maypole and monkey bar operators may also be applied to entire arrays using the syntax `DO ,2 <- |,1` or `DO ,2 <- -,1`. Chained operations such as `DO ,2 <- -|,1` are supported and are evaluated left to right.
-
-The semantics depend on the dimensionality of the array:
-
-**One-dimensional arrays.** The maypole (`|`) reverses the element order and bit-inverts each value. The monkey bar (`-`) bit-inverts each value in place without reordering. The reader may observe that in one dimension there is only one axis to reverse, and the maypole has claimed it. The monkey bar contents itself with inversion alone.
-
-**Two-dimensional arrays.** The operations correspond to flipping a sheet of paper. The maypole (`|`) reverses columns within each row (a horizontal flip) and bit-inverts each value. The monkey bar (`-`) reverses the order of rows (a vertical flip) and bit-inverts each value. Between them, the two operators can reach both axes of the array.
-
-**Three-dimensional arrays.** The operations correspond to rotating a solid object 180 degrees. The maypole (`|`) reverses the last axis and bit-inverts. The monkey bar (`-`) reverses the first axis and bit-inverts. The middle axis is not reachable by either operator. This is acknowledged as a limitation. A third operator would be required to address it, and the authors did not feel that the world needed another one.
-
-**Higher-dimensional arrays.** Not supported. The programmer will receive:
-
-    E4D1 ROTATING A HYPERCUBE IS LEFT AS AN EXERCISE FOR THE READER
-
-### 4.3 The Identity Property
-
-A consequence of the involution property is that the composition `|-|-` (maypole, monkey bar, maypole, monkey bar) produces the identity function. This can be verified by observing that the maypole reverses bit positions and inverts, and the monkey bar inverts. Two inversions cancel. Two reversals cancel. Four applications therefore restore the original value:
-
-    '|-|-x' = x
-
-This result holds for scalars, one-dimensional arrays, two-dimensional arrays, and three-dimensional arrays. A proof by induction over all possible array dimensionalities up to three is left to the reader.
-
-It has been further observed that the mesh character `#`, when viewed as two vertical strokes and two horizontal strokes, is itself composed of `|-|-`. The original INTERCAL designers chose `#` for the constant prefix. A constant is a value to which the identity function has been applied. The correspondence is exact.
-
-The authors wish to state clearly that they have no evidence that this was intentional. They also wish to state that they have no evidence that it was not.
-
-### 4.4 Mingle and Select at Higher Widths
+### 4.2 Mingle and Select at Higher Widths
 
 The mingle operator (`$`) produces a result twice the width of its operands:
 
