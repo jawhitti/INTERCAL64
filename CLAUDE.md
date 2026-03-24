@@ -5,7 +5,7 @@ This is a .NET 9 INTERCAL compiler with 64-bit extensions, a DAP debugger, and a
 ## Build
 
 ```
-dotnet build schrodie.sln
+dotnet build intercal64.sln
 dotnet test schrodie.tests/schrodie.tests.csproj
 ```
 
@@ -24,7 +24,7 @@ Run the test samples before pushing: `build/test-samples.ps1`
   - `twisty.cs` — NEXT/RESUME/FORGET thread-pool implementation
   - `QRegistry.cs` — quantum cat box registry (union-find entanglement, collapse)
   - `DebugHost.cs` — DAP debug host (named pipe communication)
-- `schrodie.dap/` — DAP debug adapter (VS Code ↔ runtime bridge)
+- `intercal64.dap/` — DAP debug adapter (VS Code ↔ runtime bridge)
   - `DebugAdapter.cs` — handles DAP protocol, breakpoints, stepping, variables, watch expressions
   - `Snark.cs` — debugger commentary ("THE COMPILER WEEPS", etc.)
 - `schrodie.tests/` — xUnit tests (scanner, parser, runtime, bitwise ops, quantum)

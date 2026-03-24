@@ -4,11 +4,11 @@ const fs = require('fs');
 const os = require('os');
 
 // Installed layout: all binaries in one directory
-// Dev layout: schrodie.dap/bin/Debug/net9.0/schrodie-dap[.exe]
-//             cringe/cringe.csproj
+// Dev layout: intercal64.dap/bin/Debug/net9.0/intercal64-dap[.exe]
+//             churn/churn.csproj
 
 function findAdapter() {
-    const exeName = process.platform === 'win32' ? 'schrodie-dap.exe' : 'schrodie-dap';
+    const exeName = process.platform === 'win32' ? 'intercal64-dap.exe' : 'intercal64-dap';
 
     // 1. Check VS Code setting
     const config = vscode.workspace.getConfiguration('intercal');
@@ -16,24 +16,24 @@ function findAdapter() {
     if (configured) {
         const installed = path.join(configured, exeName);
         if (fs.existsSync(installed)) return installed;
-        const dev = path.join(configured, 'schrodie.dap', 'bin', 'Debug', 'net9.0', exeName);
+        const dev = path.join(configured, 'intercal64.dap', 'bin', 'Debug', 'net9.0', exeName);
         if (fs.existsSync(dev)) return dev;
     }
 
     // 2. Check standard install locations
     const installPaths = process.platform === 'darwin' ? [
-        '/usr/local/lib/schrodie',
-        '/opt/homebrew/lib/schrodie',
+        '/usr/local/lib/intercal64',
+        '/opt/homebrew/lib/intercal64',
         '/usr/local/bin',
         '/opt/homebrew/bin',
-        path.join(os.homedir(), '.schrodie'),
+        path.join(os.homedir(), '.intercal64'),
     ] : process.platform === 'win32' ? [
-        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'schrodie'),
-        path.join(process.env.LOCALAPPDATA || '', 'schrodie'),
+        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'intercal64'),
+        path.join(process.env.LOCALAPPDATA || '', 'intercal64'),
     ] : [
-        '/usr/local/lib/schrodie',
+        '/usr/local/lib/intercal64',
         '/usr/local/bin',
-        path.join(os.homedir(), '.schrodie'),
+        path.join(os.homedir(), '.intercal64'),
     ];
 
     for (const dir of installPaths) {
@@ -42,9 +42,9 @@ function findAdapter() {
     }
 
     // 3. Walk up from extension path (dev mode — extension in project tree)
-    let dir = vscode.extensions.getExtension('jawhitti.intercal')?.extensionPath || '';
+    let dir = vscode.extensions.getExtension('jawhitti.intercal64')?.extensionPath || '';
     for (let i = 0; i < 5; i++) {
-        const candidate = path.join(dir, 'schrodie.dap', 'bin', 'Debug', 'net9.0', exeName);
+        const candidate = path.join(dir, 'intercal64.dap', 'bin', 'Debug', 'net9.0', exeName);
         if (fs.existsSync(candidate)) return candidate;
         dir = path.dirname(dir);
     }
@@ -57,7 +57,7 @@ function findAdapter() {
                 const installed = path.join(base, exeName);
                 if (fs.existsSync(installed)) return installed;
                 // Dev layout
-                const dev = path.join(base, 'schrodie.dap', 'bin', 'Debug', 'net9.0', exeName);
+                const dev = path.join(base, 'intercal64.dap', 'bin', 'Debug', 'net9.0', exeName);
                 if (fs.existsSync(dev)) return dev;
             }
         }
@@ -79,7 +79,7 @@ function activate(context) {
                 // Last resort: try dotnet run (requires source checkout + SDK)
                 const config = vscode.workspace.getConfiguration('intercal');
                 const root = config.get('projectRoot') || '';
-                const adapterProject = path.join(root, 'schrodie.dap', 'schrodie.dap.csproj');
+                const adapterProject = path.join(root, 'intercal64.dap', 'intercal64.dap.csproj');
                 return new vscode.DebugAdapterExecutable('dotnet', [
                     'run', '--project', adapterProject, '--no-build'
                 ]);

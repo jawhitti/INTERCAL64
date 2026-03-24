@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharplib", "csharplib\csha
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schrodie.tests", "schrodie.tests\schrodie.tests.csproj", "{C7D6E556-6EAD-462D-AF65-2BBE2E014DB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schrodie.dap", "schrodie.dap\schrodie.dap.csproj", "{59F496B3-F362-434A-B23A-DAC447AA3E1A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "intercal64.dap", "intercal64.dap\intercal64.dap.csproj", "{59F496B3-F362-434A-B23A-DAC447AA3E1A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

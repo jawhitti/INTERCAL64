@@ -15,7 +15,7 @@ INTERCAL-64 is a near-complete rewrite of CRINGE (Whittington, 2019) with 64-bit
 Requires .NET 9.0 SDK.
 
 ```
-dotnet build schrodie.sln
+dotnet build intercal64.sln
 ```
 
 This builds the compiler (`churn.exe`), runtime, DAP adapter, and compiles `syslib64.dll` from INTERCAL source automatically.
@@ -52,7 +52,7 @@ Open the repo in VS Code with the `vscode-intercal64` extension installed. Open 
 |-----------|-----------|
 | `churn/` | The compiler. Parses INTERCAL source, emits C#, compiles to .NET assemblies. |
 | `schrodie.runtime/` | Runtime library — variable system, NEXT/RESUME/FORGET threading, quantum registry. |
-| `schrodie.dap/` | DAP debug adapter — bridges VS Code to the runtime via named pipes. |
+| `intercal64.dap/` | DAP debug adapter — bridges VS Code to the runtime via named pipes. |
 | `schrodie.tests/` | xUnit test suite — scanner, parser, runtime, bitwise operations. |
 | `syslib64/` | System library in pure INTERCAL — ADD, MINUS, TIMES, DIVIDE at 16/32/64-bit. |
 | `vscode-intercal64/` | VS Code extension — syntax highlighting, debugger launch configs, snippets. |
@@ -255,7 +255,7 @@ The compiler is `churn`. It descends from Eric Raymond's `ick` via `cringe` (Whi
 ### 7.1 Building from Source
 
 ```
-dotnet build schrodie.sln
+dotnet build intercal64.sln
 ```
 
 ### 7.2 Compiling Programs

@@ -65,7 +65,7 @@
         "intercal.projectRoot": {
           "type": "string",
           "default": "",
-          "description": "Path to the project root (containing schrodie.dap/, churn/, etc.). Auto-detected from workspace if empty."
+          "description": "Path to the project root (containing intercal64.dap/, churn/, etc.). Auto-detected from workspace if empty."
         }
       }
     },
