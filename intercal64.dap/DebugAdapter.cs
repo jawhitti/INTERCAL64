@@ -265,24 +265,33 @@ public class DebugAdapter
 
         // The compiler may return exit code 0 even when the inner dotnet build fails.
         // Verify the expected output actually exists.
-        var expectedExe = Path.Combine(programDir,
-            Path.GetFileNameWithoutExtension(_programPath) + ".exe");
-        var expectedDll = Path.Combine(programDir,
-            Path.GetFileNameWithoutExtension(_programPath) + ".dll");
+        // The compiler sanitizes names: replaces - with _ and prefixes _ if starts with digit
+        var sanitized = SanitizeAssemblyName(Path.GetFileNameWithoutExtension(_programPath));
+        var expectedExe = Path.Combine(programDir, sanitized + ".exe");
+        var expectedDll = Path.Combine(programDir, sanitized + ".dll");
         if (!File.Exists(expectedExe) && !File.Exists(expectedDll))
         {
             throw new Exception("Build produced no output. Check for compilation errors above.");
         }
     }
 
+    private static string SanitizeAssemblyName(string name)
+    {
+        name = name.Replace("-", "_");
+        if (name.Length > 0 && char.IsDigit(name[0]))
+            name = "_" + name;
+        return name;
+    }
+
     private void LaunchDebuggee()
     {
-        var exeName = Path.GetFileNameWithoutExtension(_programPath) + ".exe";
+        var sanitized = SanitizeAssemblyName(Path.GetFileNameWithoutExtension(_programPath));
+        var exeName = sanitized + ".exe";
         var programDir = Path.GetDirectoryName(Path.GetFullPath(_programPath)) ?? ".";
         var exePath = Path.Combine(programDir, exeName);
 
         // Also try .dll with dotnet
-        var dllPath = Path.Combine(programDir, Path.GetFileNameWithoutExtension(_programPath) + ".dll");
+        var dllPath = Path.Combine(programDir, sanitized + ".dll");
 
         ProcessStartInfo psi;
         if (File.Exists(exePath))
