@@ -8,50 +8,7 @@
 
 ---
 
-## ABSTRACT
-
-We present a backwards-compatible extension to INTERCAL (Woods and Lyon, 1973) that introduces 64-bit arithmetic, two new involution operators, and a complete system library implemented in pure INTERCAL. The resulting language is capable of expressing nontrivial algorithms including graph traversal, spatial indexing, and combinatorial optimization — achievements previously assumed to be beyond INTERCAL's reach. A formal proof demonstrates that INTERCAL-72's NEXT/RESUME control flow cannot express callable subroutines containing arbitrary-length loops, and that the COME FROM statement is computationally necessary to overcome this limitation. The implementation is 100% backwards compatible with all prior INTERCAL programs, a claim we are in the rare position of being able to verify against substantially all code ever written in the language. This work received no funding from any source.
-
-## 1. INTRODUCTION
-
-### 1.1 Background
-
-It has been over fifty years since the publication of the original INTERCAL reference manual (Woods and Lyon, 1973). During this time, computing has advanced considerably. Processors now operate on 64-bit integers as a matter of course. INTERCAL has not kept pace.
-
-This is a shame, because INTERCAL has elements that deserve wider study. Woods and Lyon built a language around a mingle operator that interleaves bits and a select operator that extracts them — operations that map directly to Morton codes, spatial hashing, and the kind of bit manipulation that modern processors still struggle with. INTERCAL has been a bit-parallel programming language for fifty years. No one noticed.
-
-This document describes a series of extensions to INTERCAL that build on those strengths. The resulting language brings INTERCAL into the modern era by introducing 64-bit variable types, new operators, and a system library that makes arithmetic possible without external assistance.
-
-The reader is advised that familiarity with the original INTERCAL reference manual is assumed throughout.
-
-### 1.2 Prior Work
-
-The INTERCAL language has a small but distinguished lineage of implementations, each building upon the last in ways that the original authors would almost certainly not have approved of.
-
-The original INTERCAL-72 compiler (Woods and Lyon, 1973) was implemented at Princeton University and targeted the IBM System/370. It established the core language: mingle, select, ABSTAIN, COME FROM, and the general principle that a programming language need not be pleasant to use. The original compiler's source code was lost for decades before being recovered and published (Stross, 2015), by which time it was of primarily archaeological interest.
-
-Raymond (1990) produced C-INTERCAL, a portable reimplementation in C that revived the language for Unix systems. C-INTERCAL introduced several extensions, including TriINTERCAL (a ternary variant), Threaded INTERCAL, and Backtracking INTERCAL. Raymond's implementation also added support for the COME FROM statement, which had been described but not implemented in the original manual. C-INTERCAL remains actively maintained and accepts keywords in Latin, a feature whose utility is left as an exercise for the classicist.
-
-Calvelli (2001) produced CLC-INTERCAL, an ambitious Perl-based implementation that introduced literate programming support, Roman numeral literals, a networking library, and a feature called Quantum INTERCAL. CLC-INTERCAL's quantum extension treats ABSTAIN and REINSTATE as operations on qubits, placing statements into superpositions of executed and not-executed states.
-
-Whittington (2019) produced CRINGE (Common Runtime INTERCAL Next-Generation Engine), a .NET-based implementation notable for being the first component-oriented INTERCAL compiler. CRINGE compiles INTERCAL to .NET assemblies, enabling cross-component calls via the NEXT statement and allowing INTERCAL libraries to be referenced from other INTERCAL programs — or, theoretically, from C# programs, though no evidence of anyone attempting this voluntarily has been found. CRINGE serves as the foundation for the present work.
-
-Several other implementations exist, including J-INTERCAL (targeting the JVM), POGA-INTERCAL, OrthINTERCAL, and at least one attempt at an LLVM backend. A comprehensive survey is beyond the scope of this document and, frankly, beyond the scope of our funding, which is zero.
-
-### 1.3 Backwards Compatibility and File Extensions
-
-INTERCAL-64 is fully backwards compatible with all prior INTERCAL programs. No existing syntax has been modified or removed. Programs written for INTERCAL-72, C-INTERCAL, or any prior CRINGE release will compile and execute without modification.
-
-We are in the unusual position of being able to verify this claim against substantially all INTERCAL code ever written. The total corpus of known INTERCAL programs is modest. We have tested against it. Everything works, except for the programs that did not work before, which continue not to work in exactly the same way.
-
-The compiler accepts two file extensions:
-
-| Extension | Usage |
-|-----------|-------|
-| `.i` | Classic INTERCAL source files. All existing programs use this extension. |
-| `.ic64` | INTERCAL-64 source files. Recommended for new programs that use 64-bit features. |
-
-The two extensions are functionally identical to the compiler.
+INTERCAL-64 is a near-complete rewrite of CRINGE (Whittington, 2019) with 64-bit arithmetic, two new involution operators, a complete system library in pure INTERCAL, a DAP debugger, and a formal proof that COME FROM is computationally necessary. It is 100% backwards compatible with all prior INTERCAL programs. The compiler is `churn`. File extension is `.ic64`.
 
 ## 2. CHARACTER SET EXTENSIONS
 
@@ -67,14 +24,14 @@ All classic INTERCAL variable types are supported along with new 64-bit types:
 
 | Prefix | Name | Width | Description |
 |--------|------|-------|-------------|
-| `.` | quantum dot | 16-bit | A 16-bit unsigned integer |
-| `:` | double dot | 32-bit | A 32-bit unsigned integer |
+| `.` | spot | 16-bit | A 16-bit unsigned integer |
+| `:` | two-spot | 32-bit | A 32-bit unsigned integer |
 | `::` | double cateye | 64-bit | A 64-bit unsigned integer |
 | `,` | tail | 16-bit | A 16-bit array |
 | `;` | hybrid | 32-bit | A 32-bit array |
 | `;;` | double hybrid | 64-bit | A 64-bit array |
 
-The quantum dot (`.`) replaces spot (`.`) as the indicator for variable declarations. Single-dot (`.`) and double-dotted (`:`) variables replace their classic INTERCAL equivalents and the new type double cateye extends the existing quantum dot (`.`, 16-bit) and double dot (`:`, 32-bit) series to 64-bit precision. It is so named because it consists of two double dots, and two twos is four.
+The spot (`.`) and two-spot (`:`) retain their classic INTERCAL meanings. The new double cateye (`::`) extends the series to 64-bit precision. It is so named because it consists of two two-spots, and two twos is four.
 
 ### 3.2 Constants
 
@@ -83,8 +40,8 @@ Constants are formed with the mesh (`#`) prefix:
 | Prefix | Name | Width |
 |--------|------|-------|
 | `#` | mesh | 16-bit |
-| `##` | insecure fence | 32-bit |
-| `####` | secure fence | 64-bit |
+| `##` | fence | 32-bit |
+| `####` | stockade | 64-bit |
 
 The absence of a triple mesh (`###`) is intentional. Three meshes would imply 48-bit precision, which is not a thing.
 
