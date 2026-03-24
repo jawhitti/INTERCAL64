@@ -29,7 +29,7 @@ Run the test samples before pushing: `build/test-samples.ps1`
   - `Snark.cs` — debugger commentary ("THE COMPILER WEEPS", etc.)
 - `intercal64.tests/` — xUnit tests (scanner, parser, runtime, bitwise ops, quantum)
 - `syslib64/` — the system library in pure INTERCAL
-- `vscode-schrodie/` — VS Code extension (syntax highlighting, launch configs, snippets)
+- `intercal64.vscode/` — VS Code extension (syntax highlighting, launch configs, snippets)
 - `samples/` — sample programs including `learn-intercal/` tutorial
 - `csharplib/` — C# interop sample
 - `doc/` — papers and technical notes

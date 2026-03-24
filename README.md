@@ -44,7 +44,7 @@ dotnet test intercal64.tests/intercal64.tests.csproj
 
 ### Debug in VS Code
 
-Open the repo in VS Code with the `vscode-intercal64` extension installed. Open any `.i` or `.ic64` file, set a breakpoint, press F5. The `samples/learn-intercal/` folder has 17 programs designed for this.
+Open the repo in VS Code with the `intercal64.vscode` extension installed. Open any `.i` or `.ic64` file, set a breakpoint, press F5. The `samples/learn-intercal/` folder has 17 programs designed for this.
 
 ## Project Layout
 
@@ -55,7 +55,7 @@ Open the repo in VS Code with the `vscode-intercal64` extension installed. Open 
 | `intercal64.dap/` | DAP debug adapter — bridges VS Code to the runtime via named pipes. |
 | `intercal64.tests/` | xUnit test suite — scanner, parser, runtime, bitwise operations. |
 | `syslib64/` | System library in pure INTERCAL — ADD, MINUS, TIMES, DIVIDE at 16/32/64-bit. |
-| `vscode-intercal64/` | VS Code extension — syntax highlighting, debugger launch configs, snippets. |
+| `intercal64.vscode/` | VS Code extension — syntax highlighting, debugger launch configs, snippets. |
 | `csharplib/` | Sample C# interop library — demonstrates calling C# from INTERCAL. |
 | `samples/` | Sample programs including `learn-intercal/` tutorial (17 lessons). |
 | `doc/` | Papers and technical notes — COME FROM proof, Knight's Tour, Hilbert, hardware proposal. |
