@@ -28,7 +28,7 @@
         ],
         "extensions": [
           ".i",
-          ".schrodie"
+          ".ic64"
         ],
         "configuration": "./language-configuration.json"
       }

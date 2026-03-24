@@ -29,14 +29,14 @@ namespace intercal.tests
                 if (File.Exists(syslibSrc))
                     File.Copy(syslibSrc, Path.Combine(dir, "syslib64.dll"), true);
 
-                var srcFile = Path.Combine(dir, "test.schrodie");
+                var srcFile = Path.Combine(dir, "test.ic64");
                 File.WriteAllText(srcFile, source);
 
                 // Compile using bin/schrodie.exe directly
                 var compile = Process.Start(new ProcessStartInfo
                 {
                     FileName = compilerExe,
-                    Arguments = "test.schrodie -b -r:syslib64.dll",
+                    Arguments = "test.ic64 -b -r:syslib64.dll",
                     WorkingDirectory = dir,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,

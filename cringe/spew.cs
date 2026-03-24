@@ -138,7 +138,7 @@ namespace INTERCAL
                     throw new CompilationException(Messages.E998 + " (" + file + ")");
 
                 string extension = file.Substring(dot);
-                if (extension != ".i" && extension != ".schrodie")
+                if (extension != ".i" && extension != ".ic64" && extension != ".schrodie")
                     throw new CompilationException(Messages.E998 + " (" + file + ")");
 
                 try
