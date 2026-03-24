@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\schrodie.runtime\schrodie.runtime.csproj" />
-    <ProjectReference Include="..\cringe\cringe.csproj" />
+    <ProjectReference Include="..\churn\churn.csproj" />
     <Reference Include="isyslib">
       <HintPath>isyslib.dll</HintPath>
     </Reference>

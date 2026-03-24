@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cringe", "cringe\cringe.csproj", "{CD6CFE5F-5676-495B-B409-5486BBEB2E79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "churn", "churn\churn.csproj", "{CD6CFE5F-5676-495B-B409-5486BBEB2E79}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "schrodie.runtime", "schrodie.runtime\schrodie.runtime.csproj", "{37A22E15-5C33-4A06-81A3-DAE690A2CAFB}"
 EndProject
