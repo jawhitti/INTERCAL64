@@ -5,6 +5,6 @@
     <RootNamespace>csharplib</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\schrodie.runtime\schrodie.runtime.csproj" />
+    <ProjectReference Include="..\intercal64.runtime\intercal64.runtime.csproj" />
   </ItemGroup>
 </Project>

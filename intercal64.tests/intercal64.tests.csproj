@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\schrodie.runtime\schrodie.runtime.csproj" />
+    <ProjectReference Include="..\intercal64.runtime\intercal64.runtime.csproj" />
     <ProjectReference Include="..\churn\churn.csproj" />
     <Reference Include="isyslib">
       <HintPath>isyslib.dll</HintPath>

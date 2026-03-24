@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <AssemblyName>schrodie.runtime</AssemblyName>
+    <AssemblyName>intercal64.runtime</AssemblyName>
     <RootNamespace>intercal.runtime</RootNamespace>
-    <Version>1.5.0</Version>
-    <Product>schrodie</Product>
-    <Description>schrodie runtime</Description>
+    <Version>2.0.0</Version>
+    <Product>intercal64</Product>
+    <Description>INTERCAL-64 runtime</Description>
     <Copyright>Authorship disclaimed by Jason Whittington 2026. All rights reserved.</Copyright>
     <OutputPath>..\bin\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

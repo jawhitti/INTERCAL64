@@ -22,9 +22,9 @@ namespace intercal.tests
                     return "COMPILER_NOT_FOUND";
 
                 // Copy runtime and syslib to temp dir
-                var runtimeSrc = Path.Combine(binDir, "schrodie.runtime.dll");
+                var runtimeSrc = Path.Combine(binDir, "intercal64.runtime.dll");
                 if (File.Exists(runtimeSrc))
-                    File.Copy(runtimeSrc, Path.Combine(dir, "schrodie.runtime.dll"), true);
+                    File.Copy(runtimeSrc, Path.Combine(dir, "intercal64.runtime.dll"), true);
                 var syslibSrc = Path.Combine(binDir, "syslib64.dll");
                 if (File.Exists(syslibSrc))
                     File.Copy(syslibSrc, Path.Combine(dir, "syslib64.dll"), true);

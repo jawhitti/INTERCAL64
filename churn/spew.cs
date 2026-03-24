@@ -311,9 +311,9 @@ namespace INTERCAL
 
         const string Usage =
         #region usage
-            "schrodie — a quantum programming language\r\n\r\n" +
+            "churn — the INTERCAL-64 compiler\r\n\r\n" +
 
-            "Usage: schrodie <source.i> [options]\r\n\r\n" +
+            "Usage: churn <source.ic64> [options]\r\n\r\n" +
 
             "                        - OUTPUT -\r\n" +
             "/t:exe                  Build a console executable (default)\r\n" +
@@ -398,7 +398,7 @@ namespace INTERCAL
 
                             //We put syslib in last. If other libs define labels that collide with
                             //syslibs then those will get precedence over the standard ones.
-                            c.references[refs.Length] = new ExportList(FindFile("schrodie.runtime.dll"));
+                            c.references[refs.Length] = new ExportList(FindFile("intercal64.runtime.dll"));
                         }
                         else if (arg.IndexOf("DEBUG+") > 0 || arg.IndexOf("debug+") > 0)
                         {
@@ -464,7 +464,7 @@ namespace INTERCAL
                         Trace.WriteLine("Auto-referencing syslib64.dll");
                         refs.Add(new ExportList(syslibPath));
                     }
-                    refs.Add(new ExportList(FindFile("schrodie.runtime.dll")));
+                    refs.Add(new ExportList(FindFile("intercal64.runtime.dll")));
                     c.references = refs.ToArray();
                 }
 

@@ -37,7 +37,7 @@ churn samples/fizzbuzz.i -r:bin/syslib64.dll
 ### Run the tests
 
 ```
-dotnet test schrodie.tests/schrodie.tests.csproj
+dotnet test intercal64.tests/intercal64.tests.csproj
 ```
 
 237 tests covering the scanner, parser, runtime, and bitwise operations.
@@ -51,9 +51,9 @@ Open the repo in VS Code with the `vscode-intercal64` extension installed. Open 
 | Directory | What It Is |
 |-----------|-----------|
 | `churn/` | The compiler. Parses INTERCAL source, emits C#, compiles to .NET assemblies. |
-| `schrodie.runtime/` | Runtime library — variable system, NEXT/RESUME/FORGET threading, quantum registry. |
+| `intercal64.runtime/` | Runtime library — variable system, NEXT/RESUME/FORGET threading, quantum registry. |
 | `intercal64.dap/` | DAP debug adapter — bridges VS Code to the runtime via named pipes. |
-| `schrodie.tests/` | xUnit test suite — scanner, parser, runtime, bitwise operations. |
+| `intercal64.tests/` | xUnit test suite — scanner, parser, runtime, bitwise operations. |
 | `syslib64/` | System library in pure INTERCAL — ADD, MINUS, TIMES, DIVIDE at 16/32/64-bit. |
 | `vscode-intercal64/` | VS Code extension — syntax highlighting, debugger launch configs, snippets. |
 | `csharplib/` | Sample C# interop library — demonstrates calling C# from INTERCAL. |

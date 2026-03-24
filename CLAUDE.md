@@ -6,7 +6,7 @@ This is a .NET 9 INTERCAL compiler with 64-bit extensions, a DAP debugger, and a
 
 ```
 dotnet build intercal64.sln
-dotnet test schrodie.tests/schrodie.tests.csproj
+dotnet test intercal64.tests/intercal64.tests.csproj
 ```
 
 Run the test samples before pushing: `build/test-samples.ps1`
@@ -19,7 +19,7 @@ Run the test samples before pushing: `build/test-samples.ps1`
   - `spew.cs` — compilation context, abstain map, gerund registry
   - `perplex.cs` — error messages
   - `Token.cs` / `Tokenizer.cs` — lexer
-- `schrodie.runtime/` — runtime library
+- `intercal64.runtime/` — runtime library
   - `utils.cs` — ExecutionContext, variable system (spots, two-spots, four-spots, arrays, box variables)
   - `twisty.cs` — NEXT/RESUME/FORGET thread-pool implementation
   - `QRegistry.cs` — quantum cat box registry (union-find entanglement, collapse)
@@ -27,7 +27,7 @@ Run the test samples before pushing: `build/test-samples.ps1`
 - `intercal64.dap/` — DAP debug adapter (VS Code ↔ runtime bridge)
   - `DebugAdapter.cs` — handles DAP protocol, breakpoints, stepping, variables, watch expressions
   - `Snark.cs` — debugger commentary ("THE COMPILER WEEPS", etc.)
-- `schrodie.tests/` — xUnit tests (scanner, parser, runtime, bitwise ops, quantum)
+- `intercal64.tests/` — xUnit tests (scanner, parser, runtime, bitwise ops, quantum)
 - `syslib64/` — the system library in pure INTERCAL
 - `vscode-schrodie/` — VS Code extension (syntax highlighting, launch configs, snippets)
 - `samples/` — sample programs including `learn-intercal/` tutorial
