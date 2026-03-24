@@ -8,9 +8,75 @@
 
 ---
 
-INTERCAL-64 is a near-complete rewrite of CRINGE (Whittington, 2019) with 64-bit arithmetic, two new involution operators, a complete system library in pure INTERCAL, a DAP debugger, and a formal proof that COME FROM is computationally necessary. It is 100% backwards compatible with all prior INTERCAL programs. The compiler is `churn`. File extension is `.ic64`.
+INTERCAL-64 is a near-complete rewrite of CRINGE (Whittington, 2019) with 64-bit arithmetic, a complete system library in pure INTERCAL, a DAP debugger, and a formal proof that COME FROM is computationally necessary. It is 100% backwards compatible with all prior INTERCAL programs. The compiler is `churn`. File extension is `.ic64`.
 
-## 2. CHARACTER SET EXTENSIONS
+## Building
+
+Requires .NET 9.0 SDK.
+
+```
+dotnet build schrodie.sln
+```
+
+This builds the compiler (`churn.exe`), runtime, DAP adapter, and compiles `syslib64.dll` from INTERCAL source automatically.
+
+### Run a program
+
+```
+churn samples/hello.i
+./hello.exe
+```
+
+Or with the syslib for arithmetic:
+
+```
+churn samples/fizzbuzz.i -r:bin/syslib64.dll
+./fizzbuzz.exe
+```
+
+### Run the tests
+
+```
+dotnet test schrodie.tests/schrodie.tests.csproj
+```
+
+237 tests covering the scanner, parser, runtime, and bitwise operations.
+
+### Debug in VS Code
+
+Open the repo in VS Code with the `vscode-intercal64` extension installed. Open any `.i` or `.ic64` file, set a breakpoint, press F5. The `samples/learn-intercal/` folder has 17 programs designed for this.
+
+## Project Layout
+
+| Directory | What It Is |
+|-----------|-----------|
+| `churn/` | The compiler. Parses INTERCAL source, emits C#, compiles to .NET assemblies. |
+| `schrodie.runtime/` | Runtime library — variable system, NEXT/RESUME/FORGET threading, quantum registry. |
+| `schrodie.dap/` | DAP debug adapter — bridges VS Code to the runtime via named pipes. |
+| `schrodie.tests/` | xUnit test suite — scanner, parser, runtime, bitwise operations. |
+| `syslib64/` | System library in pure INTERCAL — ADD, MINUS, TIMES, DIVIDE at 16/32/64-bit. |
+| `vscode-intercal64/` | VS Code extension — syntax highlighting, debugger launch configs, snippets. |
+| `csharplib/` | Sample C# interop library — demonstrates calling C# from INTERCAL. |
+| `samples/` | Sample programs including `learn-intercal/` tutorial (17 lessons). |
+| `doc/` | Papers and technical notes — COME FROM proof, Knight's Tour, Hilbert, hardware proposal. |
+| `Analysis/` | TLA+ formal verification models and traces. |
+
+### Compiler flags
+
+```
+churn hello.i                      # compile to exe
+churn -t:library syslib64.i        # compile to dll
+churn -r:syslib64.dll program.i    # link against library
+churn -debug+dap program.i         # enable DAP debugger
+churn -noplease program.i          # disable politeness check
+churn -b program.i                 # brief output (suppress banner)
+```
+
+Use `-` prefix for flags, not `/` — Windows reinterprets `/` as drive paths.
+
+## Language Reference
+
+### 2. CHARACTER SET EXTENSIONS
 
 ### 2.1 Labels
 
