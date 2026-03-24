@@ -7,7 +7,7 @@ namespace intercal.tests
 {
     public class Bitwise64Tests
     {
-        // Helper: compile and run a schrodie program using bin/schrodie.exe
+        // Helper: compile and run a schrodie program using bin/churn.exe
         private string CompileAndRun(string source)
         {
             var dir = Path.Combine(Path.GetTempPath(), "schrodie_test_" + Guid.NewGuid().ToString("N")[..8]);
@@ -17,7 +17,7 @@ namespace intercal.tests
                 // Locate bin/ directory (contains compiler, runtime, syslib)
                 var binDir = Path.GetFullPath(Path.Combine(
                     AppContext.BaseDirectory, "..", "..", "..", "..", "bin"));
-                var compilerExe = Path.Combine(binDir, "schrodie.exe");
+                var compilerExe = Path.Combine(binDir, "churn.exe");
                 if (!File.Exists(compilerExe))
                     return "COMPILER_NOT_FOUND";
 
@@ -32,7 +32,7 @@ namespace intercal.tests
                 var srcFile = Path.Combine(dir, "test.ic64");
                 File.WriteAllText(srcFile, source);
 
-                // Compile using bin/schrodie.exe directly
+                // Compile using bin/churn.exe directly
                 var compile = Process.Start(new ProcessStartInfo
                 {
                     FileName = compilerExe,

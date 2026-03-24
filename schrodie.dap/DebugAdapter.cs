@@ -1011,14 +1011,14 @@ public class DebugAdapter
 
     private string FindCompiler()
     {
-        // Look for schrodie.exe in bin/ relative to the adapter or project root
+        // Look for churn.exe in bin/ relative to the adapter or project root
         var adapterDir = AppDomain.CurrentDomain.BaseDirectory;
         var candidates = new[]
         {
-            Path.Combine(adapterDir, "..", "..", "..", "..", "bin", "schrodie.exe"),
-            Path.Combine(adapterDir, "..", "bin", "schrodie.exe"),
-            Path.Combine(adapterDir, "bin", "schrodie.exe"),
-            Path.Combine(adapterDir, "schrodie.exe"),
+            Path.Combine(adapterDir, "..", "..", "..", "..", "bin", "churn.exe"),
+            Path.Combine(adapterDir, "..", "bin", "churn.exe"),
+            Path.Combine(adapterDir, "bin", "churn.exe"),
+            Path.Combine(adapterDir, "churn.exe"),
         };
 
         foreach (var c in candidates)
@@ -1027,7 +1027,7 @@ public class DebugAdapter
             if (File.Exists(full)) return full;
         }
 
-        return "schrodie.exe";
+        return "churn.exe";
     }
 
     private string FindSyslib()
