@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "intercal",
+            "request": "launch",
+            "name": "Debug INTERCAL-64 program",
+            "program": "${file}"
+        }
+    ]
+}

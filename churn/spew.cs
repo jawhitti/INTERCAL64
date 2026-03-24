@@ -504,7 +504,12 @@ namespace INTERCAL
 
 
                 c.program = p;
-                c.assemblyName = Path.GetFileNameWithoutExtension(sources[0]);
+                var rawName = Path.GetFileNameWithoutExtension(sources[0]);
+                // Sanitize: C# identifiers can't start with a digit or contain hyphens
+                rawName = rawName.Replace("-", "_");
+                if (rawName.Length > 0 && char.IsDigit(rawName[0]))
+                    rawName = "_" + rawName;
+                c.assemblyName = rawName;
                 c.sourceFile = Path.GetFullPath(sources[0]);
 
                 // Check for label conflicts between local program and referenced assemblies.
