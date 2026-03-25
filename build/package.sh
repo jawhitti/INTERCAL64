@@ -150,8 +150,12 @@ ARCHIVE="intercal64-$VERSION-$RID"
 if [ "$RID" = "win-x64" ]; then
     if command -v zip &>/dev/null; then
         (cd "$RID" && zip -r "../$ARCHIVE.zip" .)
+    elif command -v pwsh &>/dev/null; then
+        pwsh -Command "Compress-Archive -Path '$RID/*' -DestinationPath '$ARCHIVE.zip'"
+    elif command -v powershell &>/dev/null; then
+        powershell -Command "Compress-Archive -Path '$RID/*' -DestinationPath '$ARCHIVE.zip'"
     else
-        echo "WARNING: zip not found, skipping archive"
+        echo "WARNING: no zip tool found, skipping archive"
     fi
 else
     tar czf "$ARCHIVE.tar.gz" -C "$RID" .
