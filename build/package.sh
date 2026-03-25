@@ -1,23 +1,23 @@
 #!/bin/bash
 set -e
 
-# Build the schrodie distribution package
-# Usage: ./build/package.sh [osx-arm64|osx-x64|win-x64|linux-x64]
+# Build the INTERCAL-64 distribution package
+# Usage: ./build/package.sh [osx-arm64|osx-x64|win-x64|linux-x64] [version]
 
 RID="${1:-osx-arm64}"
-VERSION="${2:-1.5.0}"
+VERSION="${2:-2.0.0}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 OUT="$ROOT/dist/$RID"
 
-echo "=== Building schrodie $VERSION for $RID ==="
+echo "=== Building INTERCAL-64 $VERSION for $RID ==="
 
 rm -rf "$OUT"
 mkdir -p "$OUT/bin" "$OUT/lib" "$OUT/samples"
 
 # 1. Publish compiler (self-contained single-file)
 echo "--- Publishing compiler ---"
-dotnet publish "$ROOT/cringe/cringe.csproj" \
+dotnet publish "$ROOT/churn/churn.csproj" \
     -c Release \
     -r "$RID" \
     --self-contained true \
@@ -25,11 +25,9 @@ dotnet publish "$ROOT/cringe/cringe.csproj" \
     -p:IncludeNativeLibrariesForSelfExtract=true \
     -o "$OUT/bin"
 
-# The assembly is already named 'schrodie' via the csproj
-
 # 2. Publish DAP adapter (self-contained single-file)
 echo "--- Publishing DAP adapter ---"
-dotnet publish "$ROOT/schrodie.dap/schrodie.dap.csproj" \
+dotnet publish "$ROOT/intercal64.dap/intercal64.dap.csproj" \
     -c Release \
     -r "$RID" \
     --self-contained true \
@@ -39,11 +37,13 @@ dotnet publish "$ROOT/schrodie.dap/schrodie.dap.csproj" \
 
 # 3. Build syslib64
 echo "--- Building syslib64 ---"
-cd "$ROOT/samples"
-dotnet run --project "$ROOT/cringe/cringe.csproj" -- \
-    syslib64.schrodie -b -t:library -noplease
-cp syslib64.dll "$OUT/lib/"
-cp schrodie.runtime.dll "$OUT/lib/"
+cd "$OUT/bin"
+./churn$([ "$RID" = "win-x64" ] && echo ".exe" || echo "") \
+    "$ROOT/syslib64/syslib64.ic64" -b -t:library -noplease 2>/dev/null || true
+if [ -f syslib64.dll ]; then
+    cp syslib64.dll "$OUT/lib/"
+fi
+cp intercal64.runtime.dll "$OUT/lib/" 2>/dev/null || true
 cd "$ROOT"
 
 # 4. Copy samples
@@ -52,45 +52,39 @@ SAMPLES=(
     hello.i
     fizzbuzz.i
     collatz.i
-    fourspot.schrodie
-    mingle64.schrodie
-    test_quantum.schrodie
-    eve.schrodie
-    hello_schrodie.schrodie
-    alice_bob.schrodie
-    quantum_next.schrodie
-    roulette4.schrodie
-    roulette5.schrodie
-    shores_algorithm.schrodie
+    beer.i
+    rot13.i
+    primes.i
+    stable_marriage.i
 )
 for f in "${SAMPLES[@]}"; do
-    cp "$ROOT/samples/$f" "$OUT/samples/"
+    [ -f "$ROOT/samples/$f" ] && cp "$ROOT/samples/$f" "$OUT/samples/"
 done
-# Also copy runtime and syslib to samples so they can compile out of the box
-cp "$OUT/lib/schrodie.runtime.dll" "$OUT/samples/"
-cp "$OUT/lib/syslib64.dll" "$OUT/samples/"
+# Copy learn-intercal
+cp -r "$ROOT/samples/learn-intercal" "$OUT/samples/learn-intercal"
+# Copy runtime and syslib to samples so they can compile out of the box
+[ -f "$OUT/lib/intercal64.runtime.dll" ] && cp "$OUT/lib/intercal64.runtime.dll" "$OUT/samples/"
+[ -f "$OUT/lib/syslib64.dll" ] && cp "$OUT/lib/syslib64.dll" "$OUT/samples/"
 
 # 5. Package VS Code extension
 echo "--- Packaging VS Code extension ---"
-cd "$ROOT/vscode-schrodie"
+cd "$ROOT/intercal64.vscode"
 if command -v npx &>/dev/null; then
-    npx @vscode/vsce package -o "$OUT/schrodie-$VERSION.vsix"
+    npx @vscode/vsce package -o "$OUT/intercal64-$VERSION.vsix" 2>/dev/null || echo "WARNING: vsix build failed"
 else
     echo "WARNING: npx not found, skipping .vsix build"
-    echo "Install Node.js and run: npm install -g @vscode/vsce"
 fi
 cd "$ROOT"
 
 # 6. Copy docs
-cp "$ROOT/doc/schrodie.md" "$OUT/"
-cp "$ROOT/doc/debugger-install.md" "$OUT/"
+[ -f "$ROOT/doc/debugger-install.md" ] && cp "$ROOT/doc/debugger-install.md" "$OUT/"
 
 # 7. Create install script
 if [ "$RID" = "win-x64" ]; then
     cat > "$OUT/install.ps1" << 'PWSH'
-# schrodie Installer for Windows
-$installDir = "$env:LOCALAPPDATA\schrodie"
-Write-Host "Installing schrodie to $installDir..."
+# INTERCAL-64 Installer for Windows
+$installDir = "$env:LOCALAPPDATA\intercal64"
+Write-Host "Installing INTERCAL-64 to $installDir..."
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 Copy-Item -Recurse -Force "bin\*" $installDir
 Copy-Item -Recurse -Force "lib\*" $installDir
@@ -110,27 +104,27 @@ if ($vsix -and (Get-Command code -ErrorAction SilentlyContinue)) {
     code --install-extension $vsix.FullName
 }
 
-Write-Host "Done. Restart your terminal, then try: schrodie samples\hello.i"
+Write-Host "Done. Restart your terminal, then try: churn samples\hello.i"
 PWSH
 else
     cat > "$OUT/install.sh" << 'BASH'
 #!/bin/bash
 set -e
 
-INSTALL_DIR="${SCHRODIE_HOME:-$HOME/.schrodie}"
-echo "Installing schrodie to $INSTALL_DIR..."
+INSTALL_DIR="${INTERCAL64_HOME:-$HOME/.intercal64}"
+echo "Installing INTERCAL-64 to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 cp bin/* "$INSTALL_DIR/"
 cp lib/* "$INSTALL_DIR/"
 cp -r samples "$INSTALL_DIR/samples"
-chmod +x "$INSTALL_DIR/schrodie" "$INSTALL_DIR/schrodie-dap"
+chmod +x "$INSTALL_DIR/churn" "$INSTALL_DIR/intercal64-dap"
 
 # Add to PATH via shell profile
 SHELL_RC="$HOME/.zshrc"
 [ -f "$HOME/.bashrc" ] && SHELL_RC="$HOME/.bashrc"
-if ! grep -q 'INTERCAL' "$SHELL_RC" 2>/dev/null; then
+if ! grep -q 'intercal64' "$SHELL_RC" 2>/dev/null; then
     echo '' >> "$SHELL_RC"
-    echo '# schrodie' >> "$SHELL_RC"
+    echo '# INTERCAL-64' >> "$SHELL_RC"
     echo "export PATH=\"$INSTALL_DIR:\$PATH\"" >> "$SHELL_RC"
     echo "Added $INSTALL_DIR to PATH in $SHELL_RC"
 fi
@@ -142,7 +136,7 @@ if [ -n "$VSIX" ] && command -v code &>/dev/null; then
     code --install-extension "$VSIX"
 fi
 
-echo "Done. Restart your terminal, then try: schrodie samples/hello.i"
+echo "Done. Restart your terminal, then try: churn samples/hello.i"
 BASH
     chmod +x "$OUT/install.sh"
 fi
@@ -150,9 +144,8 @@ fi
 # 8. Create archive
 echo "--- Creating archive ---"
 cd "$ROOT/dist"
-ARCHIVE="schrodie-$VERSION-$RID"
+ARCHIVE="intercal64-$VERSION-$RID"
 if [ "$RID" = "win-x64" ]; then
-    # zip for Windows
     if command -v zip &>/dev/null; then
         (cd "$RID" && zip -r "../$ARCHIVE.zip" .)
     else

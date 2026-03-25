@@ -36,8 +36,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: schrodie-${{ matrix.rid }}
-          path: dist/schrodie-*
+          name: intercal64-${{ matrix.rid }}
+          path: dist/intercal64-*
 
   release:
     needs: build
