@@ -16,7 +16,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Build
+      - name: Build compiler and syslib
+        run: dotnet build churn/churn.csproj
+
+      - name: Build solution
         run: dotnet build intercal64.sln
 
       - name: Test
