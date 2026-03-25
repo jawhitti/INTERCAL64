@@ -43,17 +43,11 @@ namespace intercal.tests
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 });
-                var compileStdout = compile!.StandardOutput.ReadToEnd();
-                var compileStderr = compile.StandardError.ReadToEnd();
-                compile.WaitForExit(30000);
+                compile!.WaitForExit(30000);
 
                 // Run
                 var exePath = Path.Combine(dir, "test.exe");
-                if (!File.Exists(exePath))
-                {
-                    var files = string.Join(", ", Directory.GetFiles(dir).Select(Path.GetFileName));
-                    Assert.Fail($"COMPILE_FAILED: exit={compile.ExitCode} files=[{files}] stdout=[{compileStdout}] stderr=[{compileStderr}] binDir=[{binDir}] compilerExe=[{compilerExe}]");
-                }
+                if (!File.Exists(exePath)) return "COMPILE_FAILED";
                 var run = Process.Start(new ProcessStartInfo
                 {
                     FileName = exePath,
