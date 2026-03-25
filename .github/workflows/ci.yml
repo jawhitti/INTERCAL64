@@ -16,11 +16,12 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Build compiler and syslib
-        run: dotnet build churn/churn.csproj
-
       - name: Build solution
         run: dotnet build intercal64.sln
+
+      - name: Build syslib
+        run: dotnet churn.dll ../syslib64/syslib64.ic64 -t:library -b -noplease
+        working-directory: bin
 
       - name: Test
         run: dotnet test intercal64.tests/intercal64.tests.csproj --no-build
