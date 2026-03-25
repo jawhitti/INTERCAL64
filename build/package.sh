@@ -35,15 +35,17 @@ dotnet publish "$ROOT/intercal64.dap/intercal64.dap.csproj" \
     -p:IncludeNativeLibrariesForSelfExtract=true \
     -o "$OUT/bin"
 
-# 3. Build syslib64
+# 3. Build syslib64 using a native (non-cross-compile) build of churn
 echo "--- Building syslib64 ---"
-cd "$OUT/bin"
-./churn$([ "$RID" = "win-x64" ] && echo ".exe" || echo "") \
-    "$ROOT/syslib64/syslib64.ic64" -b -t:library -noplease 2>/dev/null || true
-if [ -f syslib64.dll ]; then
-    cp syslib64.dll "$OUT/lib/"
+dotnet build "$ROOT/churn/churn.csproj" -c Release
+NATIVE_CHURN="$ROOT/bin/churn.dll"
+cd "$ROOT/bin"
+dotnet "$NATIVE_CHURN" "$ROOT/syslib64/syslib64.ic64" -b -t:library -noplease 2>/dev/null || true
+if [ -f "$ROOT/bin/syslib64.dll" ]; then
+    cp "$ROOT/bin/syslib64.dll" "$OUT/lib/"
 fi
-cp intercal64.runtime.dll "$OUT/lib/" 2>/dev/null || true
+# Copy runtime from published output
+find "$OUT/bin" -name "intercal64.runtime.dll" -exec cp {} "$OUT/lib/" \; 2>/dev/null || true
 cd "$ROOT"
 
 # 4. Copy samples

@@ -15,7 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\intercal64.runtime\intercal64.runtime.csproj" />
   </ItemGroup>
-  <Target Name="CompileSyslib" AfterTargets="Build">
+  <Target Name="CompileSyslib" AfterTargets="Build" Condition="'$(PublishDir)' == ''">
     <PropertyGroup>
       <BinDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\bin\'))</BinDir>
       <SyslibSource>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\syslib64\syslib64.ic64'))</SyslibSource>
