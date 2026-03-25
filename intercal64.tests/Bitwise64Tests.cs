@@ -44,10 +44,11 @@ namespace intercal.tests
                     CreateNoWindow = true,
                 });
                 compile!.WaitForExit(30000);
+                var compileStderr = compile.StandardError.ReadToEnd();
 
                 // Run
                 var exePath = Path.Combine(dir, "test.exe");
-                if (!File.Exists(exePath)) return "COMPILE_FAILED";
+                if (!File.Exists(exePath)) return $"COMPILE_FAILED: {compileStderr}";
                 var run = Process.Start(new ProcessStartInfo
                 {
                     FileName = exePath,
