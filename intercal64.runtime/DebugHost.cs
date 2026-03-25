@@ -416,16 +416,9 @@ namespace INTERCAL.Runtime
                 }
 
                 _breakpoints[file] = lines;
-
-                Send(new
-                {
-                    @event = "breakpointsAck",
-                    file,
-                    lines
-                });
             }
 
-            Send(new { @event = "breakpointsSet", success = true });
+            Send(new { @event = "breakpointsAck" });
         }
 
         private void HandleCollapseBox(JsonElement root, ExecutionContext context)
