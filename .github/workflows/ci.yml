@@ -20,7 +20,10 @@ jobs:
         run: dotnet build intercal64.sln
 
       - name: Build syslib
-        run: dotnet churn.dll ../syslib64/syslib64.ic64 -t:library -b -noplease
+        run: |
+          dotnet churn.dll ${{ github.workspace }}/syslib64/syslib64.ic64 -t:library -b -noplease
+          if (!(Test-Path syslib64.dll)) { Write-Error "syslib64.dll not found in bin/"; exit 1 }
+        shell: pwsh
         working-directory: bin
 
       - name: Test
