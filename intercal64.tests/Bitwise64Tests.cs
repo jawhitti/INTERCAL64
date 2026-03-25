@@ -52,7 +52,7 @@ namespace intercal.tests
                 if (!File.Exists(exePath))
                 {
                     var files = string.Join(", ", Directory.GetFiles(dir).Select(Path.GetFileName));
-                    return $"COMPILE_FAILED: exit={compile.ExitCode} files=[{files}] stdout=[{compileStdout}] stderr=[{compileStderr}] binDir=[{binDir}]";
+                    Assert.Fail($"COMPILE_FAILED: exit={compile.ExitCode} files=[{files}] stdout=[{compileStdout}] stderr=[{compileStderr}] binDir=[{binDir}] compilerExe=[{compilerExe}]");
                 }
                 var run = Process.Start(new ProcessStartInfo
                 {
