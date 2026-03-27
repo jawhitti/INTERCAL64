@@ -37,11 +37,11 @@ jobs:
         if: matrix.rid == 'win-x64'
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
-          $distDir = "dist/win-x64"
+          $distDir = "${{ github.workspace }}\dist\win-x64"
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             /DAppVersion=$version `
             /DDistDir=$distDir `
-            /Odist `
+            /O"${{ github.workspace }}\dist" `
             build/installer/intercal64.iss
         shell: pwsh
 
