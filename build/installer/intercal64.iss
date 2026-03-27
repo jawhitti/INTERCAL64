@@ -26,9 +26,16 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; Value
 [Run]
 Filename: "cmd.exe"; Parameters: "/c copy ""{app}\lib\intercal64.runtime.dll"" ""{app}\bin\"" >nul 2>&1"; Flags: runhidden
 Filename: "cmd.exe"; Parameters: "/c copy ""{app}\lib\syslib64.dll"" ""{app}\bin\"" >nul 2>&1"; Flags: runhidden
-Filename: "code"; Parameters: "--install-extension ""{app}\intercal64-{#AppVersion}.vsix"""; Flags: runhidden nowait skipifnotfound; StatusMsg: "Installing VS Code extension..."
+Filename: "code"; Parameters: "--install-extension ""{app}\intercal64-{#AppVersion}.vsix"""; Flags: runhidden nowait; Check: VsCodeExists; StatusMsg: "Installing VS Code extension..."
 
 [Code]
+function VsCodeExists(): boolean;
+var
+  ResultCode: integer;
+begin
+  Result := Exec('cmd.exe', '/c where code >nul 2>&1', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+end;
+
 function NeedsAddPath(Param: string): boolean;
 var
   OrigPath: string;
