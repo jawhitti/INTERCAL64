@@ -551,31 +551,42 @@ namespace INTERCAL
 
         }
 
+        private static string[] SearchDirs()
+        {
+            var dirs = new List<string>();
+            dirs.Add(Environment.CurrentDirectory);
+            dirs.Add(AppContext.BaseDirectory);
+            // For single-file publish, AppContext.BaseDirectory is a temp extraction dir.
+            // Also search the directory where the actual exe lives.
+            var exePath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(exePath))
+            {
+                var exeDir = Path.GetDirectoryName(exePath);
+                if (!string.IsNullOrEmpty(exeDir))
+                {
+                    dirs.Add(exeDir);
+                    dirs.Add(Path.Combine(exeDir, "lib"));
+                    dirs.Add(Path.Combine(exeDir, "..", "lib"));
+                }
+            }
+            return dirs.ToArray();
+        }
+
         private static string TryFindFile(string path)
         {
             if (File.Exists(path)) return path;
-            var baseDir = AppContext.BaseDirectory;
-            var srcPath = Path.Combine(baseDir, path);
-            if (File.Exists(srcPath)) return srcPath;
+            foreach (var dir in SearchDirs())
+            {
+                var candidate = Path.Combine(dir, path);
+                if (File.Exists(candidate)) return candidate;
+            }
             return null;
         }
 
         private static string FindFile(string path)
         {
-            if (File.Exists(path))
-            {
-                return path;
-            }
-            else
-            {
-                var baseDir = AppContext.BaseDirectory;
-                var srcPath = Path.Combine(baseDir, path);
-                if (File.Exists(srcPath))
-                {
-                    return  srcPath;
-                }
-            }
-
+            var result = TryFindFile(path);
+            if (result != null) return result;
             throw new IntercalException(Messages.E2002);
         }
 

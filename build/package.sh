@@ -46,6 +46,10 @@ if [ -f "$ROOT/bin/syslib64.dll" ]; then
 fi
 # Copy runtime from published output
 find "$OUT/bin" -name "intercal64.runtime.dll" -exec cp {} "$OUT/lib/" \; 2>/dev/null || true
+# Also copy runtime and syslib into bin/ so the compiler can find them
+# (single-file publish means AppContext.BaseDirectory is a temp dir)
+[ -f "$OUT/lib/intercal64.runtime.dll" ] && cp "$OUT/lib/intercal64.runtime.dll" "$OUT/bin/"
+[ -f "$OUT/lib/syslib64.dll" ] && cp "$OUT/lib/syslib64.dll" "$OUT/bin/"
 cd "$ROOT"
 
 # 4. Copy samples
