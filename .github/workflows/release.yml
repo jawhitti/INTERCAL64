@@ -33,6 +33,18 @@ jobs:
       - name: Build package
         run: bash build/package.sh ${{ matrix.rid }} ${{ github.ref_name }}
 
+      - name: Build Windows installer
+        if: matrix.rid == 'win-x64'
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $distDir = "dist/win-x64"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DAppVersion=$version `
+            /DDistDir=$distDir `
+            /Odist `
+            build/installer/intercal64.iss
+        shell: pwsh
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

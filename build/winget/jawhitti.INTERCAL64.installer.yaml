@@ -1,16 +1,13 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
 PackageIdentifier: jawhitti.INTERCAL64
 PackageVersion: "${VERSION}"
-InstallerType: zip
-NestedInstallerType: portable
-NestedInstallerFiles:
-  - RelativeFilePath: bin\churn.exe
-    PortableCommandAlias: churn
-  - RelativeFilePath: bin\intercal64-dap.exe
-    PortableCommandAlias: intercal64-dap
+InstallerType: inno
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/jawhitti/INTERCAL64/releases/download/v${VERSION}/intercal64-v${VERSION}-win-x64.zip
+    InstallerUrl: https://github.com/jawhitti/INTERCAL64/releases/download/v${VERSION}/intercal64-${VERSION}-win-x64-setup.exe
     InstallerSha256: "${SHA256}"
+    InstallerSwitches:
+      Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+      SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
 ManifestType: installer
 ManifestVersion: 1.6.0

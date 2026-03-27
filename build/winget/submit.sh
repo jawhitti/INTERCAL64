@@ -11,15 +11,16 @@ PKG_ID="jawhitti.INTERCAL64"
 REPO="jawhitti/INTERCAL64"
 WINGET_REPO="microsoft/winget-pkgs"
 
-ASSET_URL="https://github.com/$REPO/releases/download/$VERSION/intercal64-$VERSION-win-x64.zip"
+ASSET_URL="https://github.com/$REPO/releases/download/$VERSION/intercal64-$VERSION_NUM-win-x64-setup.exe"
 
 echo "=== Submitting $PKG_ID $VERSION_NUM to winget ==="
 
-# 1. Download the zip and compute SHA256
+# 1. Download the installer and compute SHA256
 echo "--- Downloading $ASSET_URL ---"
 TMPDIR=$(mktemp -d)
-curl -sL "$ASSET_URL" -o "$TMPDIR/intercal64.zip"
-SHA256=$(sha256sum "$TMPDIR/intercal64.zip" | cut -d' ' -f1 | tr '[:lower:]' '[:upper:]')
+gh release download "$VERSION" --repo "$REPO" --pattern "intercal64-*-win-x64-setup.exe" --dir "$TMPDIR"
+INSTALLER=$(ls "$TMPDIR"/intercal64-*-setup.exe)
+SHA256=$(sha256sum "$INSTALLER" | cut -d' ' -f1 | tr '[:lower:]' '[:upper:]')
 echo "SHA256: $SHA256"
 
 # 2. Generate manifests
@@ -63,17 +64,14 @@ cat > "$MANIFEST_DIR/$PKG_ID.installer.yaml" << EOF
 # yaml-language-server: \$schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
 PackageIdentifier: $PKG_ID
 PackageVersion: $VERSION_NUM
-InstallerType: zip
-NestedInstallerType: portable
-NestedInstallerFiles:
-  - RelativeFilePath: bin\\churn.exe
-    PortableCommandAlias: churn
-  - RelativeFilePath: bin\\intercal64-dap.exe
-    PortableCommandAlias: intercal64-dap
+InstallerType: inno
 Installers:
   - Architecture: x64
     InstallerUrl: $ASSET_URL
     InstallerSha256: $SHA256
+    InstallerSwitches:
+      Silent: /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+      SilentWithProgress: /SILENT /SUPPRESSMSGBOXES /NORESTART
 ManifestType: installer
 ManifestVersion: 1.6.0
 EOF
