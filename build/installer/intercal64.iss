@@ -26,14 +26,53 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; Value
 [Run]
 Filename: "cmd.exe"; Parameters: "/c copy ""{app}\lib\intercal64.runtime.dll"" ""{app}\bin\"" >nul 2>&1"; Flags: runhidden
 Filename: "cmd.exe"; Parameters: "/c copy ""{app}\lib\syslib64.dll"" ""{app}\bin\"" >nul 2>&1"; Flags: runhidden
-Filename: "code"; Parameters: "--install-extension ""{app}\intercal64-{#AppVersion}.vsix"""; Flags: runhidden nowait; Check: VsCodeExists; StatusMsg: "Installing VS Code extension..."
+Filename: "{code:GetVsCodePath}"; Parameters: "--install-extension ""{app}\intercal64-{#AppVersion}.vsix"""; Flags: runhidden nowait; Check: VsCodeFound; StatusMsg: "Installing VS Code extension..."
 
 [Code]
-function VsCodeExists(): boolean;
+var
+  VsCodePathCache: string;
+
+function FindVsCode(): string;
 var
   ResultCode: integer;
+  Paths: array of string;
+  I: integer;
 begin
-  Result := Exec('cmd.exe', '/c where code >nul 2>&1', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+  Result := '';
+  // First try PATH
+  if Exec('cmd.exe', '/c where code >nul 2>&1', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+  begin
+    Result := 'code';
+    exit;
+  end;
+  // Search common install locations
+  SetArrayLength(Paths, 4);
+  Paths[0] := ExpandConstant('{localappdata}') + '\Programs\Microsoft VS Code\bin\code.cmd';
+  Paths[1] := ExpandConstant('{pf}') + '\Microsoft VS Code\bin\code.cmd';
+  Paths[2] := ExpandConstant('{localappdata}') + '\Programs\Microsoft VS Code\bin\new_code.cmd';
+  Paths[3] := ExpandConstant('{pf}') + '\Microsoft VS Code\bin\new_code.cmd';
+  for I := 0 to GetArrayLength(Paths) - 1 do
+  begin
+    if FileExists(Paths[I]) then
+    begin
+      Result := Paths[I];
+      exit;
+    end;
+  end;
+end;
+
+function VsCodeFound(): boolean;
+begin
+  if VsCodePathCache = '' then
+    VsCodePathCache := FindVsCode();
+  Result := VsCodePathCache <> '';
+end;
+
+function GetVsCodePath(Param: string): string;
+begin
+  if VsCodePathCache = '' then
+    VsCodePathCache := FindVsCode();
+  Result := VsCodePathCache;
 end;
 
 function NeedsAddPath(Param: string): boolean;
