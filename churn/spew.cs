@@ -214,9 +214,16 @@ namespace INTERCAL
             csproj.AppendLine("    <TargetFramework>net9.0</TargetFramework>");
             csproj.AppendLine("    <AssemblyName>" + c.assemblyName + "</AssemblyName>");
             csproj.AppendLine("    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>");
-            // Always emit debug symbols for source-level debugging
-            csproj.AppendLine("    <DebugType>portable</DebugType>");
-            csproj.AppendLine("    <DebugSymbols>true</DebugSymbols>");
+            if (c.debugBuild || c.debugDap)
+            {
+                csproj.AppendLine("    <DebugType>portable</DebugType>");
+                csproj.AppendLine("    <DebugSymbols>true</DebugSymbols>");
+            }
+            else
+            {
+                csproj.AppendLine("    <DebugType>none</DebugType>");
+                csproj.AppendLine("    <DebugSymbols>false</DebugSymbols>");
+            }
             if (c.debugBuild)
             {
                 csproj.AppendLine("    <DefineConstants>TRACE</DefineConstants>");
