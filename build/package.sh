@@ -44,10 +44,12 @@ dotnet "$NATIVE_CHURN" "$ROOT/syslib64/syslib64.ic64" -b -t:library -noplease 2>
 if [ -f "$ROOT/bin/syslib64.dll" ]; then
     cp "$ROOT/bin/syslib64.dll" "$OUT/lib/"
 fi
-# Copy runtime from published output
-find "$OUT/bin" -name "intercal64.runtime.dll" -exec cp {} "$OUT/lib/" \; 2>/dev/null || true
+# Copy runtime from the normal (non-single-file) build output
+# Single-file publish bundles it into the exe, so it won't be in $OUT/bin
+if [ -f "$ROOT/bin/intercal64.runtime.dll" ]; then
+    cp "$ROOT/bin/intercal64.runtime.dll" "$OUT/lib/"
+fi
 # Also copy runtime and syslib into bin/ so the compiler can find them
-# (single-file publish means AppContext.BaseDirectory is a temp dir)
 [ -f "$OUT/lib/intercal64.runtime.dll" ] && cp "$OUT/lib/intercal64.runtime.dll" "$OUT/bin/"
 [ -f "$OUT/lib/syslib64.dll" ] && cp "$OUT/lib/syslib64.dll" "$OUT/bin/"
 cd "$ROOT"
