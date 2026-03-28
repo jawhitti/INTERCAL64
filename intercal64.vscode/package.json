@@ -100,14 +100,6 @@
             }
           }
         },
-        "initialConfigurations": [
-          {
-            "type": "intercal",
-            "request": "launch",
-            "name": "Debug INTERCAL-64 program",
-            "program": "${file}"
-          }
-        ],
         "configurationSnippets": [
           {
             "label": "INTERCAL-64: Launch",

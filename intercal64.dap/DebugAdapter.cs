@@ -225,16 +225,9 @@ public class DebugAdapter
             output = $"Compiling {Path.GetFileName(_programPath)}...\n"
         });
 
-        // Skip recompile if the exe already exists and is newer than the source
+        // Always recompile — the debugger needs -debug-dap flags which differ
+        // from a command-line build. A cached exe may not have debug hooks.
         var sanitizedName = SanitizeAssemblyName(baseName);
-        var existingExe = Path.Combine(programDir, sanitizedName + ".exe");
-        if (File.Exists(existingExe) &&
-            File.GetLastWriteTimeUtc(existingExe) > File.GetLastWriteTimeUtc(_programPath))
-        {
-            SendEvent("output", new { category = "console",
-                output = $"Using cached build of {Path.GetFileName(_programPath)} (source unchanged)\n" });
-            goto skipCompile;
-        }
 
         // Clean stale build artifacts
         foreach (var ext in new[] { ".exe", ".dll", ".pdb", ".deps.json", ".runtimeconfig.json" })
@@ -274,7 +267,6 @@ public class DebugAdapter
 
         // The compiler may return exit code 0 even when the inner dotnet build fails.
         // Verify the expected output actually exists.
-        skipCompile:
         var sanitized = SanitizeAssemblyName(Path.GetFileNameWithoutExtension(_programPath));
         var expectedExe = Path.Combine(programDir, sanitized + ".exe");
         var expectedDll = Path.Combine(programDir, sanitized + ".dll");
