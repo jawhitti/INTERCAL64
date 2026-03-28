@@ -225,17 +225,26 @@ public class DebugAdapter
             output = $"Compiling {Path.GetFileName(_programPath)}...\n"
         });
 
-        // Clean stale build artifacts so dotnet build doesn't use cached output
+        // Skip recompile if the exe already exists and is newer than the source
+        var sanitizedName = SanitizeAssemblyName(baseName);
+        var existingExe = Path.Combine(programDir, sanitizedName + ".exe");
+        if (File.Exists(existingExe) &&
+            File.GetLastWriteTimeUtc(existingExe) > File.GetLastWriteTimeUtc(_programPath))
+        {
+            SendEvent("output", new { category = "console",
+                output = $"Using cached build of {Path.GetFileName(_programPath)} (source unchanged)\n" });
+            goto skipCompile;
+        }
+
+        // Clean stale build artifacts
         foreach (var ext in new[] { ".exe", ".dll", ".pdb", ".deps.json", ".runtimeconfig.json" })
         {
-            var stale = Path.Combine(programDir, baseName + ext);
+            var stale = Path.Combine(programDir, sanitizedName + ext);
             try { File.Delete(stale); } catch { }
         }
-        // Also clean the generated csproj/cs to force full recompile
         try { File.Delete(Path.Combine(programDir, "~tmp.cs")); } catch { }
         try { File.Delete(Path.Combine(programDir, "~tmp.csproj")); } catch { }
         try { Directory.Delete(Path.Combine(programDir, "obj"), true); } catch { }
-        try { Directory.Delete(Path.Combine(programDir, "bin"), true); } catch { }
 
         var psi = new ProcessStartInfo
         {
@@ -265,7 +274,7 @@ public class DebugAdapter
 
         // The compiler may return exit code 0 even when the inner dotnet build fails.
         // Verify the expected output actually exists.
-        // The compiler sanitizes names: replaces - with _ and prefixes _ if starts with digit
+        skipCompile:
         var sanitized = SanitizeAssemblyName(Path.GetFileNameWithoutExtension(_programPath));
         var expectedExe = Path.Combine(programDir, sanitized + ".exe");
         var expectedDll = Path.Combine(programDir, sanitized + ".dll");
