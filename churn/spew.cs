@@ -283,8 +283,11 @@ namespace INTERCAL
                 Abort(Messages.E2003);
             }
 
-            //File.Delete("~tmp.cs");
-            //File.Delete("~tmp.csproj");
+            // Clean up build artifacts — leave source, exe, dll, pdb, and runtimeconfig
+            try { File.Delete("~tmp.cs"); } catch { }
+            try { File.Delete("~tmp.csproj"); } catch { }
+            try { File.Delete(c.assemblyName + ".deps.json"); } catch { }
+            try { Directory.Delete("obj", true); } catch { }
         }
 
         private static void CopyRequiredBinariesToOutputFolder(CompilationContext c)
