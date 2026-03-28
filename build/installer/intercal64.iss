@@ -39,18 +39,19 @@ var
   I: integer;
 begin
   Result := '';
-  // First try PATH
-  if Exec('cmd.exe', '/c where code >nul 2>&1', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
-  begin
-    Result := 'code';
-    exit;
-  end;
-  // Search common install locations
+  // Check known install locations first (full paths work reliably in installer)
   SetArrayLength(Paths, 4);
+  SetArrayLength(Paths, 8);
   Paths[0] := ExpandConstant('{localappdata}') + '\Programs\Microsoft VS Code\bin\code.cmd';
   Paths[1] := ExpandConstant('{pf}') + '\Microsoft VS Code\bin\code.cmd';
   Paths[2] := ExpandConstant('{localappdata}') + '\Programs\Microsoft VS Code\bin\new_code.cmd';
   Paths[3] := ExpandConstant('{pf}') + '\Microsoft VS Code\bin\new_code.cmd';
+  // VS Code Insiders
+  Paths[4] := ExpandConstant('{localappdata}') + '\Programs\Microsoft VS Code Insiders\bin\code-insiders.cmd';
+  Paths[5] := ExpandConstant('{pf}') + '\Microsoft VS Code Insiders\bin\code-insiders.cmd';
+  // Scoop / Chocolatey
+  Paths[6] := ExpandConstant('{userappdata}') + '\scoop\apps\vscode\current\bin\code.cmd';
+  Paths[7] := 'C:\tools\vscode\bin\code.cmd';
   for I := 0 to GetArrayLength(Paths) - 1 do
   begin
     if FileExists(Paths[I]) then
