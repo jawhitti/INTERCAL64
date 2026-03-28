@@ -26,7 +26,7 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; Value
 [Run]
 Filename: "cmd.exe"; Parameters: "/c copy ""{app}\lib\intercal64.runtime.dll"" ""{app}\bin\"" >nul 2>&1"; Flags: runhidden
 Filename: "cmd.exe"; Parameters: "/c copy ""{app}\lib\syslib64.dll"" ""{app}\bin\"" >nul 2>&1"; Flags: runhidden
-Filename: "{code:GetVsCodePath}"; Parameters: "--install-extension ""{app}\intercal64-{#AppVersion}.vsix"""; Flags: runhidden nowait; Check: VsCodeFound; StatusMsg: "Installing VS Code extension..."
+Filename: "{code:GetVsCodePath}"; Parameters: "--install-extension ""{app}\intercal64-v{#AppVersion}.vsix"""; Flags: runhidden nowait; Check: VsCodeFound; StatusMsg: "Installing VS Code extension..."
 
 [Code]
 var
