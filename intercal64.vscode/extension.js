@@ -28,7 +28,9 @@ function findAdapter() {
         '/opt/homebrew/bin',
         path.join(os.homedir(), '.intercal64'),
     ] : process.platform === 'win32' ? [
+        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'intercal64', 'bin'),
         path.join(process.env.ProgramFiles || 'C:\\Program Files', 'intercal64'),
+        path.join(process.env.LOCALAPPDATA || '', 'intercal64', 'bin'),
         path.join(process.env.LOCALAPPDATA || '', 'intercal64'),
     ] : [
         '/usr/local/lib/intercal64',
@@ -67,6 +69,35 @@ function findAdapter() {
 }
 
 function activate(context) {
+    // Provide a default launch config so F5 works without launch.json
+    context.subscriptions.push(
+        vscode.debug.registerDebugConfigurationProvider('intercal', {
+            provideDebugConfigurations() {
+                return [{
+                    type: 'intercal',
+                    request: 'launch',
+                    name: 'Debug INTERCAL-64 program',
+                    program: '${file}'
+                }];
+            },
+            resolveDebugConfiguration(_folder, config) {
+                if (!config.type && !config.request && !config.name) {
+                    const editor = vscode.window.activeTextEditor;
+                    if (editor && (editor.document.languageId === 'intercal' ||
+                        editor.document.fileName.endsWith('.i') ||
+                        editor.document.fileName.endsWith('.ic64'))) {
+                        config.type = 'intercal';
+                        config.request = 'launch';
+                        config.name = 'Debug INTERCAL-64 program';
+                        config.program = '${file}';
+                    }
+                }
+                if (!config.program) return undefined;
+                return config;
+            }
+        })
+    );
+
     context.subscriptions.push(
         vscode.debug.registerDebugAdapterDescriptorFactory('intercal', {
             createDebugAdapterDescriptor(_session) {
