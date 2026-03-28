@@ -15,14 +15,14 @@ echo "=== Building INTERCAL-64 $VERSION for $RID ==="
 rm -rf "$OUT"
 mkdir -p "$OUT/bin" "$OUT/lib" "$OUT/samples"
 
-# 1. Publish compiler (self-contained single-file)
+# 1. Publish compiler (self-contained, NOT single-file)
+# Single-file publish breaks Assembly.LoadFrom which the compiler uses
+# to inspect referenced assemblies for entry point labels.
 echo "--- Publishing compiler ---"
 dotnet publish "$ROOT/churn/churn.csproj" \
     -c Release \
     -r "$RID" \
     --self-contained true \
-    -p:PublishSingleFile=true \
-    -p:IncludeNativeLibrariesForSelfExtract=true \
     -o "$OUT/bin"
 
 # 2. Publish DAP adapter (self-contained single-file)
